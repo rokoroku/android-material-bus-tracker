@@ -1,0 +1,81 @@
+<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/coordinator_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <android.support.v4.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/recycler_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp" />
+
+    </android.support.v4.widget.SwipeRefreshLayout>
+
+    <kr.rokoroku.mbus.widget.FloatingActionLayout
+        android:id="@+id/fab_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end">
+
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/fab_location"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end|bottom"
+            android:layout_marginBottom="96dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginRight="16dp"
+            android:src="@drawable/ic_my_location_black_24dp"
+            app:fab_shadowXOffset="0dp"
+            app:fab_shadowYOffset="1dp"
+            app:fab_colorNormal="?attr/colorButtonNormal"
+            app:fab_colorPressed="?attr/colorButtonNormal" />
+
+        <com.github.clans.fab.FloatingActionMenu
+            android:id="@+id/fab_plus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end|bottom"
+            android:layout_marginBottom="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginRight="16dp"
+            app:menu_shadowXOffset="0dp"
+            app:menu_shadowYOffset="1dp"
+            app:menu_buttonSpacing="4dp"
+            app:menu_colorNormal="?attr/colorAccent"
+            app:menu_colorPressed="?attr/colorAccent">
+
+            <com.github.clans.fab.FloatingActionButton
+                android:id="@+id/fab_bookmark"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_label_outline_black_24dp"
+                app:fab_colorNormal="?attr/colorButtonNormal"
+                app:fab_colorPressed="?attr/colorButtonNormal"
+                app:fab_label="즐겨찾기에 추가"
+                app:fab_size="mini" />
+
+            <com.github.clans.fab.FloatingActionButton
+                android:id="@+id/fab_bookmark_selection"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_label_black_24dp"
+                app:fab_colorNormal="?attr/colorButtonNormal"
+                app:fab_colorPressed="?attr/colorButtonNormal"
+                app:fab_label="선택한 위치로 즐겨찾기에 추가"
+                app:fab_size="mini" />
+
+        </com.github.clans.fab.FloatingActionMenu>
+
+
+    </kr.rokoroku.mbus.widget.FloatingActionLayout>
+
+
+</android.support.design.widget.CoordinatorLayout>

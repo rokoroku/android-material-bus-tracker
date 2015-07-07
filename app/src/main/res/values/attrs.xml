@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="toolbarIconMap" format="reference"/>
+    <attr name="toolbarIconInfo" format="reference"/>
+    <attr name="toolbarIconSearch" format="reference"/>
+    <attr name="toolbarIconRefresh" format="reference"/>
+
+    <attr name="busColorRedLine" format="color"/>
+    <attr name="busColorGreenLine" format="color"/>
+    <attr name="busColorBlueLine" format="color"/>
+    <attr name="busColorYellowLine" format="color"/>
+    <attr name="busColorPurpleLine" format="color"/>
+
+    <attr name="cardColorDefault" format="color"/>
+    <attr name="cardColorAccent1" format="color"/>
+    <attr name="cardColorAccent2" format="color"/>
+    <attr name="cardColorAccent3" format="color"/>
+    <attr name="cardColorAccent4" format="color"/>
+    <attr name="cardColorAccent5" format="color"/>
+
+    <attr name="cardPrimaryTextColor" format="color"/>
+    <attr name="cardSecondaryTextColor" format="color"/>
+
+</resources>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="ConnectorView">
+        <attr name="strokeWidth" format="dimension"/>
+        <attr name="lineColor" format="color"/>
+        <attr name="iconColor" format="color"/>
+        <attr name="fillColor" format="color"/>
+        <attr name="iconType"/>
+        <attr name="iconDrawable" format="reference"/>
+        <attr name="connectorType"/>
+    </declare-styleable>
+
+    <attr name="iconType">
+        <flag name="none" value="0" />
+        <flag name="dot" value="1" />
+        <flag name="circle" value="2" />
+        <flag name="drawable" value="3" />
+    </attr>
+    <attr name="connectorType">
+        <flag name="node" value="0" />
+        <flag name="start" value="1" />
+        <flag name="end" value="2" />
+    </attr>
+</resources>

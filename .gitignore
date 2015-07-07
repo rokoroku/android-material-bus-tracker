@@ -1,0 +1,48 @@
+# Created by .gitignore support plugin (hsz.mobi)
+### Android template
+# Built application files
+*.apk
+*.ap_
+
+# Files for the Dalvik VM
+*.dex
+
+# Java class files
+*.class
+
+# Generated files
+bin/
+gen/
+
+# Gradle files
+.gradle/
+build/
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# Windows thumbnail db
+Thumbs.db
+
+# OSX files
+.DS_Store
+
+# Log Files
+*.log
+
+# Android Studio
+.idea/scopes/
+.idea/libraries/
+.idea/dictionaries/
+.idea/inspectionProfiles/
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/.name
+.idea/compiler.xml
+.idea/copyright/profiles_settings.xml
+.idea/offing_harbor_config.xml
+.idea/encodings.xml
+.idea/misc.xml
+.idea/scopes/scope_settings.xml
+.idea/vcs.xml
+*.iml

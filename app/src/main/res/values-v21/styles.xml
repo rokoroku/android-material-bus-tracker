@@ -1,0 +1,71 @@
+<resources>
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
+
+        <item name="colorPrimary">@color/background_material_dark</item>
+        <item name="colorPrimaryDark">@color/md_grey_900</item>
+        <item name="colorAccent">@color/md_blue_600</item>
+        <item name="colorButtonNormal">@color/md_white_1000</item>
+        <item name="colorControlHighlight">@color/ripple_material_light</item>
+
+        <item name="busColorRedLine">@color/md_red_500</item>
+        <item name="busColorGreenLine">@color/md_green_500</item>
+        <item name="busColorBlueLine">@color/md_blue_500</item>
+        <item name="busColorYellowLine">@color/md_yellow_600</item>
+        <item name="busColorPurpleLine">@color/md_deep_purple_400</item>
+
+        <item name="cardColorAccent1">@color/md_pink_200</item>
+        <item name="cardColorAccent2">@color/md_blue_200</item>
+        <item name="cardColorAccent3">@color/md_green_200</item>
+        <item name="cardColorAccent4">@color/md_orange_200</item>
+        <item name="cardColorAccent5">@color/md_deep_purple_200</item>
+        <item name="cardColorDefault">@color/cardview_light_background</item>
+
+        <item name="cardPrimaryTextColor">@color/primary_text_default_material_light</item>
+        <item name="cardSecondaryTextColor">@color/secondary_text_default_material_light</item>
+
+        <item name="toolbarIconMap">@drawable/ic_map_white_48dp</item>
+        <item name="toolbarIconInfo">@drawable/ic_info_outline_white_48dp</item>
+        <item name="toolbarIconRefresh">@drawable/ic_refresh_white_48dp</item>
+
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowTranslucentStatus">true</item>
+    </style>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme.Light" parent="Theme.AppCompat.Light.NoActionBar">
+
+        <item name="colorPrimary">@color/background_material_light</item>
+        <item name="colorPrimaryDark">@color/md_grey_600</item>
+        <item name="colorAccent">@color/md_amber_600</item>
+        <item name="colorButtonNormal">@color/md_white_1000</item>
+        <item name="colorControlHighlight">@color/ripple_material_light</item>
+
+        <item name="busColorRedLine">@color/md_red_700</item>
+        <item name="busColorGreenLine">@color/md_green_700</item>
+        <item name="busColorBlueLine">@color/md_blue_700</item>
+        <item name="busColorYellowLine">@color/md_yellow_700</item>
+        <item name="busColorPurpleLine">@color/md_deep_purple_500</item>
+
+        <item name="cardColorAccent1">@color/md_pink_200</item>
+        <item name="cardColorAccent2">@color/md_blue_200</item>
+        <item name="cardColorAccent3">@color/md_green_200</item>
+        <item name="cardColorAccent4">@color/md_orange_200</item>
+        <item name="cardColorAccent5">@color/md_deep_purple_200</item>
+        <item name="cardColorDefault">@color/cardview_light_background</item>
+
+        <item name="cardPrimaryTextColor">@color/primary_text_default_material_light</item>
+        <item name="cardSecondaryTextColor">@color/secondary_text_default_material_light</item>
+
+        <item name="toolbarIconMap">@drawable/ic_map_black_48dp</item>
+        <item name="toolbarIconInfo">@drawable/ic_info_outline_black_48dp</item>
+        <item name="toolbarIconRefresh">@drawable/ic_refresh_black_48dp</item>
+
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowTranslucentStatus">true</item>
+    </style>
+
+</resources>
+

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<kr.rokoroku.mbus.widget.SplitCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/card_view"
+    android:layout_width="match_parent"
+    android:layout_height="64dp"
+    android:clickable="true"
+    android:foreground="?android:attr/selectableItemBackground"
+    card_view:cardCornerRadius="4dp">
+
+    <!--Connector Icon-->
+    <kr.rokoroku.widget.ConnectorView
+        xmlns:connector="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/connector"
+        android:layout_width="16dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:layout_marginLeft="16dp"
+        android:layout_marginStart="16dp"
+        connector:connectorType="node"
+        connector:iconType="circle"
+        connector:strokeWidth="4dp" />
+
+    <!--Station Information Layout-->
+    <RelativeLayout
+        android:id="@+id/station_info_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="start|center_vertical"
+        android:layout_marginLeft="48dp"
+        android:layout_marginStart="48dp"
+        android:visibility="visible">
+
+        <TextView
+            android:id="@+id/station_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:maxLines="2"
+            android:gravity="left|start"
+            android:layout_toStartOf="@+id/paint_button"
+            android:layout_toLeftOf="@id/paint_button"
+            android:paddingBottom="2dp"
+            android:layout_marginRight="8dp"
+            android:layout_marginEnd="8dp"
+            android:text="정류장"
+            android:textColor="@color/primary_text_default_material_light"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/station_id"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/station_title"
+            android:text="000-00"
+            android:layout_marginTop="-4dp"
+            android:textColor="@color/secondary_text_default_material_light"
+            android:textSize="12sp" />
+
+        <ImageButton
+            android:id="@+id/navigate_button"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:background="@android:color/transparent"
+            android:padding="4dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_navigate_next_black_48dp"
+            android:visibility="gone" />
+
+        <ImageButton
+            android:id="@+id/paint_button"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:layout_centerVertical="true"
+            android:layout_toLeftOf="@+id/navigate_button"
+            android:layout_toStartOf="@+id/navigate_button"
+            android:background="@android:color/transparent"
+            android:padding="9dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_palette_black_48dp"
+            android:visibility="gone" />
+    </RelativeLayout>
+</kr.rokoroku.mbus.widget.SplitCardView>

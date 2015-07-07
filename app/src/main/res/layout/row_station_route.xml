@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<kr.rokoroku.mbus.widget.SplitCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/card_view"
+    android:layout_width="match_parent"
+    android:layout_height="64dp"
+    android:clickable="true"
+    android:foreground="?android:attr/selectableItemBackground"
+    card_view:cardCornerRadius="4dp">
+
+    <!--Route Information Layout-->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="start|center_vertical"
+        android:visibility="visible">
+
+        <LinearLayout
+            android:id="@+id/route_info_layout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="12dp"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/route_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="720-1"
+                    android:textColor="@color/primary_text_default_material_light"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <kr.rokoroku.mbus.widget.CardedTextView
+                    android:id="@+id/route_type"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="4dp"
+                    android:layout_marginStart="4dp"
+                    android:paddingLeft="2dp"
+                    android:paddingRight="2dp"
+                    android:text="경기"
+                    android:textColor="@color/primary_text_default_material_light"
+                    android:textSize="9sp"
+                    android:visibility="visible" />
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/route_destination"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="-1dp"
+                android:text="서울시청 방면"
+                android:textColor="@color/secondary_text_default_material_light"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/remain_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginRight="12dp"
+            android:layout_toEndOf="@id/route_info_layout"
+            android:layout_toLeftOf="@id/paint_button"
+            android:layout_toRightOf="@id/route_info_layout"
+            android:layout_toStartOf="@+id/paint_button"
+            android:gravity="right|end"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/remain_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="2dp"
+                android:layout_marginTop="2dp"
+                android:gravity="right|end"
+                android:text="5 min"
+                android:textColor="@color/primary_text_default_material_light"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/remain_station"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="2 정류장 남음"
+                android:textColor="@color/secondary_text_default_material_light"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/navigate_button"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:background="@android:color/transparent"
+            android:padding="4dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_navigate_next_black_48dp"
+            android:visibility="visible" />
+
+        <ImageButton
+            android:id="@+id/paint_button"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="-4dp"
+            android:layout_marginStart="-4dp"
+            android:layout_toLeftOf="@+id/navigate_button"
+            android:layout_toStartOf="@+id/navigate_button"
+            android:background="@android:color/transparent"
+            android:padding="9dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_palette_black_48dp"
+            android:visibility="visible" />
+
+        <View
+            android:id="@+id/separator"
+            android:layout_width="match_parent"
+            android:layout_height="1px"
+            android:layout_alignParentBottom="true"
+            android:layout_marginLeft="2dp"
+            android:layout_marginRight="2dp"
+            android:background="@color/cardview_shadow_start_color"
+            android:visibility="visible" />
+    </RelativeLayout>
+</kr.rokoroku.mbus.widget.SplitCardView>

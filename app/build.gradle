@@ -1,0 +1,67 @@
+apply plugin: 'com.android.application'
+apply plugin: 'me.tatarka.retrolambda'
+
+android {
+    signingConfigs {
+
+    }
+    compileSdkVersion 22
+    buildToolsVersion "22.0.1"
+    defaultConfig {
+        applicationId "kr.rokoroku.mbus"
+        minSdkVersion 14
+        targetSdkVersion 22
+        versionCode 1
+        versionName "0.1"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    configurations {
+        compile.exclude group: 'stax'
+        compile.exclude group: 'xpp3'
+    }
+    dexOptions {
+
+    }
+}
+
+dependencies {
+    //local libraries
+    compile fileTree(include: ['*.jar'], dir: 'libs')
+
+    compile project(':connectorView')
+    compile project(':circularReveal')
+    compile project(':persistentSearch')
+    compile project(':advRecyclerView')
+
+    compile 'com.android.support:design:22.2.0'
+    compile 'com.android.support:appcompat-v7:22.2.0'
+    compile 'com.android.support:recyclerview-v7:22.2.0'
+    compile 'com.android.support:cardview-v7:22.2.0'
+
+    compile 'com.google.android.gms:play-services-ads:7.5.0'
+    compile 'com.google.android.gms:play-services-base:7.5.0'
+    compile 'com.google.android.gms:play-services-maps:7.5.0'
+    compile 'com.google.android.gms:play-services-location:7.5.0'
+    compile 'com.google.android.gms:play-services-analytics:7.5.0'
+
+    compile 'com.squareup.okhttp:okhttp:2.4.0'
+    compile 'com.squareup.okhttp:okhttp-urlconnection:2.4.0'
+    compile 'com.squareup.retrofit:retrofit:1.9.0'
+    compile 'com.mobprofs:retrofit-simplexmlconverter:1.1'
+    compile 'org.simpleframework:simple-xml:2.7.1'
+    compile 'com.google.code.gson:gson:2.3'
+    compile 'org.mapdb:mapdb:2.0-beta1'
+
+    compile 'com.github.clans:fab:1.5.3'
+    compile 'com.github.markushi:circlebutton:1.1'
+    compile 'com.afollestad:material-dialogs:0.7.6.0'
+}

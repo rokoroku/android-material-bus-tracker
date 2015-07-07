@@ -1,0 +1,1 @@
+include ':app', ':persistentSearch', 'connectorView', ':circularReveal', ':advRecyclerView'

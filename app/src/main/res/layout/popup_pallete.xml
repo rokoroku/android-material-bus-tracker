@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+
+    <android.support.v7.widget.CardView xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/card_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="4dp"
+        app:cardBackgroundColor="@color/background_floating_material_light"
+        app:cardCornerRadius="4dp"
+        app:cardElevation="2dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="6dp">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <at.markushi.ui.CircleButton
+                    android:id="@+id/button1"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    app:cb_color="?attr/cardColorAccent1"
+                    app:cb_pressedRingWidth="6dp" />
+
+                <at.markushi.ui.CircleButton
+                    android:id="@+id/button2"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    app:cb_color="?attr/cardColorAccent2"
+                    app:cb_pressedRingWidth="6dp" />
+
+                <at.markushi.ui.CircleButton
+                    android:id="@+id/button3"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    app:cb_color="?attr/cardColorAccent3"
+                    app:cb_pressedRingWidth="6dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <at.markushi.ui.CircleButton
+                    android:id="@+id/button4"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    app:cb_color="?attr/cardColorAccent4"
+                    app:cb_pressedRingWidth="6dp" />
+
+                <at.markushi.ui.CircleButton
+                    android:id="@+id/button5"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    app:cb_color="?attr/cardColorAccent5"
+                    app:cb_pressedRingWidth="6dp" />
+
+                <at.markushi.ui.CircleButton
+                    android:id="@+id/button6"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    app:cb_color="?attr/cardColorDefault"
+                    app:cb_pressedRingWidth="6dp" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </android.support.v7.widget.CardView>
+</RelativeLayout>

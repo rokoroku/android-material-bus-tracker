@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--fab-->
+    <dimen name="fab_size">56dp</dimen>
+    <dimen name="half_fab_size">28dp</dimen>
+    <dimen name="fab_margin_with_appbar">28dp</dimen>
+
+    <dimen name="fab_margin_right">16dp</dimen>
+    <dimen name="fab_margin_bottom">16dp</dimen>
+    <dimen name="fab_margin_bottom_x2">96dp</dimen>
+
+    <dimen name="fab_mini_margin_right">24dp</dimen>
+    <dimen name="fab_mini_margin_bottom">24dp</dimen>
+
+    <!--card view-->
+    <dimen name="cardview_item_spacing">2dp</dimen>
+</resources>

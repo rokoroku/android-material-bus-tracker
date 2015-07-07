@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingBottom="8dp"
+    android:paddingLeft="4dp"
+    android:paddingRight="4dp"
+    android:paddingTop="8dp">
+
+    <!--Bus Information Layout-->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:text="첫 번째 도착예정 버스"
+        android:textColor="?attr/cardPrimaryTextColor"
+        android:textSize="14sp" />
+
+    <include
+        android:id="@+id/bus_arrival_item_1"
+        layout="@layout/row_bus_arrival_item"
+        android:layout_width="match_parent"
+        android:layout_height="42dp"
+        android:layout_margin="8dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:text="두 번째 도착예정 버스"
+        android:textColor="?attr/cardPrimaryTextColor"
+        android:textSize="14sp" />
+
+    <include
+        android:id="@+id/bus_arrival_item_2"
+        layout="@layout/row_bus_arrival_item"
+        android:layout_width="match_parent"
+        android:layout_height="42dp"
+        android:layout_margin="8dp" />
+
+</LinearLayout>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<kr.rokoroku.mbus.widget.SplitCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/card_view"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:clickable="true"
+    android:foreground="?android:attr/selectableItemBackground"
+    card_view:cardCornerRadius="4dp">
+
+    <!--Connector Icon-->
+    <kr.rokoroku.widget.ConnectorView
+        xmlns:connector="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/connector"
+        android:layout_width="16dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:layout_marginLeft="16dp"
+        android:layout_marginStart="16dp"
+        connector:connectorType="node"
+        connector:iconType="none"
+        connector:strokeWidth="4dp" />
+
+    <!--Progress Ring-->
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        android:layout_width="36dp"
+        android:layout_height="160dp"
+        android:layout_gravity="center"
+        android:indeterminate="true"
+        android:indeterminateTint="@color/md_grey_600"
+        android:indeterminateTintMode="multiply"
+        android:visibility="visible" />
+
+    <!--Arrival Information Layout-->
+    <include
+        android:id="@+id/bus_arrival_layout"
+        layout="@layout/row_bus_arrival_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start|center_vertical"
+        android:layout_marginLeft="36dp"
+        android:layout_marginStart="36dp" />
+
+</kr.rokoroku.mbus.widget.SplitCardView>
