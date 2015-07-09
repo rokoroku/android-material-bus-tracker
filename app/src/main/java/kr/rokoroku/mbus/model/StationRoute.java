@@ -7,6 +7,8 @@ package kr.rokoroku.mbus.model;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import org.mapdb.Serializer;
+
 import java.io.Serializable;
 
 import kr.rokoroku.mbus.api.gbisweb.model.GbisWebSearchBusStationResult;
@@ -19,6 +21,7 @@ public class StationRoute implements Parcelable, Serializable, Comparable<Statio
     private String routeName;
     private String firstStationName;
     private String lastStationName;
+    private String stationLocalId;
     private Provider provider;
     private RouteType routeType;
     private int sequence = -1;
@@ -30,33 +33,37 @@ public class StationRoute implements Parcelable, Serializable, Comparable<Statio
 
     }
 
-    public StationRoute(Route route) {
+    public StationRoute(Route route, String stationLocalId) {
         this.route = route;
         this.routeId = route.getId();
         this.routeName = route.getName();
         this.provider = route.getProvider();
+        this.stationLocalId = stationLocalId;
         this.firstStationName = route.getStartStationName();
         this.lastStationName = route.getEndStationName();
         this.routeType = route.getType();
     }
 
-    public StationRoute(SeoulBusRouteByStation entity) {
+    public StationRoute(SeoulBusRouteByStation entity, String stationLocalId) {
         this.routeId = entity.getBusRouteId();
         this.routeName = entity.getBusRouteNm();
         this.firstStationName = entity.getStBegin();
         this.lastStationName = entity.getStEnd();
+        this.stationLocalId = stationLocalId;
         this.routeType = RouteType.valueOfTopis(entity.getBusRouteType());
         this.provider = Provider.SEOUL;
     }
 
-    public StationRoute(GbisWebSearchBusStationResult.ResultEntity.BusStationInfoEntity busStationInfoEntity) {
+    public StationRoute(GbisWebSearchBusStationResult.ResultEntity.BusStationInfoEntity busStationInfoEntity, String stationLocalId) {
         this.routeId = busStationInfoEntity.getRouteId();
         this.routeName = busStationInfoEntity.getRouteName();
+        this.stationLocalId = stationLocalId;
         this.provider = Provider.GYEONGGI;
     }
 
     public Route getRoute() {
-        if (route == null && routeId != null) route = DatabaseHelper.getInstance().getRoute(provider, routeId);
+        if (route == null && routeId != null)
+            route = DatabaseHelper.getInstance().getRoute(provider, routeId);
         return route;
     }
 
@@ -90,6 +97,30 @@ public class StationRoute implements Parcelable, Serializable, Comparable<Statio
 
     public void setRouteName(String routeName) {
         this.routeName = routeName;
+    }
+
+    public String getStationLocalId() {
+        return stationLocalId;
+    }
+
+    public void setStationLocalId(String stationLocalId) {
+        this.stationLocalId = stationLocalId;
+    }
+
+    public String getFirstStationName() {
+        return firstStationName;
+    }
+
+    public void setFirstStationName(String firstStationName) {
+        this.firstStationName = firstStationName;
+    }
+
+    public String getLastStationName() {
+        return lastStationName;
+    }
+
+    public void setLastStationName(String lastStationName) {
+        this.lastStationName = lastStationName;
     }
 
     public RouteType getRouteType() {

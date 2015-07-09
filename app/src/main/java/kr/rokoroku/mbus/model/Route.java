@@ -7,6 +7,7 @@ import android.text.TextUtils;
 import kr.rokoroku.mbus.api.gbisweb.model.GbisWebSearchAllResult;
 import kr.rokoroku.mbus.api.gbisweb.model.GbisWebSearchBusRouteResult;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusRouteInfo;
+import kr.rokoroku.mbus.util.FormatUtils;
 import kr.rokoroku.mbus.util.TimeUtils;
 
 import java.io.Serializable;
@@ -58,7 +59,7 @@ public class Route implements Parcelable, Serializable {
         this.name = name;
         this.provider = provider;
 
-        if(provider != null) {
+        if (provider != null) {
             switch (provider) {
                 case SEOUL:
                     this.companyName = "서울대중교통";
@@ -150,16 +151,19 @@ public class Route implements Parcelable, Serializable {
             RouteStation routeStation = new RouteStation(stationEntity, id, stationSequence++);
             routeStation.setDirection(Direction.UP);
             routeStationList.add(routeStation);
-            if(turnStationSeq == routeStation.getSequence()) {
-                turnStationId = routeStation.getId();
+            if (turnStationSeq == routeStation.getSequence()) {
+                    turnStationId = routeStation.getId();
             }
+        }
+        if (turnStationSeq == -1) {
+            turnStationSeq = stationSequence;
         }
 
         for (GbisWebSearchBusRouteResult.ResultEntity.GgEntity.StationEntity stationEntity : ggEntity.getDown().getList()) {
             RouteStation routeStation = new RouteStation(stationEntity, id, stationSequence++);
             routeStation.setDirection(Direction.DOWN);
             routeStationList.add(routeStation);
-            if(turnStationSeq == routeStation.getSequence()) {
+            if (turnStationSeq == routeStation.getSequence()) {
                 turnStationId = routeStation.getId();
             }
         }
@@ -232,7 +236,7 @@ public class Route implements Parcelable, Serializable {
     }
 
     public String getStartStationName() {
-        if(startStationName == null && routeStationList != null) {
+        if (startStationName == null && routeStationList != null) {
             startStationName = routeStationList.get(0).getName();
         }
         return startStationName;
@@ -243,16 +247,16 @@ public class Route implements Parcelable, Serializable {
     }
 
     public String getEndStationName() {
-        if(endStationName == null && routeStationList != null) {
+        if (endStationName == null && routeStationList != null) {
             endStationName = routeStationList.get(routeStationList.size() - 1).getName();
         }
         return endStationName;
     }
 
     public String getTurnStationName() {
-        if(turnStationName == null && routeStationList != null) {
+        if (turnStationName == null && routeStationList != null) {
             RouteStation routeStation = routeStationList.get(getTurnStationSeq());
-            if(routeStation != null) turnStationName = routeStation.getName();
+            if (routeStation != null) turnStationName = routeStation.getName();
         }
         return turnStationName;
     }
@@ -326,30 +330,6 @@ public class Route implements Parcelable, Serializable {
     }
 
     public String getRegionName() {
-        if(regionName == null) {
-            if(getRouteStationList() != null && !getRouteStationList().isEmpty()) {
-                Set<String> stringSet = new LinkedHashSet<>();
-                for (RouteStation routeStation : getRouteStationList()) {
-                    stringSet.add(routeStation.getCity());
-                }
-
-                StringBuilder builder = new StringBuilder();
-                Iterator<String> iterator = stringSet.iterator();
-                if(iterator.hasNext()) {
-                    builder.append(iterator.next().replace("시","").replace("구",""));
-                }
-                while (iterator.hasNext()) {
-                    builder.append(", ").append(iterator.next().replace("시","").replace("구",""));
-                }
-
-                regionName = builder.toString();
-
-                if(TextUtils.isEmpty(regionName)) {
-                    regionName = null;
-                }
-            }
-        }
-
         return regionName;
     }
 

@@ -41,6 +41,7 @@ import kr.rokoroku.mbus.model.Route;
 import kr.rokoroku.mbus.model.RouteType;
 import kr.rokoroku.mbus.model.Station;
 import kr.rokoroku.mbus.model.StationRoute;
+import kr.rokoroku.mbus.util.FormatUtils;
 import kr.rokoroku.mbus.util.TimeUtils;
 import kr.rokoroku.mbus.util.RevealUtils;
 import kr.rokoroku.mbus.util.ThemeUtils;
@@ -318,19 +319,13 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
             mRouteName.setText(stationRoute.getRouteName());
             Route route = stationRoute.getRoute();
             if (route != null && route.getTurnStationSeq() != -1) {
-                String direction;
-                if (mItem.getSequence() < route.getTurnStationSeq()) {
-                    String turnStationName = route.getTurnStationName();
-                    if (turnStationName == null) turnStationName = route.getEndStationName();
-                    direction = turnStationName;
-                } else if (route.getEndStationName() != null &&
-                        route.getEndStationName().equals(route.getTurnStationName())) {
-                    direction = route.getEndStationName();
+                String description = FormatUtils.formatHeadingTo(context, route, stationRoute);
+                if(description != null) {
+                    mRouteDestination.setVisibility(View.VISIBLE);
+                    mRouteDestination.setText(description);
                 } else {
-                    direction = route.getStartStationName();
+                    mRouteDestination.setVisibility(View.GONE);
                 }
-                mRouteDestination.setVisibility(View.VISIBLE);
-                mRouteDestination.setText(context.getString(R.string.heading_to, direction));
 
             } else {
                 mRouteDestination.setVisibility(View.GONE);
@@ -343,7 +338,7 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
 
                 if (mDataProvider.hasLinkedStation() && !Provider.SEOUL.equals(stationRoute.getProvider())) {
                     mRouteType.setVisibility(View.VISIBLE);
-                    mRouteType.setText(stationRoute.getProvider().getCityName());
+                    mRouteType.setText(stationRoute.getProvider().getCityName(context));
                 } else {
                     mRouteType.setVisibility(View.GONE);
                 }

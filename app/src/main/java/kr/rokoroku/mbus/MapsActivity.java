@@ -4,6 +4,7 @@ import android.location.Location;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 
+import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -11,7 +12,12 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import kr.rokoroku.mbus.core.LocationClient;
+
 public class MapsActivity extends FragmentActivity implements GoogleMap.OnMapLoadedCallback {
+
+    public static final String EXTRA_KEY_STATION = "station";
+    public static final String EXTRA_KEY_ROUTE = "route";
 
     private GoogleMap mMap; // Might be null if Google Play services APK is not available.
 
@@ -69,8 +75,23 @@ public class MapsActivity extends FragmentActivity implements GoogleMap.OnMapLoa
     @Override
     public void onMapLoaded() {
         Location myLocation = mMap.getMyLocation();
-        if(myLocation != null) {
+        if (myLocation != null) {
             mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(myLocation.getLatitude(), myLocation.getLongitude())));
+        } else {
+            LocationClient.with(this)
+                    .listener(new LocationClient.Listener() {
+                        @Override
+                        public void onLocationUpdate(Location location) {
+                            mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(location.getLatitude(), location.getLongitude())));
+                        }
+
+                        @Override
+                        public void onError(String failReason, ConnectionResult connectionResult) {
+
+                        }
+                    })
+                    .build()
+                    .start();
         }
     }
 }

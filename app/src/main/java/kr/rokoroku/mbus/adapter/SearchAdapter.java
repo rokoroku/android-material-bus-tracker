@@ -27,6 +27,7 @@ import kr.rokoroku.mbus.StationActivity;
 import kr.rokoroku.mbus.model.Provider;
 import kr.rokoroku.mbus.model.Route;
 import kr.rokoroku.mbus.model.Station;
+import kr.rokoroku.mbus.util.FormatUtils;
 import kr.rokoroku.mbus.util.ThemeUtils;
 
 public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchViewHolder> implements OnClickListener {
@@ -111,7 +112,14 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchView
 
             int color = route.getType().getColor(context);
             String description = route.getType().getDescription(context);
-            description = description + " / " + route.getRegionName();
+            String regionName = route.getRegionName();
+            if (regionName == null) {
+                regionName = FormatUtils.formatRegionName(context, route);
+                route.setRegionName(regionName);
+            }
+            if (regionName != null) {
+                description = description + " / " + regionName;
+            }
 
             holder.mItemTitle.setText(route.getName());
             holder.mItemTitle.setTextColor(color);
@@ -124,7 +132,7 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchView
             holder.mContainer.setTag(route);
 
             if(!Provider.SEOUL.equals(route.getProvider())) {
-                holder.mItemLabel.setText(route.getProvider().getCityName());
+                holder.mItemLabel.setText(route.getProvider().getCityName(context));
                 holder.mItemLabel.setTextColor(color);
                 holder.mItemLabel.setVisibility(View.VISIBLE);
             } else {
@@ -143,23 +151,8 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchView
             holder.mItemLabel.setVisibility(View.GONE);
 
             //build local id string set
-            StringBuilder stringBuilder = new StringBuilder();
-            if(station.getId() != null) {
-                String entryString = String.format("%s(%s)", station.getLocalId(), station.getProvider().getCityName());
-                stringBuilder.append(entryString);
-            }
-
-            List<Station.ExternalEntry> stationLinkedEntries = station.getExternalEntries();
-            if(stationLinkedEntries != null) {
-                Iterator<Station.ExternalEntry> iterator = stationLinkedEntries.iterator();
-                while (iterator.hasNext()) {
-                    Station.ExternalEntry externalEntry = iterator.next();
-                    String entryString = String.format("%s(%s)", externalEntry.getKey(), externalEntry.getProvider().getCityName());
-                    stringBuilder.append(", ").append(entryString);
-                }
-            }
-
-            holder.mItemDescription.setText(stringBuilder.toString());
+            String description = FormatUtils.formatStationIds(context, station);
+            holder.mItemDescription.setText(description);
             holder.mContainer.setOnClickListener(this);
             holder.mContainer.setTag(station);
         }

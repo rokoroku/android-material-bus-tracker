@@ -16,7 +16,7 @@ public enum RouteType {
     GREEN,
     GREEN_GYEONGGI,
     GREEN_INCHEON,
-    GREEN_RESERVED,
+    GREEN_SUBURB,
 
     // Intercourse
     BLUE,
@@ -60,6 +60,9 @@ public enum RouteType {
             case "13":    // 일반 버스
                 return GREEN_GYEONGGI;
 
+            case "23":    // 농어촌 버스 (군내/외곽 버스)
+                return GREEN_SUBURB;
+
             case "43":    // 시외버스 (경기도)
                 return PURPLE_GYEONGGI;
 
@@ -102,6 +105,7 @@ public enum RouteType {
                 return ThemeUtils.getThemeColor(context, R.attr.busColorRedLine);
             case GREEN:
             case GREEN_GYEONGGI:
+            case GREEN_SUBURB:
                 return ThemeUtils.getThemeColor(context, R.attr.busColorGreenLine);
             case BLUE:
                 return ThemeUtils.getThemeColor(context, R.attr.busColorBlueLine);
@@ -136,6 +140,8 @@ public enum RouteType {
                 return context.getString(R.string.route_type_general);
             case PURPLE_GYEONGGI:
                 return context.getString(R.string.route_type_purple);
+            case GREEN_SUBURB:
+                return context.getString(R.string.route_type_suburb);
             default:
                 return context.getString(R.string.route_type_general);
         }

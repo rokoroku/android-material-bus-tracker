@@ -20,7 +20,7 @@ public class ThemeUtils {
         TypedValue typedValue = new TypedValue();
 
         if (theme.resolveAttribute(resId, typedValue, true)) {
-            if(typedValue.type == TypedValue.TYPE_REFERENCE) {
+            if(typedValue.type == TypedValue.TYPE_STRING) {
                 return getResourceColor(context, typedValue.data);
             } else {
                 return typedValue.data;

@@ -8,9 +8,12 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.TextUtils;
 
+import com.google.android.gms.maps.model.LatLng;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +38,7 @@ public class Station implements Parcelable, Serializable {
     private List<ExternalEntry> externalEntryList;
     private List<StationRoute> stationRouteList;
     private transient Date lastUpdateTime;
-    private transient Map<String, ArrivalInfo> temporalArrivalInfos;
+    private transient Map<String, ArrivalInfo> temporalArrivalInfos ;
 
     protected Station() {
 
@@ -63,8 +66,13 @@ public class Station implements Parcelable, Serializable {
         this.name = stationEntity.getStationNm();
         this.city = stationEntity.getGnm();
         this.localId = stationEntity.getStationNo();
-        this.latitude = stationEntity.getLat();
-        this.longitude = stationEntity.getLon();
+        Double latitude = stationEntity.getLat();
+        Double longitude = stationEntity.getLon();
+        LatLng latLng = GeoUtils.convertEPSG3857(latitude, longitude);
+        if(latLng != null) {
+            this.latitude = latLng.latitude;
+            this.longitude = latLng.longitude;
+        }
         this.provider = Provider.GYEONGGI;
 
         String mobileNoSi = stationEntity.getMobileNoSi();
@@ -77,8 +85,13 @@ public class Station implements Parcelable, Serializable {
         this.name = listEntity.getStationNm();
         this.city = listEntity.getDistrictGnm();
         this.localId = listEntity.getStationNo();
-        this.latitude = listEntity.getLat();
-        this.longitude = listEntity.getLon();
+        Double latitude = listEntity.getLat();
+        Double longitude = listEntity.getLon();
+        LatLng latLng = GeoUtils.convertEPSG3857(latitude, longitude);
+        if(latLng != null) {
+            this.latitude = latLng.latitude;
+            this.longitude = latLng.longitude;
+        }
         this.provider = Provider.GYEONGGI;
 
         String stationNoSi = listEntity.getStationNoSi();
@@ -96,9 +109,11 @@ public class Station implements Parcelable, Serializable {
         this.localId = arsId;
         Double x = Double.valueOf(seoulStationInfo.getTmX());
         Double y = Double.valueOf(seoulStationInfo.getTmY());
-        Double[] latlng = GeoUtils.inverseMercator(x, y);
-        this.latitude = latlng[0];
-        this.longitude = latlng[1];
+        LatLng latLng = GeoUtils.convertTm(x, y);
+        if(latLng != null) {
+            this.latitude = latLng.latitude;
+            this.longitude = latLng.longitude;
+        }
         this.provider = Provider.SEOUL;
     }
 
@@ -109,11 +124,8 @@ public class Station implements Parcelable, Serializable {
         String arsId = seoulBusRouteStation.getStationNo();
         if ("0".equals(arsId)) arsId = null;
         this.localId = arsId;
-        Double x = Double.valueOf(seoulBusRouteStation.getGpsX());
-        Double y = Double.valueOf(seoulBusRouteStation.getGpsY());
-        Double[] latlng = GeoUtils.inverseMercator(x, y);
-        this.latitude = latlng[0];
-        this.longitude = latlng[1];
+        this.latitude = Double.valueOf(seoulBusRouteStation.getGpsY());
+        this.longitude = Double.valueOf(seoulBusRouteStation.getGpsX());
         this.provider = Provider.SEOUL;
     }
 
@@ -300,8 +312,8 @@ public class Station implements Parcelable, Serializable {
                 ", id='" + id + '\'' +
                 ", name='" + name + '\'' +
                 ", localId='" + localId + '\'' +
-                ", longitude=" + longitude +
-                ", latitude=" + latitude +
+                ", longitude=" + String.format("%.6f", longitude) +
+                ", latitude=" + String.format("%.6f", latitude) +
                 ", provider=" + provider +
                 ", externalEntryList=" + externalEntryList +
                 ", stationRouteList=" + stationRouteList +
@@ -460,6 +472,30 @@ public class Station implements Parcelable, Serializable {
                     "provider=" + provider +
                     ", key='" + key + '\'' +
                     '}';
+        }
+    }
+
+    public static class DistanceComparator implements Comparator<Station> {
+
+        private double latitude;
+        private double longitude;
+
+        public DistanceComparator(double latitude, double longitude) {
+            this.latitude = latitude;
+            this.longitude = longitude;
+        }
+
+        @Override
+        public int compare(Station lhs, Station rhs) {
+            double distLhs = getAbsDistance(lhs.getLatitude(), lhs.getLongitude());
+            double distRhs = getAbsDistance(rhs.getLatitude(), rhs.getLongitude());
+            return Double.compare(distLhs, distRhs);
+        }
+
+        public double getAbsDistance(double latitude, double longitude) {
+            double diffLhsLat = Math.abs(this.latitude - latitude);
+            double diffLhsLng = Math.abs(this.longitude - longitude);
+            return diffLhsLat + diffLhsLng;
         }
     }
 }

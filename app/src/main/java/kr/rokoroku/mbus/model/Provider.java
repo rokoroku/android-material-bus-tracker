@@ -1,5 +1,6 @@
 package kr.rokoroku.mbus.model;
 
+import android.content.Context;
 import android.support.annotation.Nullable;
 
 import java.io.Serializable;
@@ -32,7 +33,7 @@ public enum Provider {
         return cityCode;
     }
 
-    public String getCityName() {
+    public String getCityName(Context context) {
         if(cityName == null) {
             int strRes;
             switch (this) {
@@ -52,7 +53,7 @@ public enum Provider {
                     strRes = android.R.string.unknownName;
                     break;
             }
-            cityName = BaseApplication.getInstance().getString(strRes);
+            cityName = context.getString(strRes);
         }
         return cityName;
     }

@@ -168,6 +168,6 @@ public class SearchActivity extends AbstractBaseActivity
 
     @Override
     public void onMenuClick() {
-        super.onBackPressed();
+        onBackPressed();
     }
 }

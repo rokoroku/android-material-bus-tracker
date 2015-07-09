@@ -456,8 +456,9 @@ public class ApiCaller {
 
                                 // 2-1. put every route of station
                                 Map<String, StationRoute> stationRoutes = new TreeMap<>();
+                                String stationLocalId = station.getLocalIdByProvider(dataProvider);
                                 for (GbisWebSearchBusStationResult.ResultEntity.BusStationInfoEntity busStationInfoEntity : resultEntity.getBusStationInfo()) {
-                                    StationRoute stationRoute = new StationRoute(busStationInfoEntity);
+                                    StationRoute stationRoute = new StationRoute(busStationInfoEntity, stationLocalId);
                                     stationRoutes.put(stationRoute.getRouteId(), stationRoute);
                                 }
 
@@ -554,7 +555,8 @@ public class ApiCaller {
                                 // TODO: filter gbis routes
                                 List<StationRoute> stationRoutes = new ArrayList<>();
                                 for (SeoulBusRouteByStation routeByStation : result.getItems()) {
-                                    StationRoute stationRoute = new StationRoute(routeByStation);
+                                    String stationLocalId = station.getLocalIdByProvider(dataProvider);
+                                    StationRoute stationRoute = new StationRoute(routeByStation, stationLocalId);
                                     if (!stationRoute.getRouteType().equals(RouteType.RED_GYEONGGI)) {
                                         stationRoutes.add(stationRoute);
                                     }

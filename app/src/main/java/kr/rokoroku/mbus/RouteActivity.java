@@ -1,6 +1,7 @@
 package kr.rokoroku.mbus;
 
 import android.content.Intent;
+import android.location.Location;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.design.widget.CoordinatorLayout;
@@ -15,10 +16,14 @@ import android.widget.Toast;
 
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.maps.model.LatLng;
 import com.h6ah4i.android.widget.advrecyclerview.animator.GeneralItemAnimator;
 import com.h6ah4i.android.widget.advrecyclerview.animator.RefactoredDefaultItemAnimator;
 import com.h6ah4i.android.widget.advrecyclerview.expandable.RecyclerViewExpandableItemManager;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -28,10 +33,13 @@ import kr.rokoroku.mbus.adapter.RouteDataProvider;
 import kr.rokoroku.mbus.core.ApiCaller;
 import kr.rokoroku.mbus.core.DatabaseHelper;
 import kr.rokoroku.mbus.core.FavoriteFacade;
+import kr.rokoroku.mbus.core.LocationClient;
 import kr.rokoroku.mbus.model.FavoriteGroup;
 import kr.rokoroku.mbus.model.Route;
 import kr.rokoroku.mbus.model.RouteStation;
 import kr.rokoroku.mbus.model.RouteType;
+import kr.rokoroku.mbus.model.Station;
+import kr.rokoroku.mbus.util.GeoUtils;
 import kr.rokoroku.mbus.util.ThemeUtils;
 import kr.rokoroku.mbus.util.TimeUtils;
 import kr.rokoroku.mbus.util.ViewUtils;
@@ -66,6 +74,8 @@ public class RouteActivity extends AbstractBaseActivity
     private String mRedirectStationId;
     private int mLastExpandedPosition = -1;
     private boolean isRefreshing = false;
+
+    private LocationClient mLocationClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -152,7 +162,7 @@ public class RouteActivity extends AbstractBaseActivity
         Route route = routeDataProvider.getRoute();
         setToolbarTitle(route);
 
-        if(isRefreshing) return;
+        if (isRefreshing) return;
         else isRefreshing = true;
 
         final boolean needUpdateRouteInfo = !mRouteDataProvider.isRouteInfoAvailable() || route.getType() == null || route.getType().equals(RouteType.UNKNOWN);
@@ -167,26 +177,15 @@ public class RouteActivity extends AbstractBaseActivity
                     ApiCaller.getInstance().fillRouteRealtimeLocation(routeDataProvider, new ApiCaller.SimpleProgressCallback() {
                         @Override
                         public void onComplete(boolean success) {
-                            if(success) {
+                            if (success) {
                                 scheduleTimer(30000);
                             }
                             mSwipeRefreshLayout.postDelayed(() -> {
                                 isRefreshing = false;
                                 mSwipeRefreshLayout.setRefreshing(false);
                                 if (mRedirectStationId != null) {
-                                    final String redirectId = mRedirectStationId;
+                                    redirectTo(mRedirectStationId);
                                     mRedirectStationId = null;
-
-                                    int count = routeDataProvider.getCount();
-                                    for (int i = 0; i < count; i++) {
-                                        RouteStation routeStation = routeDataProvider.getItem(i).getRouteStation();
-                                        if (routeStation != null && redirectId.equals(routeStation.getLocalId())) {
-                                            int fourthHeight = ViewUtils.getScreenSize(RouteActivity.this).y / 4;
-                                            ((LinearLayoutManager) mLayoutManager).scrollToPositionWithOffset(i, fourthHeight);
-                                            mRecyclerViewExpandableItemManager.expandGroup(i + 1);
-                                            break;
-                                        }
-                                    }
                                 }
                             }, 500);
                             if (mRefreshActionItem != null) mRefreshActionItem.setActionView(null);
@@ -226,6 +225,21 @@ public class RouteActivity extends AbstractBaseActivity
             }
         });
 
+    }
+
+    private void redirectTo(String localStationId) {
+        if (localStationId != null) {
+            int count = mRouteDataProvider.getCount();
+            for (int i = 0; i < count; i++) {
+                RouteStation routeStation = mRouteDataProvider.getItem(i).getRouteStation();
+                if (routeStation != null && localStationId.equals(routeStation.getLocalId())) {
+                    int fourthHeight = ViewUtils.getScreenSize(RouteActivity.this).y / 4;
+                    ((LinearLayoutManager) mLayoutManager).scrollToPositionWithOffset(i, fourthHeight);
+                    mRecyclerViewExpandableItemManager.expandGroup(i + 1);
+                    break;
+                }
+            }
+        }
     }
 
     private void setToolbarTitle(Route route) {
@@ -307,6 +321,15 @@ public class RouteActivity extends AbstractBaseActivity
         });
         mAddFavoriteSelectedButton.setTag(EXTRA_KEY_REDIRECT_STATION_ID);
 
+        mLocationButton.setShowProgressBackground(false);
+        mLocationButton.setOnClickListener(v -> {
+            if (mLocationClient == null) {
+                initLocationClient();
+            }
+            mLocationClient.start();
+            mLocationButton.setIndeterminate(true);
+
+        });
         mPlusButton.setOnMenuToggleListener(b -> {
             if (b) {
                 mLocationButton.hide(true);
@@ -314,6 +337,54 @@ public class RouteActivity extends AbstractBaseActivity
                 mLocationButton.postDelayed(() -> mLocationButton.show(true), 200);
             }
         });
+    }
+
+    private void initLocationClient() {
+        if(mLocationClient == null) {
+            mLocationClient = LocationClient.with(this)
+                    .listener(new LocationClient.Listener() {
+                        @Override
+                        public void onLocationUpdate(Location location) {
+                            List<RouteStation> routeStationList = mRouteDataProvider.getRouteStationList();
+                            if (routeStationList != null && !routeStationList.isEmpty()) {
+                                List<RouteStation> sortedStationList = new ArrayList<>(routeStationList);
+
+                                Station.DistanceComparator distanceComparator
+                                        = new Station.DistanceComparator(location.getLatitude(), location.getLongitude());
+                                Collections.sort(sortedStationList, distanceComparator);
+
+                                RouteStation closestStation = null;
+                                for (RouteStation routeStation : sortedStationList) {
+                                    if (routeStation.getLocalId() != null) {
+                                        closestStation = routeStation;
+                                        break;
+                                    }
+                                }
+
+                                if (closestStation == null || 1 < GeoUtils.calculateDistanceInKm(
+                                        new LatLng(location.getLatitude(), location.getLongitude()),
+                                        new LatLng(closestStation.getLatitude(), closestStation.getLongitude()))) {
+                                    Snackbar.make(mCoordinatorLayout, "1km 내외의 가까운 정류장을 찾을 수 없습니다.", Snackbar.LENGTH_LONG).show();
+
+                                } else {
+                                    redirectTo(closestStation.getLocalId());
+                                }
+                            }
+
+                            mLocationButton.setIndeterminate(false);
+                            mLocationClient.stop();
+                        }
+
+                        @Override
+                        public void onError(String failReason, ConnectionResult connectionResult) {
+                            if(failReason != null) {
+                                Snackbar.make(mCoordinatorLayout, "오류가 발생했습니다 : " + failReason, Snackbar.LENGTH_LONG).show();
+                            }
+                            mLocationButton.setIndeterminate(false);
+                            mLocationClient.stop();
+                        }
+                    }).build();
+        }
     }
 
     @Override
@@ -338,6 +409,12 @@ public class RouteActivity extends AbstractBaseActivity
                 mRefreshActionItem = item;
                 item.setActionView(R.layout.widget_refresh_action_view);
                 onRefresh();
+                return true;
+
+            case R.id.action_map:
+                Intent intent = new Intent(this, MapsActivity.class);
+                intent.putExtra(MapsActivity.EXTRA_KEY_ROUTE, (Parcelable) mRouteDataProvider.getRoute());
+                startActivity(intent);
                 return true;
 
             default:

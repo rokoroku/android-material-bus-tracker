@@ -47,7 +47,7 @@ public class StationActivity extends AbstractBaseActivity
     private CoordinatorLayout mCoordinatorLayout;
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private MenuItem mRefreshActionItem;
-    private FloatingActionLayout mFloatingActionLayout;
+
     private FloatingActionMenu mPlusButton;
     private FloatingActionButton mAddFavoriteButton;
     private FloatingActionButton mAddFavoriteSelectedButton;
@@ -57,6 +57,7 @@ public class StationActivity extends AbstractBaseActivity
     private RecyclerView.LayoutManager mLayoutManager;
     private RecyclerViewExpandableItemManager mRecyclerViewExpandableItemManager;
     private RecyclerViewExpandableItemManager.OnGroupExpandListener mGroupExpandListener;
+
     private Timer mTimer;
     private String mRedirectRouteId;
     private int mLastExpandedPosition = -1;
@@ -74,7 +75,6 @@ public class StationActivity extends AbstractBaseActivity
         mCoordinatorLayout = (CoordinatorLayout) findViewById(R.id.coordinator_layout);
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_layout);
 
-        mFloatingActionLayout = (FloatingActionLayout) findViewById(R.id.fab_layout);
         mPlusButton = (FloatingActionMenu) findViewById(R.id.fab_plus);
         mAddFavoriteButton = (FloatingActionButton) findViewById(R.id.fab_bookmark);
         mAddFavoriteSelectedButton = (FloatingActionButton) findViewById(R.id.fab_bookmark_selection);
@@ -332,6 +332,12 @@ public class StationActivity extends AbstractBaseActivity
                 mRefreshActionItem = item;
                 item.setActionView(R.layout.widget_refresh_action_view);
                 onRefresh();
+                return true;
+
+            case R.id.action_map:
+                Intent intent = new Intent(this, MapsActivity.class);
+                intent.putExtra(MapsActivity.EXTRA_KEY_STATION, (Parcelable) mStationDataProvider.getStation());
+                startActivity(intent);
                 return true;
 
             default:

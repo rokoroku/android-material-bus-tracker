@@ -11,6 +11,7 @@ import org.mapdb.DB;
 import org.mapdb.DBMaker;
 
 import java.io.File;
+import java.lang.ref.WeakReference;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -19,6 +20,7 @@ import java.util.NavigableSet;
 import java.util.Random;
 import java.util.Set;
 
+import kr.rokoroku.mbus.BaseApplication;
 import kr.rokoroku.mbus.model.Favorite;
 import kr.rokoroku.mbus.model.FavoriteGroup;
 import kr.rokoroku.mbus.model.Provider;
@@ -42,9 +44,11 @@ public class DatabaseHelper {
     private static final String TAG = "DBHelper";
 
     private static DatabaseHelper instance;
+    private static WeakReference<Context> contextWeakReference;
 
     public static void init(Context context) {
-        instance = new DatabaseHelper(context);
+        contextWeakReference = new WeakReference<>(context);
+        instance = new DatabaseHelper();
     }
 
     public static DatabaseHelper getInstance() {
@@ -61,8 +65,18 @@ public class DatabaseHelper {
     private Map<Provider, Set<String>> hiddenStationRouteTable;
     private Set<SearchHistory> searchHistoryTable;
 
-    private DatabaseHelper(Context context) {
+    private DatabaseHelper() {
         //open (or create) database
+        createOrLoadFile();
+        createOrLoadTables();
+
+        //printAll();
+    }
+
+    private synchronized void createOrLoadFile() {
+        Context context = contextWeakReference.get();
+        if(context == null) context = BaseApplication.getInstance();
+
         File file = new File(context.getCacheDir().getAbsolutePath(), "data.db");
         try {
             this.db = DBMaker
@@ -80,12 +94,9 @@ public class DatabaseHelper {
                         .make();
             }
         }
-        createOrLoadTables();
-
-        //printAll();
     }
 
-    private void createOrLoadTables() {
+    private synchronized void createOrLoadTables() {
 
         this.routeTable = new HashMap<>();
         this.stationTable = new HashMap<>();
@@ -205,7 +216,6 @@ public class DatabaseHelper {
     }
 
     public synchronized void putStation(Provider provider, Station station) {
-        Log.d("DBHelper", "putStation: " + provider.getCityName() + "/" + station.toString());
         Map<String, Station> stationMap = stationTable.get(provider);
         stationMap.put(station.getId(), station);
     }
@@ -244,6 +254,7 @@ public class DatabaseHelper {
                             db.commit();
                         } catch (Exception e) {
                             e.printStackTrace();
+                            reopen();
                         }
                     }
                     return null;
@@ -256,6 +267,12 @@ public class DatabaseHelper {
             };
             commitTask.execute();
         }
+    }
+
+    private synchronized void reopen() {
+        db.close();
+        createOrLoadFile();
+        createOrLoadTables();
     }
 
     public synchronized void rollback() {

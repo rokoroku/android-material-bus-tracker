@@ -23,10 +23,12 @@
     <string name="route_type_metropolitan">직행 버스</string>
     <string name="route_type_airport">공항 버스</string>
     <string name="route_type_purple">시외 버스</string>
+    <string name="route_type_suburb">농어촌 버스</string>
 
     <string name="city_seoul">서울</string>
     <string name="city_gyeonggi">경기</string>
     <string name="city_incheon">인천</string>
+
     <string name="title_activity_maps">Map</string>
     <string name="menu_item_add_to_favorite">즐겨찾기에 추가</string>
     <string name="added_to_favorite">즐겨찾기에 추가되었습니다.</string>

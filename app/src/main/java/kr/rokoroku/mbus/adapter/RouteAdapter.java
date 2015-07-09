@@ -240,7 +240,8 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
 
         if (routeStation != null &&
                 (routeStation.getArrivalInfo() == null || TimeUtils.checkShouldUpdate(routeStation.getLastUpdateTime()))) {
-            ApiCaller.getInstance().fillArrivalInfoData(routeStation, new StationRoute(mDataProvider.getRoute()), new ApiCaller.SimpleProgressCallback() {
+            StationRoute tempStationRoute = new StationRoute(mDataProvider.getRoute(), routeStation.getLocalId());
+            ApiCaller.getInstance().fillArrivalInfoData(routeStation, tempStationRoute, new ApiCaller.SimpleProgressCallback() {
                 @Override
                 public void onComplete(boolean success) {
                     if (success) {

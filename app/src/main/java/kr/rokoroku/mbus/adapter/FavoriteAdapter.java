@@ -50,6 +50,7 @@ import kr.rokoroku.mbus.model.RouteStation;
 import kr.rokoroku.mbus.model.RouteType;
 import kr.rokoroku.mbus.model.Station;
 import kr.rokoroku.mbus.model.StationRoute;
+import kr.rokoroku.mbus.util.FormatUtils;
 import kr.rokoroku.mbus.util.ThemeUtils;
 import kr.rokoroku.mbus.util.ViewUtils;
 
@@ -588,13 +589,18 @@ public class FavoriteAdapter
                 mItemIcon.setImageResource(R.drawable.ic_bus);
                 mItemIcon.setColorFilter(color);
                 String description = route.getType().getDescription(context);
-                if (route.getRegionName() != null) {
-                    description = description + " / " + route.getRegionName();
+                String regionName = route.getRegionName();
+                if (regionName == null) {
+                    regionName = FormatUtils.formatRegionName(context, route);
+                    route.setRegionName(regionName);
+                }
+                if (regionName != null) {
+                    description = description + " / " + regionName;
                 }
                 mItemDescription.setText(description);
 
                 if (!Provider.SEOUL.equals(route.getProvider())) {
-                    mItemLabel.setText(route.getProvider().getCityName());
+                    mItemLabel.setText(route.getProvider().getCityName(context));
                     mItemLabel.setTextColor(color);
                     mItemLabel.setVisibility(View.VISIBLE);
                 } else {
@@ -622,20 +628,8 @@ public class FavoriteAdapter
                 mItemIcon.setColorFilter(color);
                 mItemLabel.setVisibility(View.GONE);
 
-                StringBuilder stringBuilder = new StringBuilder();
-                if (station.getId() != null) {
-                    String entryString = String.format("%s(%s)", station.getLocalId(), station.getProvider().getCityName());
-                    stringBuilder.append(entryString);
-                }
-
-                List<Station.ExternalEntry> stationLinkedEntries = station.getExternalEntries();
-                if (stationLinkedEntries != null) {
-                    for (Station.ExternalEntry externalEntry : stationLinkedEntries) {
-                        String entryString = String.format("%s(%s)", externalEntry.getKey(), externalEntry.getProvider().getCityName());
-                        stringBuilder.append(", ").append(entryString);
-                    }
-                }
-                mItemDescription.setText(stringBuilder.toString());
+                String description = FormatUtils.formatStationIds(context, station);
+                mItemDescription.setText(description);
 
                 StationRoute stationRoute = item.getExtraData(StationRoute.class);
                 if (stationRoute == null) {
@@ -716,7 +710,7 @@ public class FavoriteAdapter
             Provider provider = stationRoute.getProvider();
             if (!Provider.SEOUL.equals(provider)) {
                 this.mLinkItemLabel.setVisibility(View.VISIBLE);
-                this.mLinkItemLabel.setText(provider.getCityName());
+                this.mLinkItemLabel.setText(provider.getCityName(context));
                 this.mLinkItemLabel.setTextColor(color);
             } else {
                 this.mLinkItemLabel.setVisibility(View.GONE);
@@ -724,19 +718,7 @@ public class FavoriteAdapter
 
             Route route = stationRoute.getRoute();
             if (route != null && route.getTurnStationSeq() != -1) {
-                String direction;
-                if (stationRoute.getSequence() < route.getTurnStationSeq()) {
-                    String turnStationName = route.getTurnStationName();
-                    if (turnStationName == null)
-                        turnStationName = route.getEndStationName();
-                    direction = turnStationName;
-                } else if (route.getEndStationName() != null &&
-                        route.getEndStationName().equals(route.getTurnStationName())) {
-                    direction = route.getEndStationName();
-                } else {
-                    direction = route.getStartStationName();
-                }
-                String description = context.getString(R.string.heading_to, direction);
+                String description = FormatUtils.formatHeadingTo(context, route, stationRoute);
                 mLinkItemDescription.setText(description);
                 mLinkItemDescription.setVisibility(View.VISIBLE);
             } else {
@@ -754,21 +736,8 @@ public class FavoriteAdapter
             this.mLinkItemIcon.setColorFilter(color);
             this.mLinkItemLabel.setVisibility(View.GONE);
 
-            StringBuilder stationIdStringBuilder = new StringBuilder();
-            if (routeStation.getId() != null) {
-                String entryString = String.format("%s(%s)", routeStation.getLocalId(), routeStation.getProvider().getCityName());
-                stationIdStringBuilder.append(entryString);
-            }
-
-            List<Station.ExternalEntry> stationLinkedEntries = routeStation.getExternalEntries();
-            if (stationLinkedEntries != null) {
-                for (Station.ExternalEntry externalEntry : stationLinkedEntries) {
-                    String entryString = String.format("%s(%s)", externalEntry.getKey(), externalEntry.getProvider().getCityName());
-                    stationIdStringBuilder.append(", ").append(entryString);
-                }
-            }
-
-            mLinkItemDescription.setText(stationIdStringBuilder.toString());
+            String description = FormatUtils.formatStationIds(context, routeStation);
+            mLinkItemDescription.setText(description);
             mLinkItemDescription.setVisibility(View.VISIBLE);
         }
     }
