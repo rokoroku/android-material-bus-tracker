@@ -13,6 +13,7 @@ import kr.rokoroku.mbus.R;
 import kr.rokoroku.mbus.model.Provider;
 import kr.rokoroku.mbus.model.Route;
 import kr.rokoroku.mbus.model.RouteStation;
+import kr.rokoroku.mbus.model.RouteType;
 import kr.rokoroku.mbus.model.Station;
 import kr.rokoroku.mbus.model.StationRoute;
 
@@ -105,10 +106,14 @@ public class FormatUtils {
             StringBuilder builder = new StringBuilder();
             Iterator<String> iterator = stringSet.iterator();
 
+            String token = "시";
+            if(route.getType().equals(RouteType.GREEN_SUBURB)) {
+                token = "군";
+            }
             if (iterator.hasNext()) do {
                 String str = iterator.next();
-                if (str.endsWith("시")) {
-                    str = str.substring(0, str.lastIndexOf("시"));
+                if (str.endsWith(token)) {
+                    str = str.substring(0, str.lastIndexOf(token));
                     builder.append(str);
                 }
             } while (iterator.hasNext());

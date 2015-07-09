@@ -12,7 +12,9 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.ActionMode;
 import android.view.Gravity;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,7 +28,7 @@ import kr.rokoroku.mbus.util.ThemeUtils;
 /**
  * Created by rok on 2015. 5. 29..
  */
-public abstract class AbstractBaseActivity extends AppCompatActivity {
+public abstract class AbstractBaseActivity extends AppCompatActivity implements ActionMode.Callback {
 
     private static final String STATE_SELECTED_POSITION = "drawer_selected";
 
@@ -47,6 +49,8 @@ public abstract class AbstractBaseActivity extends AppCompatActivity {
     private boolean mIsActivityVisible;
 
     private Handler mHandler;
+    private ActionMode mActionMode;
+    private ActionMode.Callback mActionModeCallback;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -119,7 +123,7 @@ public abstract class AbstractBaseActivity extends AppCompatActivity {
         showToolbarLayer();
 
         RecyclerView recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
-        if(recyclerView != null) {
+        if (recyclerView != null) {
             recyclerView.post(() -> mScrollListener.onScrolled(recyclerView, 0, -1));
         }
     }
@@ -148,8 +152,67 @@ public abstract class AbstractBaseActivity extends AppCompatActivity {
 //        outState.putInt(STATE_SELECTED_POSITION, mNavigationDrawerView.);
     }
 
+    @Override
+    public ActionMode startActionMode(ActionMode.Callback callback) {
+        this.mActionModeCallback = callback;
+        this.mActionMode = getToolbar().startActionMode(this);
+        return mActionMode;
+    }
+
+    @Override
+    public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+        boolean result = true;
+        if (mActionModeCallback != null) {
+            result = mActionModeCallback.onCreateActionMode(mode, menu);
+        }
+        if (result) {
+            if (mUpperSurface != null) {
+                mUpperSurface.setY(0);
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+        boolean result = false;
+        if (mActionModeCallback != null) {
+            result = mActionModeCallback.onPrepareActionMode(mode, menu);
+        }
+        return false;
+    }
+
+    @Override
+    public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+        boolean result = false;
+        if (mActionModeCallback != null) {
+            result = mActionModeCallback.onActionItemClicked(mode, item);
+        }
+        return result;
+    }
+
+    @Override
+    public void onDestroyActionMode(ActionMode mode) {
+        if (mActionModeCallback != null) {
+            mActionModeCallback.onDestroyActionMode(mode);
+        }
+        mActionMode = null;
+        mActionModeCallback = null;
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (isDrawerOpen()) {
+            closeDrawer();
+        } else if (mActionMode != null) {
+            mActionMode.finish();
+        } else {
+            super.onBackPressed();
+        }
+    }
+
     public RecyclerView.ItemDecoration getAppBarHeaderSpacingItemDecoration() {
-        if(mItemDecoration == null) {
+        if (mItemDecoration == null) {
             mItemDecoration = new RecyclerView.ItemDecoration() {
                 int actionBarSize = ThemeUtils.getDimension(AbstractBaseActivity.this, R.attr.actionBarSize);
 
@@ -202,11 +265,9 @@ public abstract class AbstractBaseActivity extends AppCompatActivity {
                 if (mUpperSurfaceHeight == 0) {
                     mUpperSurfaceHeight = mUpperSurface.getHeight();
                 }
-                final float offset = dy * .66f;
-                final float futurePosY = mUpperSurface.getY() - offset;
-                final float futureShadowAlpha = (float) recyclerView.computeVerticalScrollOffset() / mUpperSurfaceHeight;
 
-                if (recyclerView.getAdapter() != null && recyclerView.getAdapter().getItemCount() >= 5) {
+                if (recyclerView.getAdapter() != null && recyclerView.getAdapter().getItemCount() > 5) {
+                    final float futureShadowAlpha = (float) recyclerView.computeVerticalScrollOffset() / mUpperSurfaceHeight;
                     if (futureShadowAlpha > 1) {
                         mUpperSurfaceShadow.setAlpha(1f);
                     } else {
@@ -216,21 +277,27 @@ public abstract class AbstractBaseActivity extends AppCompatActivity {
                     mUpperSurfaceShadow.setAlpha(0f);
                 }
 
-                if (futurePosY <= -mUpperSurfaceHeight) {
-                    mUpperSurface.setY(-mUpperSurfaceHeight);
-                } else if (futurePosY >= 0) {
-                    mUpperSurface.setY(0);
+                if (getActionMode() == null) {
+                    final float offset = dy * .66f;
+                    final float futurePosY = mUpperSurface.getY() - offset;
+                    if (futurePosY <= -mUpperSurfaceHeight) {
+                        mUpperSurface.setY(-mUpperSurfaceHeight);
+                    } else if (futurePosY >= 0) {
+                        mUpperSurface.setY(0);
+                    } else {
+                        mUpperSurface.animate().cancel();
+                        mUpperSurface.setY(futurePosY);
+                        mHandler.removeCallbacksAndMessages(null);
+                        mHandler.postDelayed(() -> {
+                            if (offset < 0) {
+                                showToolbarLayer();
+                            } else if (recyclerView.computeVerticalScrollOffset() >= mUpperSurfaceHeight) {
+                                hideToolbarLayer();
+                            }
+                        }, 300);
+                    }
                 } else {
-                    mUpperSurface.animate().cancel();
-                    mUpperSurface.setY(futurePosY);
-                    mHandler.removeCallbacksAndMessages(null);
-                    mHandler.postDelayed(() -> {
-                        if (offset < 0) {
-                            showToolbarLayer();
-                        } else if (recyclerView.computeVerticalScrollOffset() >= mUpperSurfaceHeight) {
-                            hideToolbarLayer();
-                        }
-                    }, 300);
+                    mUpperSurface.setY(0);
                 }
             }
         };
@@ -248,6 +315,10 @@ public abstract class AbstractBaseActivity extends AppCompatActivity {
 
     public void closeDrawer() {
         mDrawerLayout.closeDrawer(Gravity.LEFT);
+    }
+
+    public boolean isDrawerOpen() {
+        return mDrawerLayout != null && mDrawerLayout.isDrawerOpen(Gravity.LEFT);
     }
 
     public Toolbar getToolbar() {
@@ -301,4 +372,9 @@ public abstract class AbstractBaseActivity extends AppCompatActivity {
     public boolean isActivityVisible() {
         return mIsActivityVisible;
     }
+
+    public ActionMode getActionMode() {
+        return mActionMode;
+    }
+
 }

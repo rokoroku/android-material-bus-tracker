@@ -386,14 +386,14 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
 
         public RouteStation mItem;
         public TextView mStationTitle;
-        public TextView mStationId;
+        public TextView mStationDescription;
         public ImageButton mPaintButton;
         public ImageButton mNavigateButton;
 
         public StationViewHolder(View v) {
             super(v);
             mStationTitle = (TextView) v.findViewById(R.id.station_title);
-            mStationId = (TextView) v.findViewById(R.id.station_id);
+            mStationDescription = (TextView) v.findViewById(R.id.station_description);
             mPaintButton = (ImageButton) v.findViewById(R.id.paint_button);
             mNavigateButton = (ImageButton) v.findViewById(R.id.navigate_button);
             mPaintButton.setOnTouchListener(this);
@@ -405,7 +405,13 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
         public void setItem(RouteStation routeStation) {
             mItem = routeStation;
             mStationTitle.setText(routeStation.getName());
-            mStationId.setText(routeStation.getLocalId());
+            String description = routeStation.getLocalId();
+            String city = routeStation.getCity();
+            if(description != null) {
+                description = city + " - " + description;
+            }
+
+            mStationDescription.setText(description);
             itemView.setClickable(true);
 
             Context context = itemView.getContext();
@@ -510,7 +516,6 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
             }
         }
     }
-
 
     public class BusArrivalViewHolder extends BaseViewHolder {
 

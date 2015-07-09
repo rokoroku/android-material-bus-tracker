@@ -27,7 +27,8 @@
         <item name="toolbarIconMap">@drawable/ic_map_white_48dp</item>
         <item name="toolbarIconInfo">@drawable/ic_info_outline_white_48dp</item>
         <item name="toolbarIconRefresh">@drawable/ic_refresh_white_48dp</item>
-
+        <item name="actionModeBackground">?attr/colorPrimary</item>
+        <item name="windowActionModeOverlay">true</item>
     </style>
 
     <!-- Base application theme. -->
@@ -58,6 +59,8 @@
         <item name="toolbarIconMap">@drawable/ic_map_black_48dp</item>
         <item name="toolbarIconInfo">@drawable/ic_info_outline_black_48dp</item>
         <item name="toolbarIconRefresh">@drawable/ic_refresh_black_48dp</item>
+        <item name="actionModeBackground">?attr/colorPrimary</item>
+        <item name="windowActionModeOverlay">true</item>
     </style>
 
 </resources>

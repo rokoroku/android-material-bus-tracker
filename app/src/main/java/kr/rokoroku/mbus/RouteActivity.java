@@ -10,6 +10,7 @@ import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
@@ -284,6 +285,14 @@ public class RouteActivity extends AbstractBaseActivity
                 mRecyclerViewExpandableItemManager.collapseGroup(mLastExpandedPosition);
             }
             mLastExpandedPosition = i;
+            ActionMode actionMode = getActionMode();
+            if (actionMode != null) {
+                if (mLastExpandedPosition >= 0 && mRecyclerViewExpandableItemManager.isGroupExpanded(mLastExpandedPosition)) {
+                    RouteStation routeStation = mBusRouteAdapter.getItem(mLastExpandedPosition).getRouteStation();
+                    addToFavorite(routeStation);
+                }
+                actionMode.finish();
+            }
         };
         mRecyclerViewExpandableItemManager.setOnGroupExpandListener(mGroupExpandListener);
         mRecyclerViewExpandableItemManager.attachRecyclerView(mRecyclerView);
@@ -291,33 +300,41 @@ public class RouteActivity extends AbstractBaseActivity
 
     private void initFloatingActionButtons() {
         mAddFavoriteButton.setOnClickListener(v -> {
-            List<FavoriteGroup> favoriteGroups = FavoriteFacade.getInstance().getCurrentFavorite().getFavoriteGroups();
-            if (favoriteGroups.isEmpty()) {
-                favoriteGroups.add(new FavoriteGroup(getString(R.string.default_favorite_group)));
-            }
-            FavoriteGroup favoriteGroup = favoriteGroups.get(0);
-            FavoriteGroup.FavoriteItem item = new FavoriteGroup.FavoriteItem(mRouteDataProvider.getRoute());
-
-            favoriteGroup.add(item);
-            Snackbar.make(mCoordinatorLayout, R.string.added_to_favorite, Snackbar.LENGTH_LONG).show();
+            addToFavorite(null);
             mPlusButton.close(true);
         });
-        mAddFavoriteSelectedButton.setOnClickListener(v -> {
-            List<FavoriteGroup> favoriteGroups = FavoriteFacade.getInstance().getCurrentFavorite().getFavoriteGroups();
-            if (favoriteGroups.isEmpty()) {
-                favoriteGroups.add(new FavoriteGroup(getString(R.string.default_favorite_group)));
-            }
-            FavoriteGroup favoriteGroup = favoriteGroups.get(0);
-            FavoriteGroup.FavoriteItem item = new FavoriteGroup.FavoriteItem(mRouteDataProvider.getRoute());
 
+        mAddFavoriteSelectedButton.setOnClickListener(v -> {
             if (mLastExpandedPosition >= 0 && mRecyclerViewExpandableItemManager.isGroupExpanded(mLastExpandedPosition)) {
                 RouteStation routeStation = mBusRouteAdapter.getItem(mLastExpandedPosition).getRouteStation();
-                item.setExtraData(routeStation);
-            }
+                addToFavorite(routeStation);
 
-            favoriteGroup.add(item);
-            Snackbar.make(mCoordinatorLayout, R.string.added_to_favorite, Snackbar.LENGTH_LONG).show();
+            } else if(getActionMode() == null) {
+                startActionMode(new ActionMode.Callback() {
+                    @Override
+                    public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+                        mode.setTitle(R.string.add_to_favorite_hint_select_one);
+                        return true;
+                    }
+
+                    @Override
+                    public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+                        return false;
+                    }
+
+                    @Override
+                    public void onDestroyActionMode(ActionMode mode) {
+
+                    }
+                });
+            }
             mPlusButton.close(true);
+
         });
         mAddFavoriteSelectedButton.setTag(EXTRA_KEY_REDIRECT_STATION_ID);
 
@@ -340,7 +357,7 @@ public class RouteActivity extends AbstractBaseActivity
     }
 
     private void initLocationClient() {
-        if(mLocationClient == null) {
+        if (mLocationClient == null) {
             mLocationClient = LocationClient.with(this)
                     .listener(new LocationClient.Listener() {
                         @Override
@@ -364,7 +381,7 @@ public class RouteActivity extends AbstractBaseActivity
                                 if (closestStation == null || 1 < GeoUtils.calculateDistanceInKm(
                                         new LatLng(location.getLatitude(), location.getLongitude()),
                                         new LatLng(closestStation.getLatitude(), closestStation.getLongitude()))) {
-                                    Snackbar.make(mCoordinatorLayout, "1km 내외의 가까운 정류장을 찾을 수 없습니다.", Snackbar.LENGTH_LONG).show();
+                                    Snackbar.make(mCoordinatorLayout, R.string.error_failed_to_retrieve_near_station, Snackbar.LENGTH_LONG).show();
 
                                 } else {
                                     redirectTo(closestStation.getLocalId());
@@ -377,7 +394,7 @@ public class RouteActivity extends AbstractBaseActivity
 
                         @Override
                         public void onError(String failReason, ConnectionResult connectionResult) {
-                            if(failReason != null) {
+                            if (failReason != null) {
                                 Snackbar.make(mCoordinatorLayout, "오류가 발생했습니다 : " + failReason, Snackbar.LENGTH_LONG).show();
                             }
                             mLocationButton.setIndeterminate(false);
@@ -440,4 +457,19 @@ public class RouteActivity extends AbstractBaseActivity
             }
         }, delay);
     }
+
+    private void addToFavorite(RouteStation routeStation) {
+
+        List<FavoriteGroup> favoriteGroups = FavoriteFacade.getInstance().getCurrentFavorite().getFavoriteGroups();
+        if (favoriteGroups.isEmpty()) {
+            favoriteGroups.add(new FavoriteGroup(getString(R.string.default_favorite_group)));
+        }
+        FavoriteGroup favoriteGroup = favoriteGroups.get(0);
+        FavoriteGroup.FavoriteItem item = new FavoriteGroup.FavoriteItem(mRouteDataProvider.getRoute());
+        if(routeStation != null) item.setExtraData(routeStation);
+
+        favoriteGroup.add(item);
+        Snackbar.make(mCoordinatorLayout, R.string.added_to_favorite, Snackbar.LENGTH_LONG).show();
+    }
+
 }

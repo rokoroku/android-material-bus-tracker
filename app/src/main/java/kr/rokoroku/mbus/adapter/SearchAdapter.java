@@ -45,7 +45,8 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchView
 
     @Override
     public long getItemId(int position) {
-        return getItem(position).hashCode();
+        Object item = getItem(position);
+        return item != null ? item.hashCode() : -1;
     }
 
     @Override

@@ -9,6 +9,7 @@ import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
@@ -28,6 +29,7 @@ import kr.rokoroku.mbus.core.ApiCaller;
 import kr.rokoroku.mbus.core.DatabaseHelper;
 import kr.rokoroku.mbus.core.FavoriteFacade;
 import kr.rokoroku.mbus.model.FavoriteGroup;
+import kr.rokoroku.mbus.model.RouteStation;
 import kr.rokoroku.mbus.model.Station;
 import kr.rokoroku.mbus.model.StationRoute;
 import kr.rokoroku.mbus.util.ThemeUtils;
@@ -272,6 +274,14 @@ public class StationActivity extends AbstractBaseActivity
                 mRecyclerViewExpandableItemManager.collapseGroup(mLastExpandedPosition);
             }
             mLastExpandedPosition = i;
+            ActionMode actionMode = getActionMode();
+            if (actionMode != null) {
+                if (mLastExpandedPosition >= 0 && mRecyclerViewExpandableItemManager.isGroupExpanded(mLastExpandedPosition)) {
+                    StationRoute stationRoute = mStationDataProvider.getItem(mLastExpandedPosition).getStationRoute();
+                    addToFavorite(stationRoute);
+                }
+                actionMode.finish();
+            }
         };
         mRecyclerViewExpandableItemManager.setOnGroupExpandListener(mGroupExpandListener);
         mRecyclerViewExpandableItemManager.attachRecyclerView(mRecyclerView);
@@ -279,33 +289,39 @@ public class StationActivity extends AbstractBaseActivity
 
     private void initFloatingActionButtons() {
         mAddFavoriteButton.setOnClickListener(v -> {
-            List<FavoriteGroup> favoriteGroups = FavoriteFacade.getInstance().getCurrentFavorite().getFavoriteGroups();
-            if (favoriteGroups.isEmpty()) {
-                favoriteGroups.add(new FavoriteGroup(getString(R.string.default_favorite_group)));
-            }
-            FavoriteGroup favoriteGroup = favoriteGroups.get(0);
-            FavoriteGroup.FavoriteItem item = new FavoriteGroup.FavoriteItem(mStationDataProvider.getStation());
-
-            favoriteGroup.add(item);
-            Snackbar.make(mCoordinatorLayout, R.string.added_to_favorite, Snackbar.LENGTH_LONG).show();
+            addToFavorite(null);
             mPlusButton.close(true);
         });
 
         mAddFavoriteSelectedButton.setOnClickListener(v -> {
-            List<FavoriteGroup> favoriteGroups = FavoriteFacade.getInstance().getCurrentFavorite().getFavoriteGroups();
-            if (favoriteGroups.isEmpty()) {
-                favoriteGroups.add(new FavoriteGroup(getString(R.string.default_favorite_group)));
-            }
-            FavoriteGroup favoriteGroup = favoriteGroups.get(0);
-            FavoriteGroup.FavoriteItem item = new FavoriteGroup.FavoriteItem(mStationDataProvider.getStation());
-
             if (mLastExpandedPosition >= 0 && mRecyclerViewExpandableItemManager.isGroupExpanded(mLastExpandedPosition)) {
                 StationRoute stationRoute = mStationDataProvider.getItem(mLastExpandedPosition).getStationRoute();
-                item.setExtraData(stationRoute);
-            }
+                addToFavorite(stationRoute);
 
-            favoriteGroup.add(item);
-            Snackbar.make(mCoordinatorLayout, R.string.added_to_favorite, Snackbar.LENGTH_LONG).show();
+            } else if (getActionMode() == null) {
+                startActionMode(new ActionMode.Callback() {
+                    @Override
+                    public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+                        mode.setTitle(R.string.add_to_favorite_hint_select_one);
+                        return true;
+                    }
+
+                    @Override
+                    public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+                        return false;
+                    }
+
+                    @Override
+                    public void onDestroyActionMode(ActionMode mode) {
+
+                    }
+                });
+            }
             mPlusButton.close(true);
         });
     }
@@ -364,4 +380,16 @@ public class StationActivity extends AbstractBaseActivity
         }, delay);
     }
 
+    private void addToFavorite(StationRoute stationRoute) {
+        List<FavoriteGroup> favoriteGroups = FavoriteFacade.getInstance().getCurrentFavorite().getFavoriteGroups();
+        if (favoriteGroups.isEmpty()) {
+            favoriteGroups.add(new FavoriteGroup(getString(R.string.default_favorite_group)));
+        }
+        FavoriteGroup favoriteGroup = favoriteGroups.get(0);
+        FavoriteGroup.FavoriteItem item = new FavoriteGroup.FavoriteItem(mStationDataProvider.getStation());
+        if(stationRoute != null) item.setExtraData(stationRoute);
+
+        favoriteGroup.add(item);
+        Snackbar.make(mCoordinatorLayout, R.string.added_to_favorite, Snackbar.LENGTH_LONG).show();
+    }
 }
