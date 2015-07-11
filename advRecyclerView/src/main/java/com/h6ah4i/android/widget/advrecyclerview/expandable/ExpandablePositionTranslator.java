@@ -176,7 +176,7 @@ class ExpandablePositionTranslator {
     }
 
     public boolean isGroupExpanded(int groupPosition) {
-        return ((mCachedGroupPosInfo[groupPosition] & FLAG_EXPANDED) != 0);
+        return groupPosition != -1 && ((mCachedGroupPosInfo[groupPosition] & FLAG_EXPANDED) != 0);
     }
 
     public int getChildCount(int groupPosition) {

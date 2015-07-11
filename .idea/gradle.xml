@@ -14,6 +14,7 @@
             <option value="$PROJECT_DIR$/app" />
             <option value="$PROJECT_DIR$/circularReveal" />
             <option value="$PROJECT_DIR$/connectorView" />
+            <option value="$PROJECT_DIR$/fab" />
             <option value="$PROJECT_DIR$/persistentSearch" />
           </set>
         </option>

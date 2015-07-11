@@ -26,9 +26,11 @@ import android.widget.TextView;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.h6ah4i.android.widget.advrecyclerview.draggable.ItemDraggableRange;
 import com.h6ah4i.android.widget.advrecyclerview.draggable.RecyclerViewDragDropManager;
+import com.h6ah4i.android.widget.advrecyclerview.expandable.ChildPositionItemDraggableRange;
 import com.h6ah4i.android.widget.advrecyclerview.expandable.ExpandableDraggableItemAdapter;
 import com.h6ah4i.android.widget.advrecyclerview.expandable.ExpandableItemViewHolder;
 import com.h6ah4i.android.widget.advrecyclerview.expandable.ExpandableSwipeableItemAdapter;
+import com.h6ah4i.android.widget.advrecyclerview.expandable.GroupPositionItemDraggableRange;
 import com.h6ah4i.android.widget.advrecyclerview.expandable.RecyclerViewExpandableItemManager;
 import com.h6ah4i.android.widget.advrecyclerview.swipeable.RecyclerViewSwipeManager;
 import com.h6ah4i.android.widget.advrecyclerview.utils.AbstractDraggableSwipeableItemViewHolder;
@@ -92,7 +94,8 @@ public class FavoriteAdapter
 
     @Override
     public int getGroupCount() {
-        return mProvider.getGroupCount();
+        int groupCount = mProvider.getGroupCount();
+        return groupCount > 0 ? groupCount + 1 : 0;
     }
 
     @Override
@@ -107,7 +110,7 @@ public class FavoriteAdapter
     @Override
     public long getGroupId(int groupPosition) {
         FavoriteGroup groupItem = mProvider.getGroupItem(groupPosition);
-        if(groupItem != null) {
+        if (groupItem != null) {
             return groupItem.getId();
         } else {
             return generateRandomId();
@@ -117,7 +120,7 @@ public class FavoriteAdapter
     @Override
     public long getChildId(int groupPosition, int childPosition) {
         FavoriteGroup.FavoriteItem childItem = mProvider.getChildItem(groupPosition, childPosition);
-        if(childItem != null) {
+        if (childItem != null) {
             return childItem.getId();
         } else {
             return generateRandomId();
@@ -128,7 +131,7 @@ public class FavoriteAdapter
         long id;
         do {
             id = new Random().nextLong();
-        } while(mGeneratedIdSet.contains(id));
+        } while (mGeneratedIdSet.contains(id));
         return id;
     }
 
@@ -234,7 +237,11 @@ public class FavoriteAdapter
     @Override
     public SectionViewHolder onCreateGroupViewHolder(ViewGroup parent, int viewType) {
         final LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-        return new SectionViewHolder(inflater.inflate(R.layout.row_favorite_section, parent, false));
+        if(viewType == ITEM_FOOTER) {
+            return new FooterViewHolder(inflater.inflate(R.layout.row_favorite_section, parent, false));
+        } else {
+            return new SectionViewHolder(inflater.inflate(R.layout.row_favorite_section, parent, false));
+        }
     }
 
     @Override
@@ -349,12 +356,12 @@ public class FavoriteAdapter
         } else {
             mDraggedGroupPosition = -1;
         }
-        return null;
+        return new GroupPositionItemDraggableRange(0, mProvider.getGroupCount());
     }
 
     @Override
     public ItemDraggableRange onGetChildItemDraggableRange(ItemViewHolder holder, int groupPosition, int childPosition) {
-        return null;
+        return new GroupPositionItemDraggableRange(0, mProvider.getGroupCount());
     }
 
 
@@ -404,7 +411,7 @@ public class FavoriteAdapter
 
     @Override
     public int onGetGroupItemSwipeReactionType(SectionViewHolder holder, int groupPosition, int x, int y) {
-        if (onCheckGroupCanStartDrag(holder, groupPosition, x, y)) {
+        if (groupPosition == mProvider.getGroupCount() || onCheckGroupCanStartDrag(holder, groupPosition, x, y)) {
             return RecyclerViewSwipeManager.REACTION_CAN_NOT_SWIPE_BOTH;
 
         } else if (mProvider.getChildCount(groupPosition) != 0) {
@@ -477,7 +484,7 @@ public class FavoriteAdapter
         if (flatPosition == -1) return;
         if (reaction == RecyclerViewSwipeManager.AFTER_SWIPE_REACTION_REMOVE_ITEM) {
             mProvider.removeGroupItem(groupPosition);
-            notifyItemRemoved(flatPosition);
+            notifyDataSetChanged();
 
             if (mEventListener != null) {
                 mEventListener.onGroupItemRemoved(groupPosition);
@@ -494,13 +501,9 @@ public class FavoriteAdapter
 
         if (flatPosition == -1) return;
         if (reaction == RecyclerViewSwipeManager.AFTER_SWIPE_REACTION_REMOVE_ITEM) {
-            FavoriteGroup groupItem = mProvider.getGroupItem(groupPosition);
 
             mProvider.removeChildItem(groupPosition, childPosition);
-            notifyItemRemoved(flatPosition);
-            if(groupItem.isEmpty()) {
-                notifyItemRemoved(flatPosition-1);
-            }
+            notifyDataSetChanged();
 
             if (mEventListener != null) {
                 mEventListener.onChildItemRemoved(groupPosition, childPosition);
@@ -782,6 +785,15 @@ public class FavoriteAdapter
                             }
                         }
                     }).show();
+        }
+    }
+
+    public class FooterViewHolder extends SectionViewHolder {
+
+        public FooterViewHolder(View v) {
+            super(v);
+            mTitle.setVisibility(View.GONE);
+            mOverflowButton.setVisibility(View.GONE);
         }
     }
 

@@ -10,7 +10,7 @@
         android:id="@+id/bus_icon"
         android:layout_width="36dp"
         android:layout_height="36dp"
-        android:src="@drawable/ic_bus" />
+        android:src="@drawable/ic_bus_animated" />
 
     <LinearLayout
         android:layout_width="0dp"

@@ -10,6 +10,7 @@ import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.speech.RecognizerIntent;
@@ -18,10 +19,12 @@ import android.text.InputFilter;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Display;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AccelerateDecelerateInterpolator;
@@ -64,13 +67,12 @@ public class SearchBox extends RelativeLayout {
     private ArrayList<SearchResult> searchables;
     private boolean searchOpen;
     private boolean animate;
-    private View tint;
     private boolean isMic;
     private ImageView mic;
     private ImageView drawerLogo;
     private SearchListener listener;
     private MenuListener menuListener;
-    private FrameLayout rootLayout;
+    private FrameLayout touchFrameLayout;
     private String logoText;
     private String hintText;
     private ProgressBar pb;
@@ -194,6 +196,32 @@ public class SearchBox extends RelativeLayout {
                 }
             }
         });
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        if(touchFrameLayout == null) {
+            View contentView = getRootView().findViewById(android.R.id.content);
+            touchFrameLayout = new FrameLayout(context) {
+                @Override
+                public boolean onInterceptTouchEvent(MotionEvent event) {
+                    if (event.getAction() == MotionEvent.ACTION_DOWN && isSearchOpen()) {
+                        final Rect rect = new Rect();
+                        SearchBox.this.getGlobalVisibleRect(rect);
+                        if (!rect.contains((int) event.getRawX(), (int) event.getRawY())) {
+                            toggleSearch();
+                        }
+                    }
+                    return super.onInterceptTouchEvent(event);
+                }
+            };
+
+            ViewGroup parent = (ViewGroup) contentView.getParent();
+            parent.removeView(contentView);
+            parent.addView(touchFrameLayout, contentView.getLayoutParams());
+            touchFrameLayout.addView(contentView);
+        }
     }
 
     private static boolean isIntentAvailable(Context context, Intent intent) {
@@ -795,9 +823,6 @@ public class SearchBox extends RelativeLayout {
         this.drawerLogo.setVisibility(View.VISIBLE);
         this.search.setVisibility(View.GONE);
         this.results.setVisibility(View.GONE);
-        if (tint != null && rootLayout != null) {
-            rootLayout.removeView(tint);
-        }
         if (listener != null)
             listener.onSearchClosed();
         micStateChanged(true);

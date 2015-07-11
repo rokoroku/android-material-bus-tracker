@@ -46,7 +46,7 @@ public class FavoriteDataProvider {
     }
 
     public FavoriteGroup getGroupItem(int index) {
-        if (index < favoriteGroups.size()) {
+        if (index >= 0 && index < favoriteGroups.size()) {
             return favoriteGroups.get(index);
         } else {
             return null;
@@ -55,8 +55,11 @@ public class FavoriteDataProvider {
 
     public FavoriteGroup.FavoriteItem getChildItem(int groupIndex, int childIndex) {
         FavoriteGroup groupItem = getGroupItem(groupIndex);
-        if (groupItem != null) return groupItem.get(childIndex);
-        return null;
+        if (groupItem != null) {
+            return groupItem.get(childIndex);
+        } else {
+            return null;
+        }
     }
 
     public void moveGroupItem(int from, int to) {
@@ -109,7 +112,7 @@ public class FavoriteDataProvider {
         if (groupItem != null) {
             this.mLastRemovedChild = groupItem.remove(childIndex);
 
-            if(groupItem.isEmpty()) {
+            if (groupItem.isEmpty()) {
                 this.mLastRemovedGroup = favoriteGroups.remove(groupIndex);
                 this.mLastRemovedGroupPosition = groupIndex;
             } else {
@@ -130,7 +133,7 @@ public class FavoriteDataProvider {
                 position = favoriteGroups.size();
             }
 
-            if(mLastRemovedChild != null) {
+            if (mLastRemovedChild != null) {
                 mLastRemovedGroup.add(mLastRemovedChild);
             }
             addGroupItem(position, mLastRemovedGroup);
@@ -145,9 +148,9 @@ public class FavoriteDataProvider {
 
             // find the group
             FavoriteGroup group = null;
-            for (int i=0; i < favoriteGroups.size(); i++) {
+            for (int i = 0; i < favoriteGroups.size(); i++) {
                 FavoriteGroup favoriteGroup = favoriteGroups.get(i);
-                if(mLastRemovedChildParentGroupId == favoriteGroup.getId()) {
+                if (mLastRemovedChildParentGroupId == favoriteGroup.getId()) {
                     groupPosition = i;
                     group = favoriteGroup;
                     break;

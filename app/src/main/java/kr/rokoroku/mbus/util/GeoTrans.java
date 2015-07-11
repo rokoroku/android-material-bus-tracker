@@ -2,32 +2,33 @@ package kr.rokoroku.mbus.util;
 
 /**
  * @author aquilegia
- *         <p>
- *         The code based on hyosang(http://hyosang.kr/tc/96) and aero's blog ((http://aero.sarang.net/map/analysis.html)
- *         License:  LGPL : http://www.gnu.org/copyleft/lesser.html
+ *
+ * The code based on hyosang(http://hyosang.kr/tc/96) and aero's blog ((http://aero.sarang.net/map/analysis.html)
+ * License:  LGPL : http://www.gnu.org/copyleft/lesser.html
  */
 public class GeoTrans {
 
-    public static final int GEO = 0;
-    public static final int KATEC = 1;
-    public static final int TM = 2;
-    public static final int GRS80 = 3;
+    public static final int GEO=0;
+    public static final int KATEC=1;
+    public static final int TM=2;
+    public static final int GRS80=3;
+    public static final int UTMK=4;
 
-    private static double[] m_Ind = new double[3];
-    private static double[] m_Es = new double[3];
-    private static double[] m_Esp = new double[3];
-    private static double[] src_m = new double[3];
-    private static double[] dst_m = new double[3];
+    private static double[] m_Ind = new double[5];
+    private static double[] m_Es = new double[5];
+    private static double[] m_Esp = new double[5];
+    private static double[] src_m = new double[5];
+    private static double[] dst_m = new double[5];
 
     private static double EPSLN = 0.0000000001;
-    private static double[] m_arMajor = new double[3];
-    private static double[] m_arMinor = new double[3];
+    private static double[] m_arMajor = new double[5];
+    private static double[] m_arMinor = new double[5];
 
-    private static double[] m_arScaleFactor = new double[3];
-    private static double[] m_arLonCenter = new double[3];
-    private static double[] m_arLatCenter = new double[3];
-    private static double[] m_arFalseNorthing = new double[3];
-    private static double[] m_arFalseEasting = new double[3];
+    private static double[] m_arScaleFactor = new double[5];
+    private static double[] m_arLonCenter = new double[5];
+    private static double[] m_arLatCenter = new double[5];
+    private static double[] m_arFalseNorthing = new double[5];
+    private static double[] m_arFalseEasting = new double[5];
 
     private static double[] datum_params = new double[3];
 
@@ -40,8 +41,7 @@ public class GeoTrans {
         m_arMajor[GEO] = 6378137.0;
         m_arMinor[GEO] = 6356752.3142;
 
-        m_arScaleFactor[KATEC] = 0.9999;//0.9996;
-//        m_arLonCenter[KATEC] = 2.22529479629277; // 127.5
+        m_arScaleFactor[KATEC] = 0.9999;
         m_arLonCenter[KATEC] = 2.23402144255274; // 128
         m_arLatCenter[KATEC] = 0.663225115757845;
         m_arFalseNorthing[KATEC] = 600000.0;
@@ -50,13 +50,31 @@ public class GeoTrans {
         m_arMinor[KATEC] = 6356078.9633422494;
 
         m_arScaleFactor[TM] = 1.0;
-//        m_arLonCenter[TM] = 2.21656815003280; // 127
+        //this.m_arLonCenter[TM] = 2.21656815003280; // 127
         m_arLonCenter[TM] = 2.21661859489671; // 127.+10.485 minute
         m_arLatCenter[TM] = 0.663225115757845;
         m_arFalseNorthing[TM] = 500000.0;
         m_arFalseEasting[TM] = 200000.0;
         m_arMajor[TM] = 6377397.155;
         m_arMinor[TM] = 6356078.9633422494;
+
+        m_arScaleFactor[GRS80] = 1.0;//0.9999;
+        m_arLonCenter[GRS80] = 2.21656815003280; // 127
+        //m_arLonCenter[GRS80] = 2.21661859489671; // 127.+10.485 minute
+        m_arLatCenter[GRS80] = 0.663225115757845;
+        m_arFalseNorthing[GRS80] = 500000.0;
+        m_arFalseEasting[GRS80] = 200000.0;
+        m_arMajor[GRS80] = 6378137.;
+        m_arMinor[GRS80] = 6356752.3142;
+
+        m_arScaleFactor[UTMK] = 0.9996;//0.9999;
+        //m_arLonCenter[UTMK] = 2.22534523630815; // 127.502890
+        m_arLonCenter[UTMK] = 2.22529479629277; // 127.5
+        m_arLatCenter[UTMK] = 0.663225115757845;
+        m_arFalseNorthing[UTMK] = 2000000.0;
+        m_arFalseEasting[UTMK] = 1000000.0;
+        m_arMajor[UTMK] = 6378137.;
+        m_arMinor[UTMK] = 6356752.3141403558;
 
         datum_params[0] = -146.43;
         datum_params[1] = 507.89;
@@ -92,16 +110,40 @@ public class GeoTrans {
             m_Ind[TM] = 0.0;
         }
 
+        tmp = m_arMinor[UTMK] / m_arMajor[UTMK];
+        m_Es[UTMK] = 1.0 - tmp * tmp;
+        m_Esp[UTMK] = m_Es[UTMK] / (1.0 - m_Es[UTMK]);
+
+        if (m_Es[UTMK] < 0.00001) {
+            m_Ind[UTMK] = 1.0;
+        } else {
+            m_Ind[UTMK] = 0.0;
+        }
+
+        tmp = m_arMinor[GRS80] / m_arMajor[GRS80];
+        m_Es[GRS80] = 1.0 - tmp * tmp;
+        m_Esp[GRS80] = m_Es[GRS80] / (1.0 - m_Es[GRS80]);
+
+        if (m_Es[GRS80] < 0.00001) {
+            m_Ind[GRS80] = 1.0;
+        } else {
+            m_Ind[GRS80] = 0.0;
+        }
+
         src_m[GEO] = m_arMajor[GEO] * mlfn(e0fn(m_Es[GEO]), e1fn(m_Es[GEO]), e2fn(m_Es[GEO]), e3fn(m_Es[GEO]), m_arLatCenter[GEO]);
         dst_m[GEO] = m_arMajor[GEO] * mlfn(e0fn(m_Es[GEO]), e1fn(m_Es[GEO]), e2fn(m_Es[GEO]), e3fn(m_Es[GEO]), m_arLatCenter[GEO]);
         src_m[KATEC] = m_arMajor[KATEC] * mlfn(e0fn(m_Es[KATEC]), e1fn(m_Es[KATEC]), e2fn(m_Es[KATEC]), e3fn(m_Es[KATEC]), m_arLatCenter[KATEC]);
         dst_m[KATEC] = m_arMajor[KATEC] * mlfn(e0fn(m_Es[KATEC]), e1fn(m_Es[KATEC]), e2fn(m_Es[KATEC]), e3fn(m_Es[KATEC]), m_arLatCenter[KATEC]);
         src_m[TM] = m_arMajor[TM] * mlfn(e0fn(m_Es[TM]), e1fn(m_Es[TM]), e2fn(m_Es[TM]), e3fn(m_Es[TM]), m_arLatCenter[TM]);
         dst_m[TM] = m_arMajor[TM] * mlfn(e0fn(m_Es[TM]), e1fn(m_Es[TM]), e2fn(m_Es[TM]), e3fn(m_Es[TM]), m_arLatCenter[TM]);
+        src_m[GRS80] = m_arMajor[GRS80] * mlfn(e0fn(m_Es[GRS80]), e1fn(m_Es[GRS80]), e2fn(m_Es[GRS80]), e3fn(m_Es[GRS80]), m_arLatCenter[GRS80]);
+        dst_m[GRS80] = m_arMajor[GRS80] * mlfn(e0fn(m_Es[GRS80]), e1fn(m_Es[GRS80]), e2fn(m_Es[GRS80]), e3fn(m_Es[GRS80]), m_arLatCenter[GRS80]);
+        src_m[UTMK] = m_arMajor[UTMK] * mlfn(e0fn(m_Es[UTMK]), e1fn(m_Es[UTMK]), e2fn(m_Es[UTMK]), e3fn(m_Es[UTMK]), m_arLatCenter[UTMK]);
+        dst_m[UTMK] = m_arMajor[UTMK] * mlfn(e0fn(m_Es[UTMK]), e1fn(m_Es[UTMK]), e2fn(m_Es[UTMK]), e3fn(m_Es[UTMK]), m_arLatCenter[UTMK]);
     }
 
     private static double D2R(double degree) {
-        return degree * Math.PI / 180.0;
+        return degree* Math.PI / 180.0;
     }
 
     private static double R2D(double radian) {
@@ -129,7 +171,7 @@ public class GeoTrans {
     }
 
     private static double asinz(double value) {
-        if (Math.abs(value) > 1.0) value = (value > 0 ? 1 : -1);
+        if (Math.abs(value) > 1.0) value = (value > 0 ? 1: -1);
         return Math.asin(value);
     }
 
@@ -289,16 +331,30 @@ public class GeoTrans {
         return getDistancebyGeo(pt1, pt2);
     }
 
+    public static double getDistancebyUTMK(Point pt1, Point pt2) {
+        pt1 = convert(UTMK, GEO, pt1);
+        pt2 = convert(UTMK, GEO, pt2);
+
+        return getDistancebyGeo(pt1, pt2);
+    }
+
+    public static double getDistancebyGrs80(Point pt1, Point pt2) {
+        pt1 = convert(GRS80, GEO, pt1);
+        pt2 = convert(GRS80, GEO, pt2);
+
+        return getDistancebyGeo(pt1, pt2);
+    }
+
     private static long getTimebySec(double distance) {
         return Math.round(3600 * distance / 4);
     }
 
     public static long getTimebyMin(double distance) {
-        return (long) (Math.ceil(getTimebySec(distance) / 60));
+        return (long)(Math.ceil(getTimebySec(distance) / 60));
     }
-
+	
 	/*
-    Author:       Richard Greenwood rich@greenwoodmap.com
+	Author:       Richard Greenwood rich@greenwoodmap.com
 	License:      LGPL as per: http://www.gnu.org/copyleft/lesser.html
 	*/
 
@@ -310,24 +366,24 @@ public class GeoTrans {
 
     // following constants from geocent.c
     private static final double HALF_PI = 0.5 * Math.PI;
-    private static final double COS_67P5 = 0.38268343236508977;  /* cosine of 67.5 degrees */
-    private static final double AD_C = 1.0026000;
+    private static final double COS_67P5  = 0.38268343236508977;  /* cosine of 67.5 degrees */
+    private static final double AD_C      = 1.0026000 ;
 	/* Toms region 1 constant */
 
     private static void transform(int srctype, int dsttype, Point point) {
         if (srctype == dsttype)
             return;
 
-        if (srctype != 0 || dsttype != 0) {
+        if ((srctype != 0 && srctype != GRS80 && srctype != UTMK) || (dsttype != 0 && dsttype != GRS80 && dsttype != UTMK)) {
             // Convert to geocentric coordinates.
             geodetic_to_geocentric(srctype, point);
 
             // Convert between datums
-            if (srctype != 0) {
+            if (srctype != 0 && srctype != GRS80 && srctype != UTMK) {
                 geocentric_to_wgs84(point);
             }
 
-            if (dsttype != 0) {
+            if (dsttype != 0 && dsttype != GRS80 && dsttype != UTMK) {
                 geocentric_from_wgs84(point);
             }
 
@@ -336,7 +392,7 @@ public class GeoTrans {
         }
     }
 
-    private static boolean geodetic_to_geocentric(int type, Point p) {
+    private static boolean geodetic_to_geocentric (int type, Point p) {
 
 	/*
 	 * The function Convert_Geodetic_To_Geocentric converts geodetic coordinates
@@ -369,9 +425,9 @@ public class GeoTrans {
 	  ** range as it may just be a rounding issue.  Also removed longitude
 	  ** test, it should be wrapped by Math.cos() and Math.sin().  NFW for PROJ.4, Sep/2001.
 	  */
-        if (Latitude < -HALF_PI && Latitude > -1.001 * HALF_PI)
-            Latitude = -HALF_PI;
-        else if (Latitude > HALF_PI && Latitude < 1.001 * HALF_PI)
+        if (Latitude < -HALF_PI && Latitude > -1.001 * HALF_PI )
+            Latitude = -HALF_PI ;
+        else if (Latitude > HALF_PI && Latitude < 1.001 * HALF_PI )
             Latitude = HALF_PI;
         else if ((Latitude < -HALF_PI) || (Latitude > HALF_PI)) { /* Latitude out of range */
             return true;
@@ -379,7 +435,7 @@ public class GeoTrans {
 
 	  /* no errors */
         if (Longitude > Math.PI)
-            Longitude -= (2 * Math.PI);
+            Longitude -= (2*Math.PI);
         Sin_Lat = Math.sin(Latitude);
         Cos_Lat = Math.cos(Latitude);
         Sin2_Lat = Sin_Lat * Sin_Lat;
@@ -395,12 +451,11 @@ public class GeoTrans {
     } // cs_geodetic_to_geocentric()
 
 
-    /**
-     * Convert_Geocentric_To_Geodetic
+    /** Convert_Geocentric_To_Geodetic
      * The method used here is derived from 'An Improved Algorithm for
      * Geocentric to Geodetic Coordinate Conversion', by Ralph Toms, Feb 1996
      */
-    private static void geocentric_to_geodetic(int type, Point p) {
+    private static void geocentric_to_geodetic (int type, Point p) {
 
         double X = p.x;
         double Y = p.y;
@@ -426,27 +481,32 @@ public class GeoTrans {
 
         At_Pole = false;
         if (X != 0.0) {
-            Longitude = Math.atan2(Y, X);
-        } else {
+            Longitude = Math.atan2(Y,X);
+        }
+        else {
             if (Y > 0) {
                 Longitude = HALF_PI;
-            } else if (Y < 0) {
+            }
+            else if (Y < 0) {
                 Longitude = -HALF_PI;
-            } else {
+            }
+            else {
                 At_Pole = true;
                 Longitude = 0.0;
                 if (Z > 0.0) {  /* north pole */
                     Latitude = HALF_PI;
-                } else if (Z < 0.0) {  /* south pole */
+                }
+                else if (Z < 0.0) {  /* south pole */
                     Latitude = -HALF_PI;
-                } else {  /* center of earth */
+                }
+                else {  /* center of earth */
                     Latitude = HALF_PI;
                     Height = -m_arMinor[type];
                     return;
                 }
             }
         }
-        W2 = X * X + Y * Y;
+        W2 = X*X + Y*Y;
         W = Math.sqrt(W2);
         T0 = Z * AD_C;
         S0 = Math.sqrt(T0 * T0 + W2);
@@ -455,15 +515,17 @@ public class GeoTrans {
         Sin3_B0 = Sin_B0 * Sin_B0 * Sin_B0;
         T1 = Z + m_arMinor[type] * m_Esp[type] * Sin3_B0;
         Sum = W - m_arMajor[type] * m_Es[type] * Cos_B0 * Cos_B0 * Cos_B0;
-        S1 = Math.sqrt(T1 * T1 + Sum * Sum);
+        S1 = Math.sqrt(T1*T1 + Sum * Sum);
         Sin_p1 = T1 / S1;
         Cos_p1 = Sum / S1;
         Rn = m_arMajor[type] / Math.sqrt(1.0 - m_Es[type] * Sin_p1 * Sin_p1);
         if (Cos_p1 >= COS_67P5) {
             Height = W / Cos_p1 - Rn;
-        } else if (Cos_p1 <= -COS_67P5) {
+        }
+        else if (Cos_p1 <= -COS_67P5) {
             Height = W / -Cos_p1 - Rn;
-        } else {
+        }
+        else {
             Height = Z / Sin_p1 + Rn * (m_Es[type] - 1.0);
         }
         if (At_Pole == false) {
@@ -471,10 +533,11 @@ public class GeoTrans {
         }
 
         p.x = Longitude;
-        p.y = Latitude;
+        p.y =Latitude;
         p.z = Height;
         return;
     } // geocentric_to_geodetic()
+
 
 
     /****************************************************************/
@@ -509,7 +572,6 @@ public class GeoTrans {
 
         }
     } //geocentric_from_wgs84()
-
 
     public static class Point {
         double x;
@@ -558,5 +620,4 @@ public class GeoTrans {
             return z;
         }
     }
-
 }

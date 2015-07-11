@@ -1,81 +1,184 @@
 package kr.rokoroku.mbus.core;
 
-import android.app.PendingIntent;
 import android.content.Context;
-import android.content.IntentSender;
+import android.location.Criteria;
 import android.location.Location;
+import android.location.LocationManager;
+import android.location.LocationProvider;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.Nullable;
+import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.FusedLocationProviderApi;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
-import java.util.Date;
+import kr.rokoroku.mbus.BaseApplication;
+import kr.rokoroku.mbus.util.TimeUtils;
 
 /**
  * Created by rok on 2015. 6. 28..
  */
-public class LocationClient implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener {
+public class LocationClient implements GoogleApiClient.ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener, LocationListener {
+
+    private static Location mLastKnownLocation;
 
     private Context mContext;
     private GoogleApiClient mGoogleApiClient;
-    private LocationRequest mLocationRequest;
-    private Location mCurrentLocation;
+    private LocationManager mDeviceLocationManager;
+    private android.location.LocationListener mDeviceLocationListener;
+
     private Listener mListener;
 
     private LocationClient(Context context, Listener listener) {
         this.mContext = context;
         this.mListener = listener;
-        buildGoogleApiClient(mContext);
+
+        if (isGooglePlayServiceAvailable()) {
+            buildGoogleApiClient(context);
+        } else {
+            buildDeviceLocationManager(context);
+        }
+    }
+
+    public LocationClient(Context context) {
+        this(context, null);
+    }
+
+    public boolean isGooglePlayServiceAvailable() {
+        // Getting Google Play availability status
+        int availablilty = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(mContext);
+        return availablilty == ConnectionResult.SUCCESS;
+    }
+
+    protected synchronized void buildDeviceLocationManager(Context context) {
+        if (mDeviceLocationManager == null) {
+            // Getting LocationManager object from System Service LOCATION_SERVICE
+            mDeviceLocationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+
+            // Getting the best location provider
+            String provider = getBestLocationProvider(mDeviceLocationManager);
+
+            // Getting Current Location
+            Location lastKnownLocation = mDeviceLocationManager.getLastKnownLocation(provider);
+            if (lastKnownLocation != null) {
+                mLastKnownLocation = lastKnownLocation;
+            }
+
+            // Build listener
+            if (mDeviceLocationListener == null) {
+                mDeviceLocationListener = new android.location.LocationListener() {
+                    @Override
+                    public void onLocationChanged(Location location) {
+                        LocationClient.this.onLocationChanged(location);
+                    }
+
+                    @Override
+                    public void onStatusChanged(String provider, int status, Bundle extras) {
+                        if (status != LocationProvider.AVAILABLE) {
+                            if (mListener != null) {
+                                mListener.onError("TEMPORARILY_UNAVAILABLE", null);
+                            }
+                            stop();
+                        }
+                    }
+
+                    @Override
+                    public void onProviderEnabled(String provider) {
+
+                    }
+
+                    @Override
+                    public void onProviderDisabled(String provider) {
+                        if (mListener != null) {
+                            mListener.onError("PROVIDER_DISABLED", null);
+                        }
+                        stop();
+                    }
+                };
+            }
+        }
     }
 
     protected synchronized void buildGoogleApiClient(Context context) {
-        mGoogleApiClient = new GoogleApiClient.Builder(context)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .addApi(LocationServices.API)
-                .build();
+        if (mGoogleApiClient == null) {
+            mGoogleApiClient = new GoogleApiClient.Builder(context)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .addApi(LocationServices.API)
+                    .build();
+        }
     }
 
-    protected void createLocationRequest() {
-        mLocationRequest = new LocationRequest()
-                .setNumUpdates(1)
-                .setMaxWaitTime(10000)
-                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+    protected String getBestLocationProvider(LocationManager locationManager) {
+        // Creating a criteria object to retrieve provider
+        Criteria criteria = new Criteria();
+
+        // Getting the name of the best provider
+        return locationManager.getBestProvider(criteria, true);
     }
 
-    public void start() {
-        if (mGoogleApiClient.isConnected()) {
-            if (mLocationRequest == null) {
-                createLocationRequest();
+
+    public void start(boolean force) {
+
+        boolean shouldUpdate = mLastKnownLocation == null ||
+                (System.currentTimeMillis() - mLastKnownLocation.getTime() > 5 * 60 * 1000);
+
+        if (force || shouldUpdate) {
+            if (isLocationEnabled(mContext)) {
+                if (mGoogleApiClient != null) {
+                    if (mGoogleApiClient.isConnected()) {
+                        // Request location update
+                        LocationRequest locationRequest = new LocationRequest()
+                                .setNumUpdates(1)
+                                .setMaxWaitTime(5000)
+                                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+                        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, locationRequest, this);
+                    } else {
+                        mGoogleApiClient.connect();
+                    }
+
+                } else if (mDeviceLocationManager != null) {
+                    String provider = getBestLocationProvider(mDeviceLocationManager);
+                    mDeviceLocationManager.requestSingleUpdate(provider, mDeviceLocationListener, Looper.getMainLooper());
+                }
+            } else {
+                if(mListener != null) {
+                    mListener.onError("LOCATION_DISABLED", null);
+                }
+                stop();
             }
-            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
+
         } else {
-            mGoogleApiClient.connect();
+            onLocationChanged(mLastKnownLocation);
         }
     }
 
     public void stop() {
-        if (mGoogleApiClient.isConnected()) {
-            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
+        if (mGoogleApiClient != null) {
+            if (mGoogleApiClient.isConnected()) {
+                LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
+                mGoogleApiClient = null;
+            }
+        } else if (mDeviceLocationManager != null) {
+            mDeviceLocationManager = null;
         }
-    }
-
-    public void registerListener(Listener listener) {
-        this.mListener = listener;
-    }
-
-    @Nullable
-    public Location getLastLocation() {
-        return mCurrentLocation;
     }
 
     @Override
     public void onConnected(Bundle connectionHint) {
-        start();
+        Location lastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+        if (lastLocation != null) {
+            mLastKnownLocation = lastLocation;
+        }
+        start(false);
     }
 
     @Override
@@ -164,17 +267,44 @@ public class LocationClient implements GoogleApiClient.ConnectionCallbacks, Goog
                 break;
         }
 
-        if (mListener != null) {
+        if (errorCode == ConnectionResult.SERVICE_MISSING) {
+            mGoogleApiClient = null;
+            buildDeviceLocationManager(mContext);
+            start(false);
+        } else if (mListener != null) {
             mListener.onError(failReason, connectionResult);
         }
     }
 
     @Override
     public void onLocationChanged(Location location) {
-        mCurrentLocation = location;
+        if (location != null) {
+            mLastKnownLocation = location;
+        }
         if (mListener != null) {
             mListener.onLocationUpdate(location);
         }
+    }
+
+    public void setListener(Listener listener) {
+        this.mListener = listener;
+    }
+
+    public static void init(Context context) {
+        final LocationClient locationClient = new LocationClient(context);
+        locationClient.buildDeviceLocationManager(context);
+        locationClient.setListener(new Listener() {
+            @Override
+            public void onLocationUpdate(Location location) {
+                locationClient.stop();
+            }
+
+            @Override
+            public void onError(String failReason, ConnectionResult connectionResult) {
+                locationClient.stop();
+            }
+        });
+        locationClient.start(true);
     }
 
     public interface Listener {
@@ -201,8 +331,29 @@ public class LocationClient implements GoogleApiClient.ConnectionCallbacks, Goog
         }
 
         public LocationClient build() {
-            return new LocationClient(context, listener);
+            LocationClient locationClient = new LocationClient(context, listener);
+            return locationClient;
         }
     }
 
+    @Nullable
+    public static Location getLastKnownLocation() {
+        return mLastKnownLocation;
+    }
+
+    public static boolean isLocationEnabled(Context context) {
+        LocationManager lm = (LocationManager)context.getSystemService(Context.LOCATION_SERVICE);
+        boolean gps_enabled = false;
+        boolean network_enabled = false;
+
+        try {
+            gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        } catch(Exception ex) {}
+
+        try {
+            network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        } catch(Exception ex) {}
+
+        return gps_enabled || network_enabled;
+    }
 }

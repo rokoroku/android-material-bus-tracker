@@ -8,6 +8,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.AnimationDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Parcelable;
 import android.support.v4.view.ViewCompat;
 import android.text.format.DateUtils;
@@ -581,7 +583,16 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
         public void setItem(ArrivalInfo.BusArrivalItem arrivalItem) {
             mItem = arrivalItem;
             if (mItem != null) {
-                if (mBusIcon != null) mBusIcon.setVisibility(View.VISIBLE);
+                if (mBusIcon != null) {
+                    mBusIcon.setVisibility(View.VISIBLE);
+                    Drawable drawable = mBusIcon.getDrawable();
+                    if(drawable instanceof AnimationDrawable) {
+                        AnimationDrawable animationDrawable = (AnimationDrawable) drawable;
+                        if(!animationDrawable.isRunning()) {
+                            animationDrawable.start();
+                        }
+                    }
+                }
                 if (mBusTitle != null) mBusTitle.setVisibility(View.VISIBLE);
                 if (mRemainTime != null) mRemainTime.setVisibility(View.VISIBLE);
                 if (mRemainStation != null) mRemainStation.setVisibility(View.VISIBLE);

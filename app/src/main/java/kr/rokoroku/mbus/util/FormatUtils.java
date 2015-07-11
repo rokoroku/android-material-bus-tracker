@@ -103,26 +103,27 @@ public class FormatUtils {
                 stringSet.add(routeStation.getCity());
             }
 
-            StringBuilder builder = new StringBuilder();
-            Iterator<String> iterator = stringSet.iterator();
+            StringBuilder builder = null;
 
             String token = "시";
             if(route.getType().equals(RouteType.GREEN_SUBURB)) {
                 token = "군";
             }
+            Iterator<String> iterator = stringSet.iterator();
             if (iterator.hasNext()) do {
                 String str = iterator.next();
                 if (str.endsWith(token)) {
                     str = str.substring(0, str.lastIndexOf(token));
-                    builder.append(str);
+                    if (builder == null) {
+                        builder = new StringBuilder(str);
+                    } else {
+                        builder.append(", ").append(str);
+                    }
                 }
             } while (iterator.hasNext());
 
-            regionName = builder.toString();
+            regionName = builder != null ? builder.toString() : null;
 
-            if (TextUtils.isEmpty(regionName)) {
-                regionName = null;
-            }
         }
         return regionName;
     }

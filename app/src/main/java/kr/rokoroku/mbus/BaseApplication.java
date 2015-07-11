@@ -1,18 +1,23 @@
 package kr.rokoroku.mbus;
 
 import android.app.Application;
+import android.location.Location;
 
 import com.google.android.gms.analytics.GoogleAnalytics;
 import com.google.android.gms.analytics.Tracker;
+import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 
 import kr.rokoroku.mbus.core.ApiCaller;
 import kr.rokoroku.mbus.core.DatabaseHelper;
+import kr.rokoroku.mbus.core.LocationClient;
 
 /**
  * Created by rok on 2015. 5. 31..
  */
 public class BaseApplication extends Application {
+
+    public static final int REFRESH_INTERVAL = 60 * 1000;
 
     public static boolean showAd = false;
 
@@ -22,7 +27,6 @@ public class BaseApplication extends Application {
 
     public static GoogleAnalytics analytics;
     public static Tracker tracker;
-    public static GoogleApiClient googleApiClient;
 
     @Override
     public void onCreate() {
@@ -30,6 +34,7 @@ public class BaseApplication extends Application {
         instance = this;
 
         DatabaseHelper.init(this);
+        LocationClient.init(this);
         ApiCaller.init(this);
 
         analytics = GoogleAnalytics.getInstance(this);
@@ -39,6 +44,7 @@ public class BaseApplication extends Application {
         tracker.enableExceptionReporting(true);
         tracker.enableAdvertisingIdCollection(true);
         tracker.enableAutoActivityTracking(true);
+
     }
 
 

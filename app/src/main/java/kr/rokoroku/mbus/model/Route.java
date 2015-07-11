@@ -49,6 +49,7 @@ public class Route implements Parcelable, Serializable {
 
     private transient List<BusLocation> busLocationList;
     private transient Date lastUpdateTime;
+    private transient List<MapLine> mapLineList;
 
     public Route() {
 
@@ -254,11 +255,15 @@ public class Route implements Parcelable, Serializable {
     }
 
     public String getTurnStationName() {
-        if (turnStationName == null && routeStationList != null) {
+        if (turnStationName == null && routeStationList != null && getTurnStationSeq() < routeStationList.size()) {
             RouteStation routeStation = routeStationList.get(getTurnStationSeq());
             if (routeStation != null) turnStationName = routeStation.getName();
         }
         return turnStationName;
+    }
+
+    public void setTurnStationName(String turnStationName) {
+        this.turnStationName = turnStationName;
     }
 
     public void setEndStationName(String endStationName) {
@@ -409,6 +414,14 @@ public class Route implements Parcelable, Serializable {
 
     public void setTurnStationSeq(int turnStationSeq) {
         this.turnStationSeq = turnStationSeq;
+    }
+
+    public List<MapLine> getMapLineList() {
+        return mapLineList;
+    }
+
+    public void setMapLineList(List<MapLine> mapLineList) {
+        this.mapLineList = mapLineList;
     }
 
     @Override

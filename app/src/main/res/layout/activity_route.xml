@@ -33,10 +33,12 @@
             android:layout_marginEnd="16dp"
             android:layout_marginRight="16dp"
             android:src="@drawable/ic_my_location_black_24dp"
-            app:fab_shadowXOffset="0dp"
-            app:fab_shadowYOffset="1dp"
             app:fab_colorNormal="?attr/colorButtonNormal"
-            app:fab_colorPressed="?attr/colorButtonNormal" />
+            app:fab_colorPressed="?attr/colorButtonNormal"
+            app:fab_progress_color="?attr/colorAccent"
+            app:fab_progress_width="2dp"
+            app:fab_shadowXOffset="0dp"
+            app:fab_shadowYOffset="1dp" />
 
         <com.github.clans.fab.FloatingActionMenu
             android:id="@+id/fab_plus"
@@ -46,11 +48,11 @@
             android:layout_marginBottom="16dp"
             android:layout_marginEnd="16dp"
             android:layout_marginRight="16dp"
-            app:menu_shadowXOffset="0dp"
-            app:menu_shadowYOffset="1dp"
             app:menu_buttonSpacing="4dp"
             app:menu_colorNormal="?attr/colorAccent"
-            app:menu_colorPressed="?attr/colorAccent">
+            app:menu_colorPressed="?attr/colorAccent"
+            app:menu_shadowXOffset="0dp"
+            app:menu_shadowYOffset="1dp">
 
             <com.github.clans.fab.FloatingActionButton
                 android:id="@+id/fab_bookmark"

@@ -1,5 +1,7 @@
 package kr.rokoroku.mbus;
 
+import android.content.Context;
+import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.widget.ContentLoadingProgressBar;
@@ -7,8 +9,12 @@ import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.TypedValue;
+import android.view.MotionEvent;
+import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
@@ -56,10 +62,9 @@ public class SearchActivity extends AbstractBaseActivity
 
         int actionbarHeight = ThemeUtils.getDimension(this, R.attr.actionBarSize);
         mSwipeRefreshLayout.setProgressViewOffset(true, 0, actionbarHeight * 2);
-        mSwipeRefreshLayout.setEnabled(false);
 
-        String query = getIntent().getStringExtra("query");
-        if(query != null) mSearchBox.triggerSearch(query);
+        final String query = getIntent().getStringExtra("query");
+        if(query != null) mSearchBox.postDelayed(() -> mSearchBox.triggerSearch(query), 100);
     }
 
     private void initSearchBox() {
@@ -78,30 +83,37 @@ public class SearchActivity extends AbstractBaseActivity
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             mSearchBox.setElevation(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 8, getResources().getDisplayMetrics()));
         }
+        reloadSearchQuery();
     }
 
     private void initRecyclerView() {
-        mLayoutManager = new LinearLayoutManager(this);
 
         mSearchDataProvider = new SearchDataProvider();
         mAdapter = new SearchAdapter(mSearchDataProvider);
-        RecyclerView.Adapter wrappedAdapter = new BaseWrapperAdapter<>(mAdapter);
+        mAdapter.setHasStableIds(true);
+        mLayoutManager = new LinearLayoutManager(this);
         mRecyclerView.setLayoutManager(mLayoutManager);
-        mRecyclerView.setAdapter(wrappedAdapter);
+        mRecyclerView.setAdapter(new BaseWrapperAdapter<>(mAdapter));
         mRecyclerView.setHasFixedSize(false);
         mRecyclerView.setItemAnimator(new RefactoredDefaultItemAnimator());
         mRecyclerView.addItemDecoration(getAppBarHeaderSpacingItemDecoration());
         mRecyclerView.addOnScrollListener(getScrollListener());
     }
 
+    public void reloadSearchQuery() {
+        if(mSearchBox != null) {
+            Set<SearchHistory> searchHistoryTable = DatabaseHelper.getInstance().getSearchHistoryTable();
+            ArrayList<SearchResult> arrayList = new ArrayList<>();
+            for (SearchHistory searchHistory : searchHistoryTable) {
+                arrayList.add(new SearchResult(searchHistory.getTitle(), null));
+            }
+            mSearchBox.setSearchables(arrayList);
+        }
+    }
+
     @Override
     public void onSearchOpened() {
-        Set<SearchHistory> searchHistoryTable = DatabaseHelper.getInstance().getSearchHistoryTable();
-        ArrayList<SearchResult> arrayList = new ArrayList<>();
-        for (SearchHistory searchHistory : searchHistoryTable) {
-            arrayList.add(new SearchResult(searchHistory.getTitle(), null));
-        }
-        mSearchBox.setSearchables(arrayList);
+        reloadSearchQuery();
     }
 
     @Override
@@ -121,7 +133,7 @@ public class SearchActivity extends AbstractBaseActivity
 
     @Override
     public void onSearch(String keyword) {
-        if (keyword == null || keyword.length() < 2) {
+        if (keyword.length() < 2) {
             if (!TextUtils.isEmpty(keyword.replaceAll("\\d", ""))) {
                 Toast.makeText(this, "2글자 이상 입력하세요.", Toast.LENGTH_SHORT).show();
                 return;
@@ -135,6 +147,7 @@ public class SearchActivity extends AbstractBaseActivity
         while(searchHistoryTable.remove(searchHistory));
         searchHistoryTable.add(searchHistory);
 
+        mSwipeRefreshLayout.setEnabled(true);
         mSwipeRefreshLayout.setRefreshing(true);
 
         mSearchDataProvider.clear();
@@ -143,8 +156,12 @@ public class SearchActivity extends AbstractBaseActivity
         apiCaller.searchByKeyword(keyword, mSearchDataProvider, new ApiCaller.SimpleProgressCallback() {
             @Override
             public void onComplete(boolean success) {
-                mAdapter.notifyItemRangeInserted(0, mSearchDataProvider.getCount());
-                mSwipeRefreshLayout.postDelayed(() -> mSwipeRefreshLayout.setRefreshing(false), 500);
+                mSearchDataProvider.sortByKeyword(keyword);
+                mAdapter.notifyDataSetChanged();
+                mSwipeRefreshLayout.postDelayed(() -> {
+                    mSwipeRefreshLayout.setRefreshing(false);
+                    mSwipeRefreshLayout.setEnabled(false);
+                }, 500);
             }
 
 

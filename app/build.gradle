@@ -41,6 +41,7 @@ dependencies {
     compile project(':circularReveal')
     compile project(':persistentSearch')
     compile project(':advRecyclerView')
+    compile project(':fab')
 
     compile 'com.android.support:design:22.2.0'
     compile 'com.android.support:appcompat-v7:22.2.0'
@@ -61,7 +62,6 @@ dependencies {
     compile 'com.google.code.gson:gson:2.3'
     compile 'org.mapdb:mapdb:2.0-beta1'
 
-    compile 'com.github.clans:fab:1.5.3'
     compile 'com.github.markushi:circlebutton:1.1'
     compile 'com.afollestad:material-dialogs:0.7.6.0'
 }

@@ -46,7 +46,16 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchView
     @Override
     public long getItemId(int position) {
         Object item = getItem(position);
-        return item != null ? item.hashCode() : -1;
+        if (item != null) {
+            if (item instanceof Route) {
+                return ((Route) item).getId().hashCode();
+            } else if (item instanceof Station) {
+                return ((Station) item).getId().hashCode();
+            } else if (item instanceof SearchDataProvider.SectionInfo) {
+                return ((SearchDataProvider.SectionInfo) item).title.hashCode();
+            }
+        }
+        return -1;
     }
 
     @Override
@@ -132,7 +141,7 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchView
             holder.mContainer.setOnClickListener(this);
             holder.mContainer.setTag(route);
 
-            if(!Provider.SEOUL.equals(route.getProvider())) {
+            if (!Provider.SEOUL.equals(route.getProvider())) {
                 holder.mItemLabel.setText(route.getProvider().getCityName(context));
                 holder.mItemLabel.setTextColor(color);
                 holder.mItemLabel.setVisibility(View.VISIBLE);

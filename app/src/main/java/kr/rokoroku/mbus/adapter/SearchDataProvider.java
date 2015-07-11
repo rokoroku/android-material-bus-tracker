@@ -42,10 +42,31 @@ public class SearchDataProvider {
         Collections.sort(mStationData, (lhs, rhs) -> {
             int result = lhs.getProvider().compareTo(rhs.getProvider());
             result = lhs.getName().compareTo(rhs.getName());
-            if(result == 0) {
+            if (result == 0) {
                 result = lhs.getLocalId().compareTo(rhs.getLocalId());
             }
             return result;
+        });
+    }
+
+    public void sortByKeyword(String keyword) {
+        Collections.sort(mRouteData, (lhs, rhs) -> {
+            String lhsName = lhs.getName();
+            String rhsName = rhs.getName();
+            if (lhsName.startsWith(keyword)) {
+                return rhsName.startsWith(keyword) ? lhsName.compareTo(rhsName) : -1;
+            } else {
+                return rhsName.startsWith(keyword) ? 1 : lhsName.compareTo(rhsName);
+            }
+        });
+        Collections.sort(mStationData, (lhs, rhs) -> {
+            String lhsName = lhs.getName();
+            String rhsName = rhs.getName();
+            if (lhsName.startsWith(keyword)) {
+                return rhsName.startsWith(keyword) ? lhsName.compareTo(rhsName) : -1;
+            } else {
+                return rhsName.startsWith(keyword) ? 1 : lhsName.compareTo(rhsName);
+            }
         });
     }
 
@@ -99,5 +120,4 @@ public class SearchDataProvider {
             this.count = count;
         }
     }
-
 }

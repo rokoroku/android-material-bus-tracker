@@ -2,6 +2,7 @@ package kr.rokoroku.mbus;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Rect;
 import android.graphics.drawable.NinePatchDrawable;
 import android.os.Build;
 import android.os.Bundle;
@@ -119,6 +120,7 @@ public class MainActivity extends AbstractBaseActivity
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             mSearchBox.setElevation(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 8, getResources().getDisplayMetrics()));
         }
+        reloadSearchQuery();
     }
 
     private void initRecyclerView(Bundle savedInstanceState) {
@@ -206,7 +208,6 @@ public class MainActivity extends AbstractBaseActivity
                                         Context.INPUT_METHOD_SERVICE);
                                 imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
                             }
-
                         }
                     })
                     .show();
@@ -252,12 +253,7 @@ public class MainActivity extends AbstractBaseActivity
 
     @Override
     public void onSearchOpened() {
-        Set<SearchHistory> searchHistoryTable = DatabaseHelper.getInstance().getSearchHistoryTable();
-        ArrayList<SearchResult> arrayList = new ArrayList<>();
-        for (SearchHistory searchHistory : searchHistoryTable) {
-            arrayList.add(new SearchResult(searchHistory.getTitle(), null));
-        }
-        mSearchBox.setSearchables(arrayList);
+        reloadSearchQuery();
     }
 
     @Override
@@ -325,48 +321,6 @@ public class MainActivity extends AbstractBaseActivity
         openDrawer();
     }
 
-    private void onItemViewClick(View v) {
-        final int flatPosition = mRecyclerView.getChildPosition(v);
-
-        if (flatPosition == RecyclerView.NO_POSITION) {
-            return;
-        }
-
-        final long expandablePosition = mRecyclerViewExpandableItemManager.getExpandablePosition(flatPosition);
-        final int groupPosition = RecyclerViewExpandableItemManager.getPackedPositionGroup(expandablePosition);
-        final int childPosition = RecyclerViewExpandableItemManager.getPackedPositionChild(expandablePosition);
-    }
-
-    public void notifyGroupItemRestored(int groupPosition) {
-        mAdapter.notifyDataSetChanged();
-
-        final long expandablePosition = RecyclerViewExpandableItemManager.getPackedPositionForGroup(groupPosition);
-        final int flatPosition = mRecyclerViewExpandableItemManager.getFlatPosition(expandablePosition);
-        mRecyclerView.scrollToPosition(flatPosition);
-    }
-
-    public void notifyChildItemRestored(int groupPosition, int childPosition) {
-        mAdapter.notifyDataSetChanged();
-
-        final long expandablePosition = RecyclerViewExpandableItemManager.getPackedPositionForChild(groupPosition, childPosition);
-        final int flatPosition = mRecyclerViewExpandableItemManager.getFlatPosition(expandablePosition);
-        mRecyclerView.scrollToPosition(flatPosition);
-    }
-
-    public void notifyGroupItemChanged(int groupPosition) {
-        final long expandablePosition = RecyclerViewExpandableItemManager.getPackedPositionForGroup(groupPosition);
-        final int flatPosition = mRecyclerViewExpandableItemManager.getFlatPosition(expandablePosition);
-
-        mAdapter.notifyItemChanged(flatPosition);
-    }
-
-    public void notifyChildItemChanged(int groupPosition, int childPosition) {
-        final long expandablePosition = RecyclerViewExpandableItemManager.getPackedPositionForChild(groupPosition, childPosition);
-        final int flatPosition = mRecyclerViewExpandableItemManager.getFlatPosition(expandablePosition);
-
-        mAdapter.notifyItemChanged(flatPosition);
-    }
-
     @Override
     public void onGroupItemRemoved(int groupPosition) {
         Snackbar.make(mCoordinatorLayout, "그룹이 제거되었습니다.", Snackbar.LENGTH_LONG)
@@ -412,6 +366,17 @@ public class MainActivity extends AbstractBaseActivity
             mAdapter.notifyDataSetChanged();
             mRecyclerView.scrollToPosition(flatPosition);
             mRecyclerViewExpandableItemManager.expandGroup(position[0]);
+        }
+    }
+
+    public void reloadSearchQuery() {
+        if(mSearchBox != null) {
+            Set<SearchHistory> searchHistoryTable = DatabaseHelper.getInstance().getSearchHistoryTable();
+            ArrayList<SearchResult> arrayList = new ArrayList<>();
+            for (SearchHistory searchHistory : searchHistoryTable) {
+                arrayList.add(new SearchResult(searchHistory.getTitle(), null));
+            }
+            mSearchBox.setSearchables(arrayList);
         }
     }
 

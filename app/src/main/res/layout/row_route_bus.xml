@@ -17,8 +17,6 @@
         connector:iconColor="@android:color/transparent"
         connector:strokeWidth="4dp" />
 
-
-
     <!--Bus Information Layout-->
     <RelativeLayout
         android:layout_width="wrap_content"
@@ -27,7 +25,7 @@
 
         <ImageView
             android:id="@+id/bus_icon"
-            android:src="@drawable/ic_bus"
+            android:src="@drawable/ic_bus_animated"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:padding="6dp"

@@ -1,6 +1,7 @@
 package kr.rokoroku.mbus;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Parcelable;
@@ -15,8 +16,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
-import com.github.clans.fab.FloatingActionButton;
-import com.github.clans.fab.FloatingActionMenu;
+import com.github.clans.fab.*;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.maps.model.LatLng;
 import com.h6ah4i.android.widget.advrecyclerview.animator.GeneralItemAnimator;
@@ -179,7 +179,7 @@ public class RouteActivity extends AbstractBaseActivity
                         @Override
                         public void onComplete(boolean success) {
                             if (success) {
-                                scheduleTimer(30000);
+                                scheduleTimer(BaseApplication.REFRESH_INTERVAL);
                             }
                             mSwipeRefreshLayout.postDelayed(() -> {
                                 isRefreshing = false;
@@ -309,7 +309,7 @@ public class RouteActivity extends AbstractBaseActivity
                 RouteStation routeStation = mBusRouteAdapter.getItem(mLastExpandedPosition).getRouteStation();
                 addToFavorite(routeStation);
 
-            } else if(getActionMode() == null) {
+            } else if (getActionMode() == null) {
                 startActionMode(new ActionMode.Callback() {
                     @Override
                     public boolean onCreateActionMode(ActionMode mode, Menu menu) {
@@ -342,10 +342,12 @@ public class RouteActivity extends AbstractBaseActivity
         mLocationButton.setOnClickListener(v -> {
             if (mLocationClient == null) {
                 initLocationClient();
+                mLocationClient.start(false);
+            } else {
+                mLocationClient.start(true);
             }
-            mLocationClient.start();
             mLocationButton.setIndeterminate(true);
-
+            mLocationButton.setDrawableTint(ThemeUtils.getThemeColor(this, R.attr.colorAccent));
         });
         mPlusButton.setOnMenuToggleListener(b -> {
             if (b) {
@@ -378,7 +380,7 @@ public class RouteActivity extends AbstractBaseActivity
                                     }
                                 }
 
-                                if (closestStation == null || 1 < GeoUtils.calculateDistanceInKm(
+                                if (closestStation == null || 1000 < GeoUtils.calculateDistanceInMeter(
                                         new LatLng(location.getLatitude(), location.getLongitude()),
                                         new LatLng(closestStation.getLatitude(), closestStation.getLongitude()))) {
                                     Snackbar.make(mCoordinatorLayout, R.string.error_failed_to_retrieve_near_station, Snackbar.LENGTH_LONG).show();
@@ -388,17 +390,23 @@ public class RouteActivity extends AbstractBaseActivity
                                 }
                             }
 
-                            mLocationButton.setIndeterminate(false);
-                            mLocationClient.stop();
+                            mLocationButton.postDelayed(() -> {
+                                mLocationButton.setDrawableTint(Color.BLACK);
+                                mLocationButton.setIndeterminate(false);
+                                mLocationButton.setProgress(0, false);
+                            }, 600);
                         }
 
                         @Override
                         public void onError(String failReason, ConnectionResult connectionResult) {
                             if (failReason != null) {
-                                Snackbar.make(mCoordinatorLayout, "오류가 발생했습니다 : " + failReason, Snackbar.LENGTH_LONG).show();
+                                Snackbar.make(mCoordinatorLayout, "오류가 발생했습니다: " + failReason, Snackbar.LENGTH_LONG).show();
                             }
-                            mLocationButton.setIndeterminate(false);
-                            mLocationClient.stop();
+                            mLocationButton.postDelayed(() -> {
+                                mLocationButton.setDrawableTint(Color.BLACK);
+                                mLocationButton.setIndeterminate(false);
+                                mLocationButton.setProgress(0, false);
+                            }, 600);
                         }
                     }).build();
         }
@@ -431,6 +439,7 @@ public class RouteActivity extends AbstractBaseActivity
             case R.id.action_map:
                 Intent intent = new Intent(this, MapsActivity.class);
                 intent.putExtra(MapsActivity.EXTRA_KEY_ROUTE, (Parcelable) mRouteDataProvider.getRoute());
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
                 startActivity(intent);
                 return true;
 
@@ -466,7 +475,7 @@ public class RouteActivity extends AbstractBaseActivity
         }
         FavoriteGroup favoriteGroup = favoriteGroups.get(0);
         FavoriteGroup.FavoriteItem item = new FavoriteGroup.FavoriteItem(mRouteDataProvider.getRoute());
-        if(routeStation != null) item.setExtraData(routeStation);
+        if (routeStation != null) item.setExtraData(routeStation);
 
         favoriteGroup.add(item);
         Snackbar.make(mCoordinatorLayout, R.string.added_to_favorite, Snackbar.LENGTH_LONG).show();

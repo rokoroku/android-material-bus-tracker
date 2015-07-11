@@ -27,11 +27,11 @@ public class SplashActivity extends AppCompatActivity {
         mDummyView = findViewById(R.id.dummy_view);
 
         mHandler = new Handler();
-        mHandler.postDelayed(() -> RevealUtils.revealView(mDummyView, RevealUtils.Position.CENTER, null), 1000);
+        mHandler.postDelayed(() -> RevealUtils.revealView(mDummyView, RevealUtils.Position.CENTER, null), 600);
         mHandler.postDelayed(() -> {
             startActivity(new Intent(SplashActivity.this, MainActivity.class));
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
             finish();
-        }, 1250);
+        }, 750);
     }
 }

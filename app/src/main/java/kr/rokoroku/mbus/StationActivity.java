@@ -185,7 +185,7 @@ public class StationActivity extends AbstractBaseActivity
                                 if (success) {
                                     stationDataProvider.organize();
                                     mBusStationAdapter.notifyDataSetChanged();
-                                    scheduleTimer(30000);
+                                    scheduleTimer(BaseApplication.REFRESH_INTERVAL);
                                 }
                                 if (mRefreshActionItem != null) {
                                     mRefreshActionItem.setActionView(null);
@@ -353,6 +353,7 @@ public class StationActivity extends AbstractBaseActivity
             case R.id.action_map:
                 Intent intent = new Intent(this, MapsActivity.class);
                 intent.putExtra(MapsActivity.EXTRA_KEY_STATION, (Parcelable) mStationDataProvider.getStation());
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
                 startActivity(intent);
                 return true;
 

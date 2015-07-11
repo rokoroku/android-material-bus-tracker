@@ -10,6 +10,8 @@ import android.util.Log;
 import android.util.NoSuchPropertyException;
 import android.util.TypedValue;
 
+import kr.rokoroku.mbus.MapsActivity;
+
 /**
  * Created by rok on 2015. 6. 1..
  */
@@ -20,10 +22,15 @@ public class ThemeUtils {
         TypedValue typedValue = new TypedValue();
 
         if (theme.resolveAttribute(resId, typedValue, true)) {
-            if(typedValue.type == TypedValue.TYPE_STRING) {
-                return getResourceColor(context, typedValue.data);
-            } else {
-                return typedValue.data;
+            switch (typedValue.type) {
+                case TypedValue.TYPE_INT_COLOR_RGB4:
+                case TypedValue.TYPE_INT_COLOR_RGB8:
+                case TypedValue.TYPE_INT_COLOR_ARGB4:
+                case TypedValue.TYPE_INT_COLOR_ARGB8:
+                    return typedValue.data;
+
+                default:
+                    return getResourceColor(context, typedValue.resourceId);
             }
         } else {
             throw new NoSuchPropertyException("No such property: " + resId);
@@ -48,5 +55,15 @@ public class ThemeUtils {
         Color.colorToHSV(color, hsv);
         hsv[2] *= amount;
         return Color.HSVToColor(hsv);
+    }
+
+    public static int getStatusBarHeight(Context context) {
+        int result = 0;
+        Resources resources = context.getResources();
+        int resourceId = resources.getIdentifier("status_bar_height", "dimen", "android");
+        if (resourceId > 0) {
+            result = resources.getDimensionPixelSize(resourceId);
+        }
+        return result;
     }
 }

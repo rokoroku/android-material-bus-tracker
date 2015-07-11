@@ -8,6 +8,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.AnimationDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Parcelable;
 import android.support.v4.view.ViewCompat;
 import android.text.TextUtils;
@@ -379,6 +381,14 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
                 mBusIcon.setColorFilter(type.getColor(itemView.getContext()));
             }
             itemView.setClickable(false);
+
+            Drawable drawable = mBusIcon.getDrawable();
+            if(drawable instanceof AnimationDrawable) {
+                AnimationDrawable animationDrawable = (AnimationDrawable) drawable;
+                if(!animationDrawable.isRunning()) {
+                    animationDrawable.start();
+                }
+            }
         }
     }
 
@@ -405,10 +415,10 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
         public void setItem(RouteStation routeStation) {
             mItem = routeStation;
             mStationTitle.setText(routeStation.getName());
-            String description = routeStation.getLocalId();
-            String city = routeStation.getCity();
-            if(description != null) {
-                description = city + " - " + description;
+            String localId = routeStation.getLocalId();
+            String description = routeStation.getCity();
+            if(!TextUtils.isEmpty(localId)) {
+                description = description + " - " + localId;
             }
 
             mStationDescription.setText(description);
@@ -617,10 +627,20 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
         public void setItem(ArrivalInfo.BusArrivalItem arrivalItem) {
             mItem = arrivalItem;
             if (mItem != null) {
-                if (mBusIcon != null) mBusIcon.setVisibility(View.VISIBLE);
+                if (mBusIcon != null) {
+                    mBusIcon.setVisibility(View.VISIBLE);
+                    Drawable drawable = mBusIcon.getDrawable();
+                    if(drawable instanceof AnimationDrawable) {
+                        AnimationDrawable animationDrawable = (AnimationDrawable) drawable;
+                        if(!animationDrawable.isRunning()) {
+                            animationDrawable.start();
+                        }
+                    }
+                }
                 if (mBusTitle != null) mBusTitle.setVisibility(View.VISIBLE);
                 if (mRemainTime != null) mRemainTime.setVisibility(View.VISIBLE);
                 if (mRemainStation != null) mRemainStation.setVisibility(View.VISIBLE);
+
                 countdown();
 
             } else {

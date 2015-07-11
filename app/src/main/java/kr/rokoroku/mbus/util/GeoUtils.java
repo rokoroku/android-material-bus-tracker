@@ -48,6 +48,12 @@ public class GeoUtils {
     public static LatLng convertTm(Double x, Double y) {
         GeoTrans.Point inPoint = new GeoTrans.Point(x, y);
         GeoTrans.Point outPoint = GeoTrans.convert(GeoTrans.TM, GeoTrans.GEO, inPoint);
+        return new LatLng(outPoint.y - 0.00268, outPoint.x - 0.00074);
+    }
+
+    public static LatLng convertKATECH(Double latitude, Double longitude) {
+        GeoTrans.Point inPoint = new GeoTrans.Point(longitude, latitude);
+        GeoTrans.Point outPoint = GeoTrans.convert(GeoTrans.KATEC, GeoTrans.GEO, inPoint);
         return new LatLng(outPoint.y, outPoint.x);
     }
 
@@ -63,7 +69,7 @@ public class GeoUtils {
         return new LatLng(angleLat.toDecimal(), angleLng.toDecimal());
     }
 
-    public static int calculateDistanceInKm(LatLng from, LatLng to) {
+    public static int calculateDistanceInMeter(LatLng from, LatLng to) {
 
         double latDistance = Math.toRadians(from.latitude - to.latitude);
         double lngDistance = Math.toRadians(from.longitude - to.longitude);
@@ -74,8 +80,9 @@ public class GeoUtils {
 
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-        return (int) (Math.round(AVERAGE_RADIUS_OF_EARTH * c));
+        return (int) (Math.round(AVERAGE_RADIUS_OF_EARTH * c * 1000));
     }
+
 
     public static class Angle {
         int degree;

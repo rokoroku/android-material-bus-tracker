@@ -6,6 +6,7 @@ import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
+import android.util.Log;
 
 import kr.rokoroku.mbus.BaseApplication;
 import kr.rokoroku.mbus.R;
@@ -23,6 +24,7 @@ import kr.rokoroku.mbus.api.gbisweb.core.GbisWebRestInterface;
 import kr.rokoroku.mbus.api.gbisweb.model.GbisWebSearchAllResult;
 import kr.rokoroku.mbus.api.gbisweb.model.GbisWebSearchBusRouteResult;
 import kr.rokoroku.mbus.api.gbisweb.model.GbisWebSearchBusStationResult;
+import kr.rokoroku.mbus.api.gbisweb.model.GbisWebSearchMapLineResult;
 import kr.rokoroku.mbus.api.seoul.core.SeoulBusException;
 import kr.rokoroku.mbus.api.seoul.core.SeoulBusRestClient;
 import kr.rokoroku.mbus.api.seoul.core.SeoulBusRestInterface;
@@ -38,15 +40,21 @@ import kr.rokoroku.mbus.api.seoul.model.SeoulBusRouteStation;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusRouteStationList;
 import kr.rokoroku.mbus.api.seoul.model.SeoulStationInfo;
 import kr.rokoroku.mbus.api.seoul.model.SeoulStationInfoList;
+import kr.rokoroku.mbus.api.seoulweb.core.SeoulWebRestClient;
+import kr.rokoroku.mbus.api.seoulweb.core.SeoulWebRestInterface;
+import kr.rokoroku.mbus.api.seoulweb.model.TopisMapLineResult;
 import kr.rokoroku.mbus.model.ArrivalInfo;
 import kr.rokoroku.mbus.model.BusLocation;
+import kr.rokoroku.mbus.model.Direction;
 import kr.rokoroku.mbus.model.District;
+import kr.rokoroku.mbus.model.MapLine;
 import kr.rokoroku.mbus.model.Provider;
 import kr.rokoroku.mbus.model.Route;
 import kr.rokoroku.mbus.model.RouteStation;
 import kr.rokoroku.mbus.model.RouteType;
 import kr.rokoroku.mbus.model.Station;
 
+import com.google.android.gms.maps.model.LatLng;
 import com.squareup.okhttp.Cache;
 import com.squareup.okhttp.OkHttpClient;
 
@@ -61,6 +69,7 @@ import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
 import kr.rokoroku.mbus.model.StationRoute;
+import kr.rokoroku.mbus.util.GeoUtils;
 import retrofit.Callback;
 import retrofit.RetrofitError;
 import retrofit.android.AndroidApacheClient;
@@ -103,9 +112,10 @@ public class ApiCaller {
     }
 
     private Handler handler;
-    private SeoulBusRestClient seoulBusRestClient;
     private GbisRestClient gbisRestClient;
     private GbisWebRestClient gbisWebRestClient;
+    private SeoulBusRestClient seoulBusRestClient;
+    private SeoulWebRestClient seoulWebRestClient;
 
     private ApiCaller(String apiKey) {
         if (client == null) client = new AndroidApacheClient();
@@ -115,6 +125,7 @@ public class ApiCaller {
         this.gbisRestClient = new GbisRestClient(client, apiKey);
         this.gbisWebRestClient = new GbisWebRestClient(client);
         this.seoulBusRestClient = new SeoulBusRestClient(client, apiKey);
+        this.seoulWebRestClient = new SeoulWebRestClient(client);
     }
 
     public SeoulBusRestInterface getSeoulBusRestClient() {
@@ -127,6 +138,10 @@ public class ApiCaller {
 
     public GbisWebRestInterface getGbisWebRestClient() {
         return gbisWebRestClient.getAdapter();
+    }
+
+    public SeoulWebRestInterface getSeoulWebRestClient() {
+        return seoulWebRestClient.getAdapter();
     }
 
     public void fillRouteData(@NonNull String routeId,
@@ -847,11 +862,11 @@ public class ApiCaller {
                                         for (SeoulBusArrival arrival : seoulBusArrivalList.getItems()) {
                                             String seoulStationId = station.getId();
                                             Station seoulStation = null;
-                                            if(station.getProvider().equals(Provider.SEOUL)) {
+                                            if (station.getProvider().equals(Provider.SEOUL)) {
                                                 seoulStationId = station.getId();
                                             } else {
                                                 seoulStation = DatabaseHelper.getInstance().getStationWithSecondaryKey(Provider.SEOUL, station.getLocalIdByProvider(Provider.SEOUL));
-                                                if(seoulStation != null) {
+                                                if (seoulStation != null) {
                                                     seoulStationId = seoulStation.getId();
                                                 }
                                             }
@@ -860,7 +875,7 @@ public class ApiCaller {
                                                 ArrivalInfo arrivalInfo = new ArrivalInfo(arrival);
                                                 station.putArrivalInfo(arrivalInfo);
                                                 station.setLastUpdateTime(new Date());
-                                                if(seoulStation != null) {
+                                                if (seoulStation != null) {
                                                     seoulStation.putArrivalInfo(arrivalInfo);
                                                     seoulStation.setLastUpdateTime(new Date());
                                                 }
@@ -922,8 +937,15 @@ public class ApiCaller {
                                 Route route = new Route(seoulBusRouteInfo);
 
                                 //exclude non-Seoul route
-                                if (!RouteType.UNKNOWN.equals(route.getType()) && !RouteType.RED_GYEONGGI.equals(route.getType())) {
-                                    routeList.add(route);
+                                switch (route.getType()) {
+                                    case RED_GYEONGGI:
+                                    case RED_INCHEON:
+                                    case MBUS:
+                                    case UNKNOWN:
+                                        break;
+
+                                    default:
+                                        routeList.add(route);
                                 }
                             }
                             searchDataProvider.addRouteData(routeList);
@@ -1045,6 +1067,117 @@ public class ApiCaller {
                 });
     }
 
+    public void getRouteMapLine(Route route, Callback<List<MapLine>> callback) {
+        Provider provider = route.getProvider();
+        switch (provider) {
+            case GYEONGGI:
+                getGbisWebRestClient().getRouteMapLine(route.getId(), new Callback<GbisWebSearchMapLineResult>() {
+                    @Override
+                    public void success(GbisWebSearchMapLineResult gbisWebSearchMapLineResult, Response response) {
+                        List<MapLine> mapLineList = null;
+                        if (gbisWebSearchMapLineResult != null && gbisWebSearchMapLineResult.isSuccess()) {
+                            GbisWebSearchMapLineResult.ResultEntity.GgEntity resultEntity = gbisWebSearchMapLineResult.getResult().getGg();
+
+                            mapLineList = new ArrayList<MapLine>();
+                            for (GbisWebSearchMapLineResult.ResultEntity.GgEntity.UpLineEntity.ListEntity listEntity : resultEntity.getUpLine().getList()) {
+                                if (TextUtils.isEmpty(listEntity.getLinkId())) {
+                                    MapLine mapLine = new MapLine();
+                                    mapLine.setDirection(Direction.UP);
+                                    double latitude = Double.parseDouble(listEntity.getLat());
+                                    double longitude = Double.parseDouble(listEntity.getLon());
+                                    LatLng latLng = GeoUtils.convertEPSG3857(latitude, longitude);
+                                    mapLine.setLatitude(latLng.latitude);
+                                    mapLine.setLongitude(latLng.longitude);
+
+                                    mapLineList.add(mapLine);
+                                }
+                            }
+
+                            for (GbisWebSearchMapLineResult.ResultEntity.GgEntity.DownLineEntity.ListEntity listEntity : resultEntity.getDownLine().getList()) {
+                                if (TextUtils.isEmpty(listEntity.getLinkId())) {
+                                    MapLine mapLine = new MapLine();
+                                    mapLine.setDirection(Direction.DOWN);
+                                    double latitude = Double.parseDouble(listEntity.getLat());
+                                    double longitude = Double.parseDouble(listEntity.getLon());
+                                    LatLng latLng = GeoUtils.convertEPSG3857(latitude, longitude);
+                                    mapLine.setLatitude(latLng.latitude);
+                                    mapLine.setLongitude(latLng.longitude);
+
+                                    mapLineList.add(mapLine);
+                                }
+                            }
+                        }
+                        if (mapLineList != null) {
+                            route.setMapLineList(mapLineList);
+                        }
+                        if (callback != null) {
+                            final List<MapLine> finalMapLineList = mapLineList;
+                            handler.post(() -> callback.success(finalMapLineList, response));
+                        }
+                    }
+
+                    @Override
+                    public void failure(RetrofitError error) {
+                        handler.post(() -> callback.failure(error));
+                    }
+                });
+                break;
+
+            case SEOUL:
+                getSeoulWebRestClient().getRouteMapLine(route.getId(), new Callback<TopisMapLineResult>() {
+                    @Override
+                    public void success(TopisMapLineResult topisMapLineResult, Response response) {
+                        List<MapLine> mapLineList = null;
+                        if (topisMapLineResult != null && topisMapLineResult.result != null) {
+                            mapLineList = new ArrayList<>();
+
+                            //get turn station
+                            List<RouteStation> routeStationList = route.getRouteStationList();
+                            RouteStation turnStation = null;
+                            if(routeStationList != null && route.getTurnStationSeq() != -1) {
+                                for (RouteStation routeStation : routeStationList) {
+                                    if(route.getTurnStationSeq() == routeStation.getSequence()) {
+                                        turnStation = routeStation;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            Direction direction = Direction.UP;
+                            for (TopisMapLineResult.ResultEntity resultEntity : topisMapLineResult.result) {
+                                MapLine mapLine = new MapLine();
+                                LatLng latLng = GeoUtils.convertTm(resultEntity.x, resultEntity.y);
+                                mapLine.setLatitude(latLng.latitude);
+                                mapLine.setLongitude(latLng.longitude);
+
+                                if(turnStation != null) {
+                                    LatLng turnLatLng = new LatLng(turnStation.getLatitude(), turnStation.getLongitude());
+                                    if(GeoUtils.calculateDistanceInMeter(turnLatLng, latLng) < 100) {
+                                        direction = Direction.DOWN;
+                                        turnStation = null;
+                                    }
+                                }
+                                mapLine.setDirection(direction);
+                                mapLineList.add(mapLine);
+                            }
+                        }
+                        if (mapLineList != null) {
+                            route.setMapLineList(mapLineList);
+                        }
+                        if (callback != null) {
+                            final List<MapLine> finalMapLineList = mapLineList;
+                            handler.post(() -> callback.success(finalMapLineList, response));
+                        }
+                    }
+
+                    @Override
+                    public void failure(RetrofitError error) {
+                        handler.post(() -> callback.failure(error));
+                    }
+                });
+                break;
+        }
+    }
 
     public interface ProgressCallback {
         void onComplete(boolean success);
