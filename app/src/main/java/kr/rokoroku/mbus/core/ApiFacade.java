@@ -6,7 +6,6 @@ import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
-import android.util.Log;
 
 import kr.rokoroku.mbus.BaseApplication;
 import kr.rokoroku.mbus.R;
@@ -21,10 +20,10 @@ import kr.rokoroku.mbus.api.gbis.model.GbisBusLocation;
 import kr.rokoroku.mbus.api.gbis.model.GbisBusLocationList;
 import kr.rokoroku.mbus.api.gbisweb.core.GbisWebRestClient;
 import kr.rokoroku.mbus.api.gbisweb.core.GbisWebRestInterface;
-import kr.rokoroku.mbus.api.gbisweb.model.GbisWebSearchAllResult;
-import kr.rokoroku.mbus.api.gbisweb.model.GbisWebSearchBusRouteResult;
-import kr.rokoroku.mbus.api.gbisweb.model.GbisWebSearchBusStationResult;
-import kr.rokoroku.mbus.api.gbisweb.model.GbisWebSearchMapLineResult;
+import kr.rokoroku.mbus.api.gbisweb.model.SearchAllResult;
+import kr.rokoroku.mbus.api.gbisweb.model.SearchRouteResult;
+import kr.rokoroku.mbus.api.gbisweb.model.SearchStationResult;
+import kr.rokoroku.mbus.api.gbisweb.model.SearchMapLineResult;
 import kr.rokoroku.mbus.api.seoul.core.SeoulBusException;
 import kr.rokoroku.mbus.api.seoul.core.SeoulBusRestClient;
 import kr.rokoroku.mbus.api.seoul.core.SeoulBusRestInterface;
@@ -80,7 +79,7 @@ import retrofit.client.Response;
 /**
  * Created by rok on 2015. 6. 3..
  */
-public class ApiCaller {
+public class ApiFacade {
 
     private String apiKey;
     private static Client client;
@@ -98,15 +97,15 @@ public class ApiCaller {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        ApiCaller.client = new OkClient(okHttpClient);
+        ApiFacade.client = new OkClient(okHttpClient);
     }
 
-    private static ApiCaller instance;
+    private static ApiFacade instance;
 
-    public static ApiCaller getInstance() {
+    public static ApiFacade getInstance() {
         if (instance == null) {
             String apiKey = BaseApplication.getInstance().getString(R.string.data_gov_openapi_key);
-            instance = new ApiCaller(apiKey);
+            instance = new ApiFacade(apiKey);
         }
         return instance;
     }
@@ -117,7 +116,7 @@ public class ApiCaller {
     private SeoulBusRestClient seoulBusRestClient;
     private SeoulWebRestClient seoulWebRestClient;
 
-    private ApiCaller(String apiKey) {
+    private ApiFacade(String apiKey) {
         if (client == null) client = new AndroidApacheClient();
 
         this.apiKey = apiKey;
@@ -153,7 +152,7 @@ public class ApiCaller {
         // 1. retrieve base info (incl. station info)
         // 1-1. use local data if exist
         final Provider provider = routeDataProvider.getRoute().getProvider();
-        Route storedRoute = DatabaseHelper.getInstance().getRoute(provider, routeId);
+        Route storedRoute = Database.getInstance().getRoute(provider, routeId);
         if (storedRoute != null) {
             routeDataProvider.setRoute(storedRoute);
             runOnUiThread(() -> {
@@ -168,17 +167,17 @@ public class ApiCaller {
             switch (provider) {
                 case GYEONGGI:
                     getGbisWebRestClient().getRouteInfo(route.getId(),
-                            new ProgressWrappedCallback<GbisWebSearchBusRouteResult>(callback, progress) {
+                            new ProgressWrappedCallback<SearchRouteResult>(callback, progress) {
                                 @Override
-                                public void success(GbisWebSearchBusRouteResult result) {
+                                public void success(SearchRouteResult result) {
                                     if (result != null && result.isSuccess()) {
-                                        GbisWebSearchBusRouteResult.ResultEntity resultEntity = result.getResult();
+                                        SearchRouteResult.ResultEntity resultEntity = result.getResult();
                                         routeDataProvider.setGbisRouteEntity(resultEntity);
                                         routeDataProvider.setGbisStationEntity(resultEntity);
                                         if (routeDataProvider.getBusPositionList() == null) {
                                             routeDataProvider.setGbisRealtimeBusEntity(resultEntity);
                                         }
-                                        DatabaseHelper.getInstance().putRoute(provider, routeDataProvider.getRoute());
+                                        Database.getInstance().putRoute(provider, routeDataProvider.getRoute());
                                     }
                                 }
                             });
@@ -197,7 +196,7 @@ public class ApiCaller {
                                     route.setSeoulBusInfo(seoulBusRouteInfoList.getItems().get(0));
                                 }
                                 if (route.isRouteBaseInfoAvailable() && route.isRouteStationInfoAvailable()) {
-                                    DatabaseHelper.getInstance().putRoute(provider, route);
+                                    Database.getInstance().putRoute(provider, route);
                                 }
                             }
                         });
@@ -227,7 +226,7 @@ public class ApiCaller {
                                             routeDataProvider.setRouteStationList(routeStationList);
                                         }
                                         if (route.isRouteBaseInfoAvailable() && route.isRouteStationInfoAvailable()) {
-                                            DatabaseHelper.getInstance().putRoute(provider, route);
+                                            Database.getInstance().putRoute(provider, route);
                                         }
                                     }
                                 });
@@ -324,7 +323,7 @@ public class ApiCaller {
                                 @NonNull ProgressCallback callback) {
         final int[] progress = {0, 1};
         final Provider dataProvider = stationDataProvider.getProvider();
-        final Station storedStation = DatabaseHelper.getInstance().getStation(dataProvider, stationId);
+        final Station storedStation = Database.getInstance().getStation(dataProvider, stationId);
 
         // 1. retrieve base info
         if (storedStation != null) stationDataProvider.setStation(storedStation);
@@ -355,16 +354,16 @@ public class ApiCaller {
 
                     } else {
                         // 1-4. retrieve meta data by recursion
-                        Station linkStation = DatabaseHelper.getInstance().getStationWithSecondaryKey(linkEntryProvider, externalEntry.getKey());
+                        Station linkStation = Database.getInstance().getStationWithSecondaryKey(linkEntryProvider, externalEntry.getKey());
                         if (linkStation == null)
                             linkStation = new Station(externalEntry.getKey(), linkEntryProvider);
 
                         if (linkEntryProvider.equals(Provider.GYEONGGI)) {
-                            getGbisWebRestClient().searchAll(externalEntry.getKey(), 1, 1, new Callback<GbisWebSearchAllResult>() {
+                            getGbisWebRestClient().searchAll(externalEntry.getKey(), 1, 1, new Callback<SearchAllResult>() {
                                 @Override
-                                public void success(GbisWebSearchAllResult gbisWebSearchAllResult, Response response) {
-                                    if (gbisWebSearchAllResult.isSuccess()) {
-                                        for (GbisWebSearchAllResult.ResultEntity.BusStationEntity.ListEntity listEntity : gbisWebSearchAllResult.getResult().getBusStation().getList()) {
+                                public void success(SearchAllResult searchAllResult, Response response) {
+                                    if (searchAllResult.isSuccess()) {
+                                        for (SearchAllResult.ResultEntity.BusStationEntity.ListEntity listEntity : searchAllResult.getResult().getBusStation().getList()) {
                                             if (listEntity.getStationNo().equals(externalEntry.getKey())) {
                                                 Station station = new Station(listEntity);
                                                 StationDataProvider linkStationDataProvider = new StationDataProvider(station);
@@ -382,8 +381,8 @@ public class ApiCaller {
                                                                 }
                                                                 linkStationDataProvider.putStationRouteList(rawStationRouteList);
                                                                 linkStationDataProvider.getStation().addExternalEntry(new Station.ExternalEntry(station.getProvider(), station.getLocalId()));
-                                                                DatabaseHelper.getInstance().putStation(stationDataProvider.getProvider(), stationDataProvider.getStation());
-                                                                DatabaseHelper.getInstance().putStation(linkStationDataProvider.getProvider(), linkStationDataProvider.getStation());
+                                                                Database.getInstance().putStation(stationDataProvider.getProvider(), stationDataProvider.getStation());
+                                                                Database.getInstance().putStation(linkStationDataProvider.getProvider(), linkStationDataProvider.getStation());
                                                             }
                                                         }
                                                         runOnUiThread(() -> {
@@ -437,8 +436,8 @@ public class ApiCaller {
                                             }
                                             linkStationDataProvider.putStationRouteList(rawStationRouteList);
                                             linkStationDataProvider.getStation().addExternalEntry(new Station.ExternalEntry(station.getProvider(), station.getLocalId()));
-                                            DatabaseHelper.getInstance().putStation(stationDataProvider.getProvider(), stationDataProvider.getStation());
-                                            DatabaseHelper.getInstance().putStation(linkStationDataProvider.getProvider(), linkStationDataProvider.getStation());
+                                            Database.getInstance().putStation(stationDataProvider.getProvider(), stationDataProvider.getStation());
+                                            Database.getInstance().putStation(linkStationDataProvider.getProvider(), linkStationDataProvider.getStation());
                                         }
                                     }
                                     runOnUiThread(() -> {
@@ -463,22 +462,22 @@ public class ApiCaller {
             switch (dataProvider) {
                 case GYEONGGI:
                     GbisWebRestInterface gbisWebRestClient = getGbisWebRestClient();
-                    gbisWebRestClient.getStationInfo(stationId, new Callback<GbisWebSearchBusStationResult>() {
+                    gbisWebRestClient.getStationInfo(stationId, new Callback<SearchStationResult>() {
                         @Override
-                        public void success(GbisWebSearchBusStationResult result, Response response) {
+                        public void success(SearchStationResult result, Response response) {
                             if (result != null && result.isSuccess()) {
-                                GbisWebSearchBusStationResult.ResultEntity resultEntity = result.getResult();
+                                SearchStationResult.ResultEntity resultEntity = result.getResult();
 
                                 // 2-1. put every route of station
                                 Map<String, StationRoute> stationRoutes = new TreeMap<>();
                                 String stationLocalId = station.getLocalIdByProvider(dataProvider);
-                                for (GbisWebSearchBusStationResult.ResultEntity.BusStationInfoEntity busStationInfoEntity : resultEntity.getBusStationInfo()) {
+                                for (SearchStationResult.ResultEntity.BusStationInfoEntity busStationInfoEntity : resultEntity.getBusStationInfo()) {
                                     StationRoute stationRoute = new StationRoute(busStationInfoEntity, stationLocalId);
                                     stationRoutes.put(stationRoute.getRouteId(), stationRoute);
                                 }
 
                                 // 2-2. set arrivalinfo if presents
-                                for (GbisWebSearchBusStationResult.ResultEntity.BusArrivalInfoEntity busArrivalInfoEntity : resultEntity.getBusArrivalInfo()) {
+                                for (SearchStationResult.ResultEntity.BusArrivalInfoEntity busArrivalInfoEntity : resultEntity.getBusArrivalInfo()) {
                                     ArrivalInfo arrivalInfo = new ArrivalInfo(busArrivalInfoEntity);
                                     StationRoute stationRoute = stationRoutes.get(arrivalInfo.getRouteId());
                                     if (stationRoute != null) {
@@ -516,7 +515,7 @@ public class ApiCaller {
                                                 }
                                                 if (progress[0] >= progress[1]) {
                                                     stationDataProvider.putStationRouteList(stationRoutes.values());
-                                                    DatabaseHelper.getInstance().putStation(dataProvider, stationDataProvider.getStation());
+                                                    Database.getInstance().putStation(dataProvider, stationDataProvider.getStation());
                                                 }
                                                 runOnUiThread(() -> {
                                                     callback.onProgressUpdate(progress[0], progress[1]);
@@ -534,7 +533,7 @@ public class ApiCaller {
                                     }
                                 } else {
                                     stationDataProvider.putStationRouteList(stationRoutes.values());
-                                    DatabaseHelper.getInstance().putStation(dataProvider, stationDataProvider.getStation());
+                                    Database.getInstance().putStation(dataProvider, stationDataProvider.getStation());
                                     runOnUiThread(() -> {
                                         callback.onProgressUpdate(++progress[0], progress[1]);
                                         if (progress[0] >= progress[1]) callback.onComplete(true);
@@ -599,7 +598,7 @@ public class ApiCaller {
 
                                                 if (progress[0] >= progress[1]) {
                                                     stationDataProvider.putStationRouteList(stationRoutes);
-                                                    DatabaseHelper.getInstance().putStation(dataProvider, stationDataProvider.getStation());
+                                                    Database.getInstance().putStation(dataProvider, stationDataProvider.getStation());
                                                 }
 
                                                 runOnUiThread(() -> {
@@ -618,7 +617,7 @@ public class ApiCaller {
                                     }
                                 } else {
                                     stationDataProvider.putStationRouteList(stationRoutes);
-                                    DatabaseHelper.getInstance().putStation(dataProvider, stationDataProvider.getStation());
+                                    Database.getInstance().putStation(dataProvider, stationDataProvider.getStation());
                                     runOnUiThread(() -> {
                                         callback.onProgressUpdate(++progress[0], progress[1]);
                                         callback.onComplete(true);
@@ -738,7 +737,7 @@ public class ApiCaller {
                 String stationId = station.getId();
                 if (!station.getProvider().equals(serviceProvider)) {
                     String publicId = station.getLocalIdByProvider(serviceProvider);
-                    Station secondaryKey = DatabaseHelper.getInstance().getStationWithSecondaryKey(serviceProvider, publicId);
+                    Station secondaryKey = Database.getInstance().getStationWithSecondaryKey(serviceProvider, publicId);
                     if (secondaryKey != null) stationId = secondaryKey.getId();
                 }
 
@@ -749,7 +748,7 @@ public class ApiCaller {
                 } else {
                     // retrieve single
                     String routeId = stationRoute.getRouteId();
-                    gbisRestClient.getBusArrivalListByRouteId(stationId, routeId, gbisCallback);
+                    gbisRestClient.getBusArrivalList(stationId, routeId, gbisCallback);
                 }
                 break;
 
@@ -865,7 +864,7 @@ public class ApiCaller {
                                             if (station.getProvider().equals(Provider.SEOUL)) {
                                                 seoulStationId = station.getId();
                                             } else {
-                                                seoulStation = DatabaseHelper.getInstance().getStationWithSecondaryKey(Provider.SEOUL, station.getLocalIdByProvider(Provider.SEOUL));
+                                                seoulStation = Database.getInstance().getStationWithSecondaryKey(Provider.SEOUL, station.getLocalIdByProvider(Provider.SEOUL));
                                                 if (seoulStation != null) {
                                                     seoulStationId = seoulStation.getId();
                                                 }
@@ -894,10 +893,10 @@ public class ApiCaller {
                                 stationId = station.getId();
                                 if (!station.getProvider().equals(serviceProvider)) {
                                     String externalProviderLocalId = station.getLocalIdByProvider(serviceProvider);
-                                    Station secondaryKey = DatabaseHelper.getInstance().getStationWithSecondaryKey(serviceProvider, externalProviderLocalId);
+                                    Station secondaryKey = Database.getInstance().getStationWithSecondaryKey(serviceProvider, externalProviderLocalId);
                                     if (secondaryKey != null) stationId = secondaryKey.getId();
                                 }
-                                getSeoulBusRestClient().getArrivalInfo(stationId, routeId, String.valueOf(sequence), singleCallback);
+                                getSeoulBusRestClient().getArrivalInfo(stationId, routeId, sequence, singleCallback);
                             }
 
                         } else {
@@ -927,7 +926,7 @@ public class ApiCaller {
 
         //search seoulbus route
         SeoulBusRestInterface seoulBusRestClient = getSeoulBusRestClient();
-        seoulBusRestClient.searchRouteListByName(keyword,
+                seoulBusRestClient.searchRouteListByName(keyword,
                 new ProgressWrappedCallback<SeoulBusRouteInfoList>(callback, progress) {
                     @Override
                     public void success(SeoulBusRouteInfoList seoulBusRouteInfoList) {
@@ -940,7 +939,7 @@ public class ApiCaller {
                                 switch (route.getType()) {
                                     case RED_GYEONGGI:
                                     case RED_INCHEON:
-                                    case MBUS:
+                                    case METROPOLITAN:
                                     case UNKNOWN:
                                         break;
 
@@ -986,15 +985,15 @@ public class ApiCaller {
 
                     private void searchGbisAll(int page) {
                         //search via gbis web interface
-                        getGbisWebRestClient().searchAll(keyword, page, page, new Callback<GbisWebSearchAllResult>() {
+                        getGbisWebRestClient().searchAll(keyword, page, page, new Callback<SearchAllResult>() {
                             @Override
-                            public void success(GbisWebSearchAllResult gbisWebSearchAllResult, Response response) {
+                            public void success(SearchAllResult searchAllResult, Response response) {
                                 // put route entities
-                                if (gbisWebSearchAllResult != null && gbisWebSearchAllResult.isSuccess()) {
-                                    GbisWebSearchAllResult.ResultEntity.BusRouteEntity busRouteEntity = gbisWebSearchAllResult.getResult().getBusRoute();
+                                if (searchAllResult != null && searchAllResult.isSuccess()) {
+                                    SearchAllResult.ResultEntity.BusRouteEntity busRouteEntity = searchAllResult.getResult().getBusRoute();
                                     List<Route> routeList = new ArrayList<>();
                                     if (busRouteEntity.getCount() > 0) {
-                                        for (GbisWebSearchAllResult.ResultEntity.BusRouteEntity.ListEntity listEntity : busRouteEntity.getList()) {
+                                        for (SearchAllResult.ResultEntity.BusRouteEntity.ListEntity listEntity : busRouteEntity.getList()) {
                                             Route route = new Route(listEntity);
 
                                             // exclude SEOUL route from GBIS result
@@ -1007,9 +1006,9 @@ public class ApiCaller {
 
                                     // put station entities
                                     List<Station> stationList = new ArrayList<>();
-                                    GbisWebSearchAllResult.ResultEntity.BusStationEntity busStationEntity = gbisWebSearchAllResult.getResult().getBusStation();
+                                    SearchAllResult.ResultEntity.BusStationEntity busStationEntity = searchAllResult.getResult().getBusStation();
                                     if (busStationEntity.getCount() > 0) {
-                                        for (GbisWebSearchAllResult.ResultEntity.BusStationEntity.ListEntity listEntity : busStationEntity.getList()) {
+                                        for (SearchAllResult.ResultEntity.BusStationEntity.ListEntity listEntity : busStationEntity.getList()) {
                                             Station station = new Station(listEntity);
 
                                             // exclude non-stop station
@@ -1033,8 +1032,8 @@ public class ApiCaller {
                                     searchDataProvider.addRouteData(routeList);
                                     searchDataProvider.addStationData(stationList);
 
-                                    int routeCount = Integer.parseInt(gbisWebSearchAllResult.getResult().getBusRoute().getTotalCount());
-                                    int stationCount = Integer.parseInt(gbisWebSearchAllResult.getResult().getBusStation().getTotalCount());
+                                    int routeCount = Integer.parseInt(searchAllResult.getResult().getBusRoute().getTotalCount());
+                                    int stationCount = Integer.parseInt(searchAllResult.getResult().getBusStation().getTotalCount());
                                     if (routeCount > 10 || stationCount > 10) {
                                         if (progress[1] < 4) {
                                             progress[1]++;
@@ -1042,11 +1041,11 @@ public class ApiCaller {
                                         }
                                     } else {
                                         searchDataProvider.addStationData(seoulStationMap.values());
-                                        DatabaseHelper.getInstance().putStations(Provider.SEOUL, seoulStationMap.values());
+                                        Database.getInstance().putStations(Provider.SEOUL, seoulStationMap.values());
                                     }
                                 } else {
                                     searchDataProvider.addStationData(seoulStationMap.values());
-                                    DatabaseHelper.getInstance().putStations(Provider.SEOUL, seoulStationMap.values());
+                                    Database.getInstance().putStations(Provider.SEOUL, seoulStationMap.values());
                                 }
                                 runOnUiThread(() -> {
                                     callback.onProgressUpdate(++progress[0], progress[1]);
@@ -1071,15 +1070,15 @@ public class ApiCaller {
         Provider provider = route.getProvider();
         switch (provider) {
             case GYEONGGI:
-                getGbisWebRestClient().getRouteMapLine(route.getId(), new Callback<GbisWebSearchMapLineResult>() {
+                getGbisWebRestClient().getRouteMapLine(route.getId(), new Callback<SearchMapLineResult>() {
                     @Override
-                    public void success(GbisWebSearchMapLineResult gbisWebSearchMapLineResult, Response response) {
+                    public void success(SearchMapLineResult searchMapLineResult, Response response) {
                         List<MapLine> mapLineList = null;
-                        if (gbisWebSearchMapLineResult != null && gbisWebSearchMapLineResult.isSuccess()) {
-                            GbisWebSearchMapLineResult.ResultEntity.GgEntity resultEntity = gbisWebSearchMapLineResult.getResult().getGg();
+                        if (searchMapLineResult != null && searchMapLineResult.isSuccess()) {
+                            SearchMapLineResult.ResultEntity.GgEntity resultEntity = searchMapLineResult.getResult().getGg();
 
                             mapLineList = new ArrayList<MapLine>();
-                            for (GbisWebSearchMapLineResult.ResultEntity.GgEntity.UpLineEntity.ListEntity listEntity : resultEntity.getUpLine().getList()) {
+                            for (SearchMapLineResult.ResultEntity.GgEntity.UpLineEntity.ListEntity listEntity : resultEntity.getUpLine().getList()) {
                                 if (TextUtils.isEmpty(listEntity.getLinkId())) {
                                     MapLine mapLine = new MapLine();
                                     mapLine.setDirection(Direction.UP);
@@ -1093,7 +1092,7 @@ public class ApiCaller {
                                 }
                             }
 
-                            for (GbisWebSearchMapLineResult.ResultEntity.GgEntity.DownLineEntity.ListEntity listEntity : resultEntity.getDownLine().getList()) {
+                            for (SearchMapLineResult.ResultEntity.GgEntity.DownLineEntity.ListEntity listEntity : resultEntity.getDownLine().getList()) {
                                 if (TextUtils.isEmpty(listEntity.getLinkId())) {
                                     MapLine mapLine = new MapLine();
                                     mapLine.setDirection(Direction.DOWN);

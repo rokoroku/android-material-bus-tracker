@@ -2,7 +2,6 @@ package kr.rokoroku.mbus;
 
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Rect;
 import android.graphics.drawable.NinePatchDrawable;
 import android.os.Build;
 import android.os.Bundle;
@@ -37,7 +36,7 @@ import java.util.Set;
 
 import kr.rokoroku.mbus.adapter.FavoriteAdapter;
 import kr.rokoroku.mbus.adapter.FavoriteDataProvider;
-import kr.rokoroku.mbus.core.DatabaseHelper;
+import kr.rokoroku.mbus.core.Database;
 import kr.rokoroku.mbus.core.FavoriteFacade;
 import kr.rokoroku.mbus.model.Favorite;
 import kr.rokoroku.mbus.model.FavoriteGroup;
@@ -216,7 +215,7 @@ public class MainActivity extends AbstractBaseActivity
 
         mAddNewEntryButton.setOnClickListener(v -> {
 
-            Route randomRoute = DatabaseHelper.getInstance().getRandomRoute();
+            Route randomRoute = Database.getInstance().getRandomRoute();
             if (randomRoute != null && randomRoute.getId() != null) {
                 int groupPosition = 0;
 
@@ -313,7 +312,7 @@ public class MainActivity extends AbstractBaseActivity
     protected void onStop() {
         super.onStop();
         Favorite currentFavorite = FavoriteFacade.getInstance().getCurrentFavorite();
-        DatabaseHelper.getInstance().putBookmark(currentFavorite.getName(), currentFavorite);
+        Database.getInstance().putBookmark(currentFavorite.getName(), currentFavorite);
     }
 
     @Override
@@ -371,7 +370,7 @@ public class MainActivity extends AbstractBaseActivity
 
     public void reloadSearchQuery() {
         if(mSearchBox != null) {
-            Set<SearchHistory> searchHistoryTable = DatabaseHelper.getInstance().getSearchHistoryTable();
+            Set<SearchHistory> searchHistoryTable = Database.getInstance().getSearchHistoryTable();
             ArrayList<SearchResult> arrayList = new ArrayList<>();
             for (SearchHistory searchHistory : searchHistoryTable) {
                 arrayList.add(new SearchResult(searchHistory.getTitle(), null));

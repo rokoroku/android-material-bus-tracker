@@ -19,8 +19,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import kr.rokoroku.mbus.api.gbisweb.model.GbisWebSearchAllResult;
-import kr.rokoroku.mbus.api.gbisweb.model.GbisWebSearchBusRouteResult;
+import kr.rokoroku.mbus.api.gbisweb.model.SearchAllResult;
+import kr.rokoroku.mbus.api.gbisweb.model.SearchRouteResult;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusRouteStation;
 import kr.rokoroku.mbus.api.seoul.model.SeoulStationInfo;
 import kr.rokoroku.mbus.util.GeoUtils;
@@ -61,7 +61,7 @@ public class Station implements Parcelable, Serializable {
         this.stationRouteList = other.stationRouteList;
     }
 
-    public Station(GbisWebSearchBusRouteResult.ResultEntity.GgEntity.StationEntity stationEntity) {
+    public Station(SearchRouteResult.ResultEntity.GgEntity.StationEntity stationEntity) {
         this.id = stationEntity.getStationId();
         this.name = stationEntity.getStationNm();
         this.city = stationEntity.getGnm();
@@ -80,7 +80,7 @@ public class Station implements Parcelable, Serializable {
         if (externalEntry != null) addExternalEntry(externalEntry);
     }
 
-    public Station(GbisWebSearchAllResult.ResultEntity.BusStationEntity.ListEntity listEntity) {
+    public Station(SearchAllResult.ResultEntity.BusStationEntity.ListEntity listEntity) {
         this.id = listEntity.getStationId();
         this.name = listEntity.getStationNm();
         this.city = listEntity.getDistrictGnm();
@@ -238,6 +238,12 @@ public class Station implements Parcelable, Serializable {
         }
     }
 
+    public void putArrivalInfos(Collection<ArrivalInfo> arrivalInfos) {
+        for (ArrivalInfo arrivalInfo : arrivalInfos) {
+            putArrivalInfo(arrivalInfo);
+        }
+    }
+
     public void setArrivalInfos(Collection<ArrivalInfo> arrivalInfoList) {
         this.lastUpdateTime = new Date();
         for (ArrivalInfo arrivalInfo : arrivalInfoList) {
@@ -251,10 +257,21 @@ public class Station implements Parcelable, Serializable {
 
     public void setStationRouteList(Collection<StationRoute> stationRouteList) {
         if(stationRouteList != null) {
-            this.stationRouteList = new ArrayList<>();
-            this.stationRouteList.addAll(stationRouteList);
+            this.stationRouteList = new ArrayList<>(stationRouteList);
         } else {
             this.stationRouteList = null;
+        }
+    }
+
+    public void putStationRouteList(Collection<StationRoute> stationRoutes) {
+        if(stationRouteList == null) {
+            setStationRouteList(stationRoutes);
+        } else {
+            for (StationRoute stationRoute : stationRoutes) {
+                if(!stationRouteList.contains(stationRoute)) {
+                    stationRouteList.add(stationRoute);
+                }
+            }
         }
     }
 

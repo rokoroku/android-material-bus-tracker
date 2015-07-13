@@ -25,17 +25,15 @@ import java.util.TimerTask;
 
 import kr.rokoroku.mbus.adapter.StationAdapter;
 import kr.rokoroku.mbus.adapter.StationDataProvider;
-import kr.rokoroku.mbus.core.ApiCaller;
-import kr.rokoroku.mbus.core.DatabaseHelper;
+import kr.rokoroku.mbus.core.ApiFacade;
+import kr.rokoroku.mbus.core.Database;
 import kr.rokoroku.mbus.core.FavoriteFacade;
 import kr.rokoroku.mbus.model.FavoriteGroup;
-import kr.rokoroku.mbus.model.RouteStation;
 import kr.rokoroku.mbus.model.Station;
 import kr.rokoroku.mbus.model.StationRoute;
 import kr.rokoroku.mbus.util.ThemeUtils;
 import kr.rokoroku.mbus.util.TimeUtils;
 import kr.rokoroku.mbus.util.ViewUtils;
-import kr.rokoroku.mbus.widget.FloatingActionLayout;
 
 
 public class StationActivity extends AbstractBaseActivity
@@ -126,7 +124,7 @@ public class StationActivity extends AbstractBaseActivity
             finish();
 
         } else {
-            Station storedStation = DatabaseHelper.getInstance().getStation(station.getProvider(), station.getId());
+            Station storedStation = Database.getInstance().getStation(station.getProvider(), station.getId());
             if (storedStation != null) station = storedStation;
 
             if (mStationDataProvider == null)
@@ -150,7 +148,7 @@ public class StationActivity extends AbstractBaseActivity
         if(isRefreshing) return;
         else isRefreshing = true;
 
-        ApiCaller.getInstance().fillStationData(station.getId(), stationDataProvider, new ApiCaller.SimpleProgressCallback() {
+        ApiFacade.getInstance().fillStationData(station.getId(), stationDataProvider, new ApiFacade.SimpleProgressCallback() {
 
             boolean retried = false;
 
@@ -160,7 +158,7 @@ public class StationActivity extends AbstractBaseActivity
                 Log.d("StationActivity", "upperOnComplete " + success);
                 if (success && stationDataProvider.getRawStationRouteList() != null) {
                     if (!stationDataProvider.getStation().isEveryLinkedRouteInfoAvailable() && !retried) {
-                        ApiCaller.getInstance().fillStationData(station.getId(), stationDataProvider, this);
+                        ApiFacade.getInstance().fillStationData(station.getId(), stationDataProvider, this);
                         retried = true;
                     } else {
                         if (mRedirectRouteId != null) {
@@ -179,7 +177,7 @@ public class StationActivity extends AbstractBaseActivity
                                 }
                             }, 500);
                         }
-                        ApiCaller.getInstance().fillArrivalInfoData(stationDataProvider.getStation(), new ApiCaller.SimpleProgressCallback() {
+                        ApiFacade.getInstance().fillArrivalInfoData(stationDataProvider.getStation(), new ApiFacade.SimpleProgressCallback() {
                             @Override
                             public void onComplete(boolean success) {
                                 if (success) {

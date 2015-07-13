@@ -7,13 +7,11 @@ package kr.rokoroku.mbus.model;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import org.mapdb.Serializer;
-
 import java.io.Serializable;
 
-import kr.rokoroku.mbus.api.gbisweb.model.GbisWebSearchBusStationResult;
+import kr.rokoroku.mbus.api.gbisweb.model.SearchStationResult;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusRouteByStation;
-import kr.rokoroku.mbus.core.DatabaseHelper;
+import kr.rokoroku.mbus.core.Database;
 
 public class StationRoute implements Parcelable, Serializable, Comparable<StationRoute> {
 
@@ -54,7 +52,7 @@ public class StationRoute implements Parcelable, Serializable, Comparable<Statio
         this.provider = Provider.SEOUL;
     }
 
-    public StationRoute(GbisWebSearchBusStationResult.ResultEntity.BusStationInfoEntity busStationInfoEntity, String stationLocalId) {
+    public StationRoute(SearchStationResult.ResultEntity.BusStationInfoEntity busStationInfoEntity, String stationLocalId) {
         this.routeId = busStationInfoEntity.getRouteId();
         this.routeName = busStationInfoEntity.getRouteName();
         this.stationLocalId = stationLocalId;
@@ -63,7 +61,7 @@ public class StationRoute implements Parcelable, Serializable, Comparable<Statio
 
     public Route getRoute() {
         if (route == null && routeId != null)
-            route = DatabaseHelper.getInstance().getRoute(provider, routeId);
+            route = Database.getInstance().getRoute(provider, routeId);
         return route;
     }
 

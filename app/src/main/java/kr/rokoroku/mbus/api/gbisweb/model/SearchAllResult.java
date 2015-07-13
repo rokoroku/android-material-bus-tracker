@@ -5,7 +5,7 @@ import java.util.List;
 /**
  * Created by rok on 2015. 6. 3..
  */
-public class GbisWebSearchAllResult {
+public class SearchAllResult {
 
     private ResultEntity result;
     private boolean success;

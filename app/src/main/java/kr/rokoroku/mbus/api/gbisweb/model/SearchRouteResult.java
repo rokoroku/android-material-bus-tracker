@@ -5,7 +5,7 @@ import java.util.List;
 /**
  * Created by rok on 2015. 6. 3..
  */
-public class GbisWebSearchBusRouteResult {
+public class SearchRouteResult {
 
     private ResultEntity result;
     private boolean success;
@@ -82,8 +82,8 @@ public class GbisWebSearchBusRouteResult {
                  * routeNm : 720
                  */
                 private List<String> busDirList;
-                private List<Long> busXList;
-                private List<Long> busYList;
+                private List<Double> busXList;
+                private List<Double> busYList;
                 private String fromStationId;
                 private String vehId;
                 private List<String> busNo;
@@ -96,11 +96,11 @@ public class GbisWebSearchBusRouteResult {
                     this.busDirList = busDirList;
                 }
 
-                public void setBusXList(List<Long> busXList) {
+                public void setBusXList(List<Double> busXList) {
                     this.busXList = busXList;
                 }
 
-                public void setBusYList(List<Long> busYList) {
+                public void setBusYList(List<Double> busYList) {
                     this.busYList = busYList;
                 }
 
@@ -136,11 +136,11 @@ public class GbisWebSearchBusRouteResult {
                     return busDirList;
                 }
 
-                public List<Long> getBusXList() {
+                public List<Double> getBusXList() {
                     return busXList;
                 }
 
-                public List<Long> getBusYList() {
+                public List<Double> getBusYList() {
                     return busYList;
                 }
 

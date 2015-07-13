@@ -35,7 +35,7 @@ import java.util.TimerTask;
 
 import kr.rokoroku.mbus.RouteActivity;
 import kr.rokoroku.mbus.R;
-import kr.rokoroku.mbus.core.ApiCaller;
+import kr.rokoroku.mbus.core.ApiFacade;
 import kr.rokoroku.mbus.core.FavoriteFacade;
 import kr.rokoroku.mbus.model.ArrivalInfo;
 import kr.rokoroku.mbus.model.Provider;
@@ -220,7 +220,7 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
         holder.mRouteId = stationRoute.getRouteId();
 
         if (stationRoute.getArrivalInfo() == null || TimeUtils.checkShouldUpdate(stationRoute.getArrivalInfo().getTimestamp())) {
-            ApiCaller.getInstance().fillArrivalInfoData(station, stationRoute, new ApiCaller.SimpleProgressCallback() {
+            ApiFacade.getInstance().fillArrivalInfoData(station, stationRoute, new ApiFacade.SimpleProgressCallback() {
                 @Override
                 public void onComplete(boolean success) {
                     if (success) holder.setItem(stationRoute.getArrivalInfo());

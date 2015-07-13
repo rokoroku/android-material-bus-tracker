@@ -5,7 +5,7 @@ import android.os.Parcelable;
 import android.text.TextUtils;
 
 import kr.rokoroku.mbus.api.gbis.model.GbisBusArrival;
-import kr.rokoroku.mbus.api.gbisweb.model.GbisWebSearchBusStationResult;
+import kr.rokoroku.mbus.api.gbisweb.model.SearchStationResult;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusArrival;
 
 import java.util.Date;
@@ -54,7 +54,7 @@ public class ArrivalInfo implements Parcelable {
         }
     }
 
-    public ArrivalInfo(GbisWebSearchBusStationResult.ResultEntity.BusArrivalInfoEntity entity) {
+    public ArrivalInfo(SearchStationResult.ResultEntity.BusArrivalInfoEntity entity) {
         this.routeId = entity.getRouteId();
         this.stationId = entity.getStationId();
         this.isDriveEnd = "Y".equals(entity.getDrvEnd());

@@ -1,23 +1,16 @@
 package kr.rokoroku.mbus.api.seoulweb.model;
 
+import com.google.gson.annotations.SerializedName;
+
 import java.util.List;
 
 /**
  * Created by rok on 2015. 6. 3..
  */
-public class SeoulWebSearchRouteResult {
+public class SearchRouteResult {
 
     public ErrorEntity error;
     public List<ResultListEntity> resultList;
-
-    public class ErrorEntity {
-        /**
-         * errorMessage : 성공
-         * errorCode : 0000
-         */
-        public String errorMessage;
-        public String errorCode;
-    }
 
     public class ResultListEntity {
         /**
@@ -35,18 +28,18 @@ public class SeoulWebSearchRouteResult {
          * routeType : 1
          * busRouteId : 3600800
          */
-        public String firstLowTm;
-        public String lastLowTm;
-        public String length;
-        public String corpNm;
-        public String lastBusTm;
-        public String busRouteNm;
-        public String stStationNm;
-        public String lastBusYn;
-        public String edStationNm;
-        public String term;
-        public String firstBusTm;
-        public String routeType;
         public String busRouteId;
+        public String busRouteNm;
+        public String routeType;
+        public String edStationNm;
+        public String stStationNm;
+        public String corpNm;
+        public String term;
+        public String length;
+        public String lastBusTm;
+        public String lastLowTm;
+        public String lastBusYn;
+        public String firstLowTm;
+        public String firstBusTm;
     }
 }

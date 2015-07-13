@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import kr.rokoroku.mbus.core.DatabaseHelper;
+import kr.rokoroku.mbus.core.Database;
 
 /**
  * Created by rok on 2015. 7. 7..
@@ -167,11 +167,11 @@ public class FavoriteGroup implements Serializable {
 
         public <T> T getData(Class<T> clazz) {
             if (data == null) {
-                DatabaseHelper databaseHelper = DatabaseHelper.getInstance();
+                Database database = Database.getInstance();
                 if (type.equals(Type.ROUTE)) {
-                    data = databaseHelper.getRoute(dataAccessKey.provider, dataAccessKey.id);
+                    data = database.getRoute(dataAccessKey.provider, dataAccessKey.id);
                 } else {
-                    data = databaseHelper.getStation(dataAccessKey.provider, dataAccessKey.id);
+                    data = database.getStation(dataAccessKey.provider, dataAccessKey.id);
                 }
             }
             if (clazz.isInstance(data)) {

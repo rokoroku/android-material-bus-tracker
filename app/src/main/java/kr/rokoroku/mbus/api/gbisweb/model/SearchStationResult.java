@@ -5,7 +5,7 @@ import java.util.List;
 /**
  * Created by rok on 2015. 6. 3..
  */
-public class GbisWebSearchBusStationResult {
+public class SearchStationResult {
 
     /**
      * success : true

@@ -5,9 +5,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
-import android.widget.Button;
 
-import kr.rokoroku.mbus.core.DatabaseHelper;
 import kr.rokoroku.mbus.util.RevealUtils;
 
 public class SplashActivity extends AppCompatActivity {

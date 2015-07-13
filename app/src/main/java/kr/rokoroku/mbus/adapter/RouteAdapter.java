@@ -30,7 +30,7 @@ import com.h6ah4i.android.widget.advrecyclerview.utils.AbstractExpandableItemVie
 
 import kr.rokoroku.mbus.R;
 import kr.rokoroku.mbus.StationActivity;
-import kr.rokoroku.mbus.core.ApiCaller;
+import kr.rokoroku.mbus.core.ApiFacade;
 import kr.rokoroku.mbus.model.ArrivalInfo;
 import kr.rokoroku.mbus.model.BusLocation;
 import kr.rokoroku.mbus.model.Route;
@@ -243,7 +243,7 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
         if (routeStation != null &&
                 (routeStation.getArrivalInfo() == null || TimeUtils.checkShouldUpdate(routeStation.getLastUpdateTime()))) {
             StationRoute tempStationRoute = new StationRoute(mDataProvider.getRoute(), routeStation.getLocalId());
-            ApiCaller.getInstance().fillArrivalInfoData(routeStation, tempStationRoute, new ApiCaller.SimpleProgressCallback() {
+            ApiFacade.getInstance().fillArrivalInfoData(routeStation, tempStationRoute, new ApiFacade.SimpleProgressCallback() {
                 @Override
                 public void onComplete(boolean success) {
                     if (success) {

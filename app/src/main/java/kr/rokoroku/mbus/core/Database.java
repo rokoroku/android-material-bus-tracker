@@ -31,7 +31,7 @@ import kr.rokoroku.mbus.model.Station;
 /**
  * Created by rok on 2015. 6. 7..
  */
-public class DatabaseHelper {
+public class Database {
 
     public static final String TABLE_ROUTE_PREFIX = "route_";
     public static final String TABLE_STATION_PREFIX = "station_";
@@ -43,15 +43,15 @@ public class DatabaseHelper {
 
     private static final String TAG = "DBHelper";
 
-    private static DatabaseHelper instance;
+    private static Database instance;
     private static WeakReference<Context> contextWeakReference;
 
     public static void init(Context context) {
         contextWeakReference = new WeakReference<>(context);
-        instance = new DatabaseHelper();
+        instance = new Database();
     }
 
-    public static DatabaseHelper getInstance() {
+    public static Database getInstance() {
         return instance;
     }
 
@@ -65,7 +65,7 @@ public class DatabaseHelper {
     private Map<Provider, Set<String>> hiddenStationRouteTable;
     private Set<SearchHistory> searchHistoryTable;
 
-    private DatabaseHelper() {
+    private Database() {
         //open (or create) database
         createOrLoadFile();
         createOrLoadTables();
@@ -85,7 +85,7 @@ public class DatabaseHelper {
                     .cacheHardRefEnable()
                     .make();
         } catch (Exception e) {
-            Log.e(TAG, "Exception in DatabaseHelper", e);
+            Log.e(TAG, "Exception in Database", e);
             if(file.delete()) {
                 this.db = DBMaker
                         .fileDB(file)
@@ -249,7 +249,7 @@ public class DatabaseHelper {
             commitTask = new AsyncTask<Void, Void, Void>() {
                 @Override
                 protected Void doInBackground(Void[] params) {
-                    synchronized (DatabaseHelper.this) {
+                    synchronized (Database.this) {
                         try {
                             db.commit();
                         } catch (Exception e) {

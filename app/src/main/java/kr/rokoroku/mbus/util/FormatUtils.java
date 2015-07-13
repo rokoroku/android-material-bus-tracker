@@ -1,7 +1,6 @@
 package kr.rokoroku.mbus.util;
 
 import android.content.Context;
-import android.text.TextUtils;
 import android.util.Log;
 
 import java.util.Iterator;

@@ -39,9 +39,9 @@ public class SeoulBusLocation {
     @Element
     private String busType;     // 차량유형 (0:일반버스, 1:저상버스, 2:굴절버스)
     @Element
-    private String gpsX;
+    private Double gpsX;
     @Element
-    private String gpsY;
+    private Double gpsY;
     @Element
     private String lstbusyn;// 해당차량 운행여부
     @Element
@@ -111,7 +111,7 @@ public class SeoulBusLocation {
         this.busType = busType;
     }
 
-    public void setGpsX(String gpsX) {
+    public void setGpsX(Double gpsX) {
         this.gpsX = gpsX;
     }
 
@@ -119,7 +119,7 @@ public class SeoulBusLocation {
         this.isrunyn = isrunyn;
     }
 
-    public void setGpsY(String gpsY) {
+    public void setGpsY(Double gpsY) {
         this.gpsY = gpsY;
     }
 
@@ -187,7 +187,7 @@ public class SeoulBusLocation {
         return busType;
     }
 
-    public String getGpsX() {
+    public Double getGpsX() {
         return gpsX;
     }
 
@@ -195,7 +195,7 @@ public class SeoulBusLocation {
         return isrunyn;
     }
 
-    public String getGpsY() {
+    public Double getGpsY() {
         return gpsY;
     }
 }

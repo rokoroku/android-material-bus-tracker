@@ -3,9 +3,12 @@ package kr.rokoroku.mbus.model;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import com.google.android.gms.maps.model.LatLng;
+
 import kr.rokoroku.mbus.api.gbis.model.GbisBusLocation;
-import kr.rokoroku.mbus.api.gbisweb.model.GbisWebSearchBusRouteResult;
+import kr.rokoroku.mbus.api.gbisweb.model.SearchRouteResult;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusLocation;
+import kr.rokoroku.mbus.util.GeoUtils;
 
 public class BusLocation implements Comparable<BusLocation>, Parcelable {
 
@@ -21,6 +24,7 @@ public class BusLocation implements Comparable<BusLocation>, Parcelable {
     private String targetStationId;
     private boolean isLowPlate = false;
     private boolean isLastBus = false;
+    private LatLng latLng;
 
     public BusLocation() {
 
@@ -34,9 +38,10 @@ public class BusLocation implements Comparable<BusLocation>, Parcelable {
         this.isLowPlate = "1".equals(entity.getBusType());  //차량유형 (0:일반버스, 1:저상버스, 2:굴절버스)
         this.stationSeq = entity.getSectOrd();
         this.isLastBus = "Y".equalsIgnoreCase(entity.getLstbusyn());
+        this.latLng = new LatLng(entity.getGpsY(), entity.getGpsX());
     }
 
-    public BusLocation(GbisWebSearchBusRouteResult.ResultEntity.RealTimeEntity.BusEntity busEntity) {
+    public BusLocation(SearchRouteResult.ResultEntity.RealTimeEntity.BusEntity busEntity) {
         this.id = busEntity.getVehId();
         this.routeName = busEntity.getRouteNm();
         this.plateNumber = busEntity.getBusNo().get(0);
@@ -46,6 +51,9 @@ public class BusLocation implements Comparable<BusLocation>, Parcelable {
                 busEntity.getBusDirList().get(0).equals("D") ? Direction.DOWN : Direction.UP;
         this.isLowPlate = !busEntity.getLowBusYn().isEmpty() &&
                 busEntity.getLowBusYn().get(0).equals("Y");
+        Double mercatorX = busEntity.getBusXList().get(0);
+        Double mercatorY = busEntity.getBusYList().get(0);
+        this.latLng = GeoUtils.convertEPSG3857(mercatorY, mercatorX);
     }
 
     public BusLocation(GbisBusLocation gbisBusLocation) {

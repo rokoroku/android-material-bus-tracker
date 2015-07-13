@@ -5,19 +5,10 @@ import java.util.List;
 /**
  * Created by rok on 2015. 6. 3..
  */
-public class SeoulWebRouteStationResult {
+public class RouteStationResult {
 
     public ErrorEntity error;
     public List<ResultListEntity> resultList;
-
-    public class ErrorEntity {
-        /**
-         * errorMessage : 성공
-         * errorCode : 0000
-         */
-        public String errorMessage;
-        public String errorCode;
-    }
 
     public class ResultListEntity {
         /**

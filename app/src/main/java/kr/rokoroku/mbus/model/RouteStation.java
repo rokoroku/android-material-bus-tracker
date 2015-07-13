@@ -8,8 +8,8 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.TextUtils;
 
-import kr.rokoroku.mbus.api.gbisweb.model.GbisWebSearchAllResult;
-import kr.rokoroku.mbus.api.gbisweb.model.GbisWebSearchBusRouteResult;
+import kr.rokoroku.mbus.api.gbisweb.model.SearchAllResult;
+import kr.rokoroku.mbus.api.gbisweb.model.SearchRouteResult;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusRouteStation;
 import kr.rokoroku.mbus.api.seoul.model.SeoulStationInfo;
 
@@ -26,14 +26,14 @@ public class RouteStation extends Station implements Parcelable, Serializable {
 
     }
 
-    public RouteStation(GbisWebSearchBusRouteResult.ResultEntity.GgEntity.StationEntity entity, String routeId, int sequence) {
+    public RouteStation(SearchRouteResult.ResultEntity.GgEntity.StationEntity entity, String routeId, int sequence) {
         super(entity);
         this.routeId = routeId;
         this.sequence = sequence;
         this.district = District.GYEONGGI;
     }
 
-    public RouteStation(GbisWebSearchAllResult.ResultEntity.BusStationEntity.ListEntity entity, String routeId, int sequence) {
+    public RouteStation(SearchAllResult.ResultEntity.BusStationEntity.ListEntity entity, String routeId, int sequence) {
         super(entity);
         this.routeId = routeId;
         this.sequence = sequence;

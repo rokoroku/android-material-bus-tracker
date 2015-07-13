@@ -2,23 +2,17 @@ package kr.rokoroku.mbus.model;
 
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.text.TextUtils;
 
-import kr.rokoroku.mbus.api.gbisweb.model.GbisWebSearchAllResult;
-import kr.rokoroku.mbus.api.gbisweb.model.GbisWebSearchBusRouteResult;
+import kr.rokoroku.mbus.api.gbisweb.model.SearchAllResult;
+import kr.rokoroku.mbus.api.gbisweb.model.SearchRouteResult;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusRouteInfo;
-import kr.rokoroku.mbus.util.FormatUtils;
 import kr.rokoroku.mbus.util.TimeUtils;
 
 import java.io.Serializable;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
 
 public class Route implements Parcelable, Serializable {
 
@@ -78,7 +72,7 @@ public class Route implements Parcelable, Serializable {
         setSeoulBusInfo(seoulBusRouteInfo);
     }
 
-    public Route(GbisWebSearchAllResult.ResultEntity.BusRouteEntity.ListEntity entity) {
+    public Route(SearchAllResult.ResultEntity.BusRouteEntity.ListEntity entity) {
         this.id = entity.getRouteId();
         this.name = entity.getRouteNm();
         this.type = RouteType.valueOfGbis(entity.getRouteTp());
@@ -87,7 +81,7 @@ public class Route implements Parcelable, Serializable {
         this.provider = Provider.GYEONGGI;
     }
 
-    public Route(GbisWebSearchBusRouteResult.ResultEntity result) {
+    public Route(SearchRouteResult.ResultEntity result) {
         setGbisRouteEntity(result);
         setGbisStationEntity(result);
         setGbisRealtimeBusEntity(result);
@@ -113,9 +107,9 @@ public class Route implements Parcelable, Serializable {
         this.provider = Provider.SEOUL;
     }
 
-    public void setGbisRouteEntity(GbisWebSearchBusRouteResult.ResultEntity resultEntity) {
-        GbisWebSearchBusRouteResult.ResultEntity.GgEntity ggEntity = resultEntity.getGg();
-        GbisWebSearchBusRouteResult.ResultEntity.GgEntity.RouteEntity routeEntity = ggEntity.getRoute();
+    public void setGbisRouteEntity(SearchRouteResult.ResultEntity resultEntity) {
+        SearchRouteResult.ResultEntity.GgEntity ggEntity = resultEntity.getGg();
+        SearchRouteResult.ResultEntity.GgEntity.RouteEntity routeEntity = ggEntity.getRoute();
 
         this.id = routeEntity.getRouteId();
         this.name = routeEntity.getRouteNm();
@@ -143,12 +137,12 @@ public class Route implements Parcelable, Serializable {
         this.provider = Provider.GYEONGGI;
     }
 
-    public void setGbisStationEntity(GbisWebSearchBusRouteResult.ResultEntity resultEntity) {
-        GbisWebSearchBusRouteResult.ResultEntity.GgEntity ggEntity = resultEntity.getGg();
+    public void setGbisStationEntity(SearchRouteResult.ResultEntity resultEntity) {
+        SearchRouteResult.ResultEntity.GgEntity ggEntity = resultEntity.getGg();
 
         this.routeStationList = new ArrayList<>();
         int stationSequence = 1;
-        for (GbisWebSearchBusRouteResult.ResultEntity.GgEntity.StationEntity stationEntity : ggEntity.getUp().getList()) {
+        for (SearchRouteResult.ResultEntity.GgEntity.StationEntity stationEntity : ggEntity.getUp().getList()) {
             RouteStation routeStation = new RouteStation(stationEntity, id, stationSequence++);
             routeStation.setDirection(Direction.UP);
             routeStationList.add(routeStation);
@@ -160,7 +154,7 @@ public class Route implements Parcelable, Serializable {
             turnStationSeq = stationSequence;
         }
 
-        for (GbisWebSearchBusRouteResult.ResultEntity.GgEntity.StationEntity stationEntity : ggEntity.getDown().getList()) {
+        for (SearchRouteResult.ResultEntity.GgEntity.StationEntity stationEntity : ggEntity.getDown().getList()) {
             RouteStation routeStation = new RouteStation(stationEntity, id, stationSequence++);
             routeStation.setDirection(Direction.DOWN);
             routeStationList.add(routeStation);
@@ -170,9 +164,9 @@ public class Route implements Parcelable, Serializable {
         }
     }
 
-    public void setGbisRealtimeBusEntity(GbisWebSearchBusRouteResult.ResultEntity resultEntity) {
+    public void setGbisRealtimeBusEntity(SearchRouteResult.ResultEntity resultEntity) {
         int index = 0;
-        for (GbisWebSearchBusRouteResult.ResultEntity.RealTimeEntity.BusEntity busEntity : resultEntity.getRealTime().getList()) {
+        for (SearchRouteResult.ResultEntity.RealTimeEntity.BusEntity busEntity : resultEntity.getRealTime().getList()) {
             BusLocation busLocation = new BusLocation(busEntity);
             busLocation.setRouteId(this.id);
             busLocation.setType(this.type);

@@ -16,7 +16,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
-import com.github.clans.fab.*;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.maps.model.LatLng;
 import com.h6ah4i.android.widget.advrecyclerview.animator.GeneralItemAnimator;
@@ -31,8 +30,8 @@ import java.util.TimerTask;
 
 import kr.rokoroku.mbus.adapter.RouteAdapter;
 import kr.rokoroku.mbus.adapter.RouteDataProvider;
-import kr.rokoroku.mbus.core.ApiCaller;
-import kr.rokoroku.mbus.core.DatabaseHelper;
+import kr.rokoroku.mbus.core.ApiFacade;
+import kr.rokoroku.mbus.core.Database;
 import kr.rokoroku.mbus.core.FavoriteFacade;
 import kr.rokoroku.mbus.core.LocationClient;
 import kr.rokoroku.mbus.model.FavoriteGroup;
@@ -142,7 +141,7 @@ public class RouteActivity extends AbstractBaseActivity
             finish();
 
         } else {
-            Route storedRoute = DatabaseHelper.getInstance().getRoute(route.getProvider(), route.getId());
+            Route storedRoute = Database.getInstance().getRoute(route.getProvider(), route.getId());
             if (storedRoute != null) route = storedRoute;
 
             if (mRouteDataProvider == null) mRouteDataProvider = new RouteDataProvider(route);
@@ -167,7 +166,7 @@ public class RouteActivity extends AbstractBaseActivity
         else isRefreshing = true;
 
         final boolean needUpdateRouteInfo = !mRouteDataProvider.isRouteInfoAvailable() || route.getType() == null || route.getType().equals(RouteType.UNKNOWN);
-        ApiCaller.getInstance().fillRouteData(route.getId(), routeDataProvider, new ApiCaller.SimpleProgressCallback() {
+        ApiFacade.getInstance().fillRouteData(route.getId(), routeDataProvider, new ApiFacade.SimpleProgressCallback() {
             @Override
             public void onComplete(boolean success) {
                 mBusRouteAdapter.notifyDataSetChanged();
@@ -175,7 +174,7 @@ public class RouteActivity extends AbstractBaseActivity
                     if (needUpdateRouteInfo) {
                         setToolbarTitle(routeDataProvider.getRoute());
                     }
-                    ApiCaller.getInstance().fillRouteRealtimeLocation(routeDataProvider, new ApiCaller.SimpleProgressCallback() {
+                    ApiFacade.getInstance().fillRouteRealtimeLocation(routeDataProvider, new ApiFacade.SimpleProgressCallback() {
                         @Override
                         public void onComplete(boolean success) {
                             if (success) {

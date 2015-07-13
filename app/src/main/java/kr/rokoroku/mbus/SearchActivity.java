@@ -1,7 +1,5 @@
 package kr.rokoroku.mbus;
 
-import android.content.Context;
-import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.widget.ContentLoadingProgressBar;
@@ -9,12 +7,8 @@ import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.TypedValue;
-import android.view.MotionEvent;
-import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
@@ -29,8 +23,8 @@ import java.util.Set;
 
 import kr.rokoroku.mbus.adapter.SearchAdapter;
 import kr.rokoroku.mbus.adapter.SearchDataProvider;
-import kr.rokoroku.mbus.core.ApiCaller;
-import kr.rokoroku.mbus.core.DatabaseHelper;
+import kr.rokoroku.mbus.core.ApiFacade;
+import kr.rokoroku.mbus.core.Database;
 import kr.rokoroku.mbus.model.SearchHistory;
 import kr.rokoroku.mbus.util.ThemeUtils;
 
@@ -102,7 +96,7 @@ public class SearchActivity extends AbstractBaseActivity
 
     public void reloadSearchQuery() {
         if(mSearchBox != null) {
-            Set<SearchHistory> searchHistoryTable = DatabaseHelper.getInstance().getSearchHistoryTable();
+            Set<SearchHistory> searchHistoryTable = Database.getInstance().getSearchHistoryTable();
             ArrayList<SearchResult> arrayList = new ArrayList<>();
             for (SearchHistory searchHistory : searchHistoryTable) {
                 arrayList.add(new SearchResult(searchHistory.getTitle(), null));
@@ -140,7 +134,7 @@ public class SearchActivity extends AbstractBaseActivity
             }
         }
 
-        Set<SearchHistory> searchHistoryTable = DatabaseHelper.getInstance().getSearchHistoryTable();
+        Set<SearchHistory> searchHistoryTable = Database.getInstance().getSearchHistoryTable();
         SearchHistory searchHistory = new SearchHistory(keyword);
 
         //noinspection StatementWithEmptyBody
@@ -152,8 +146,8 @@ public class SearchActivity extends AbstractBaseActivity
 
         mSearchDataProvider.clear();
         mRecyclerView.getAdapter().notifyDataSetChanged();
-        ApiCaller apiCaller = ApiCaller.getInstance();
-        apiCaller.searchByKeyword(keyword, mSearchDataProvider, new ApiCaller.SimpleProgressCallback() {
+        ApiFacade apiFacade = ApiFacade.getInstance();
+        apiFacade.searchByKeyword(keyword, mSearchDataProvider, new ApiFacade.SimpleProgressCallback() {
             @Override
             public void onComplete(boolean success) {
                 mSearchDataProvider.sortByKeyword(keyword);

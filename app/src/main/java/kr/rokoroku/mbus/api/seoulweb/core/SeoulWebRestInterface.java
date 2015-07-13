@@ -1,6 +1,8 @@
 package kr.rokoroku.mbus.api.seoulweb.core;
 
-import kr.rokoroku.mbus.api.seoulweb.model.SeoulWebSearchRouteResult;
+import kr.rokoroku.mbus.api.seoulweb.model.RouteStationResult;
+import kr.rokoroku.mbus.api.seoulweb.model.SearchRouteResult;
+import kr.rokoroku.mbus.api.seoulweb.model.SearchStationResult;
 import kr.rokoroku.mbus.api.seoulweb.model.TopisMapLineResult;
 import retrofit.Callback;
 import retrofit.http.Field;
@@ -15,19 +17,30 @@ import retrofit.http.Query;
 public interface SeoulWebRestInterface {
 
     /**
-     * 경기버스 통합검색
+     * 서울버스 (모바일) 노선검색
      *
      * @param keyword
-     * @param pageOfRoute
-     * @param pageOfBus
      * @param callback
      */
     @FormUrlEncoded
     @POST("//m.bus.go.kr/mBus/bus/getBusRouteList.bms")
     void searchRoute(@Field("strSrch") String keyword,
-                     @Field("pageOfRoute") int pageOfRoute,
-                     @Field("pageOfBus") int pageOfBus,
-                     Callback<SeoulWebSearchRouteResult> callback);
+                     Callback<SearchRouteResult> callback);
+
+    @FormUrlEncoded
+    @POST("//m.bus.go.kr/mBus/bus/getSearchByName.bms")
+    void searchStation(@Field("stSrch") String keyword,
+                     Callback<SearchStationResult> callback);
+
+    @FormUrlEncoded
+    @POST("//m.bus.go.kr/mBus/bus/getRouteAndPos.bms")
+    void getRouteStations(@Field("busRouteId") String routeId,
+                          Callback<RouteStationResult> callback);
+
+    @FormUrlEncoded
+    @POST("//m.bus.go.kr/mBus/bus/getStationByUid.bms")
+    void getStationRoutes(@Field("arsId") String stationLocalId,
+                          Callback<RouteStationResult> callback);
 
     @GET("//topis.seoul.go.kr/renewal/ajaxData/getBusData.jsp?mode=routLine")
     void getRouteMapLine(@Query("rout_id") String routeId,

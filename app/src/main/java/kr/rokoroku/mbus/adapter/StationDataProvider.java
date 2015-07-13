@@ -39,16 +39,7 @@ public class StationDataProvider {
     }
 
     public void putStationRouteList(Collection<StationRoute> routeList) {
-        List<StationRoute> stationRouteList = this.station.getStationRouteList();
-        if(stationRouteList == null) {
-            this.station.setStationRouteList(routeList);
-        } else {
-            for (StationRoute stationRoute : routeList) {
-                if(!stationRouteList.contains(stationRoute)) {
-                    stationRouteList.add(stationRoute);
-                }
-            }
-        }
+        this.station.putStationRouteList(routeList);
         organize();
     }
 

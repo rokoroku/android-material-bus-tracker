@@ -9,14 +9,11 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
-import android.support.v4.app.FragmentActivity;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.MenuItem;
-import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import com.github.clans.fab.FloatingActionButton;
@@ -37,8 +34,8 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
-import kr.rokoroku.mbus.core.ApiCaller;
-import kr.rokoroku.mbus.core.DatabaseHelper;
+import kr.rokoroku.mbus.core.ApiFacade;
+import kr.rokoroku.mbus.core.Database;
 import kr.rokoroku.mbus.core.LocationClient;
 import kr.rokoroku.mbus.model.Direction;
 import kr.rokoroku.mbus.model.MapLine;
@@ -160,7 +157,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (mRouteExtra != null) {
             List<MapLine> mapLineList = mRouteExtra.getMapLineList();
             if (mapLineList == null) {
-                ApiCaller.getInstance().getRouteMapLine(mRouteExtra, new Callback<List<MapLine>>() {
+                ApiFacade.getInstance().getRouteMapLine(mRouteExtra, new Callback<List<MapLine>>() {
                     @Override
                     public void success(List<MapLine> mapLines, Response response) {
                         drawRoute(mRouteExtra);
@@ -262,7 +259,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         mStationExtra = intent.getParcelableExtra(EXTRA_KEY_STATION);
 
         if (mRouteExtra != null) {
-            Route storedRoute = DatabaseHelper.getInstance().getRoute(mRouteExtra.getProvider(), mRouteExtra.getId());
+            Route storedRoute = Database.getInstance().getRoute(mRouteExtra.getProvider(), mRouteExtra.getId());
             if (storedRoute != null) mRouteExtra = storedRoute;
             setTitle(mRouteExtra.getName());
 
@@ -272,7 +269,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
 
         } else if (mStationExtra != null) {
-            Station storedStation = DatabaseHelper.getInstance().getStation(mStationExtra.getProvider(), mStationExtra.getId());
+            Station storedStation = Database.getInstance().getStation(mStationExtra.getProvider(), mStationExtra.getId());
             if (storedStation != null) mStationExtra = storedStation;
             setTitle(mStationExtra.getName());
         }

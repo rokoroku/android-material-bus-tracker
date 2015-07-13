@@ -99,7 +99,7 @@ public class FavoriteFacade {
 
     public Favorite getCurrentFavorite() {
         if(currentFavorite == null) {
-            Favorite storedFavorite = DatabaseHelper.getInstance().getBookmark(DatabaseHelper.DEFAULT_FAVORITE_ID);
+            Favorite storedFavorite = Database.getInstance().getBookmark(Database.DEFAULT_FAVORITE_ID);
             currentFavorite = new Favorite(storedFavorite);
         }
         return currentFavorite;

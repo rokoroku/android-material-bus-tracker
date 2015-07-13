@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-import kr.rokoroku.mbus.api.gbisweb.model.GbisWebSearchBusRouteResult;
+import kr.rokoroku.mbus.api.gbisweb.model.SearchRouteResult;
 import kr.rokoroku.mbus.model.BusLocation;
 import kr.rokoroku.mbus.model.Route;
 import kr.rokoroku.mbus.model.RouteStation;
@@ -37,16 +37,16 @@ public class RouteDataProvider {
         rearrange();
     }
 
-    public void setGbisRouteEntity(GbisWebSearchBusRouteResult.ResultEntity resultEntity) {
+    public void setGbisRouteEntity(SearchRouteResult.ResultEntity resultEntity) {
         this.route.setGbisRouteEntity(resultEntity);
     }
 
-    public void setGbisStationEntity(GbisWebSearchBusRouteResult.ResultEntity resultEntity) {
+    public void setGbisStationEntity(SearchRouteResult.ResultEntity resultEntity) {
         this.route.setGbisStationEntity(resultEntity);
         rearrange();
     }
 
-    public void setGbisRealtimeBusEntity(GbisWebSearchBusRouteResult.ResultEntity resultEntity) {
+    public void setGbisRealtimeBusEntity(SearchRouteResult.ResultEntity resultEntity) {
         this.route.setGbisRealtimeBusEntity(resultEntity);
         rearrange();
     }
