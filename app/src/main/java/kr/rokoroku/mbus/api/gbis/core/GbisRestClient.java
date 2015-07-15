@@ -7,16 +7,16 @@ import kr.rokoroku.mbus.api.gbis.model.GbisBusArrival;
 import kr.rokoroku.mbus.api.gbis.model.GbisBusArrivalList;
 import kr.rokoroku.mbus.api.gbis.model.GbisBusLocation;
 import kr.rokoroku.mbus.api.gbis.model.GbisBusLocationList;
-import kr.rokoroku.mbus.api.ApiMethodNotSupportedException;
 import kr.rokoroku.mbus.api.ApiWrapperInterface;
+import kr.rokoroku.mbus.core.ApiFacade;
 import kr.rokoroku.mbus.core.Database;
-import kr.rokoroku.mbus.model.ArrivalInfo;
-import kr.rokoroku.mbus.model.BusLocation;
-import kr.rokoroku.mbus.model.MapLine;
-import kr.rokoroku.mbus.model.Provider;
-import kr.rokoroku.mbus.model.Route;
-import kr.rokoroku.mbus.model.RouteType;
-import kr.rokoroku.mbus.model.Station;
+import kr.rokoroku.mbus.data.model.ArrivalInfo;
+import kr.rokoroku.mbus.data.model.BusLocation;
+import kr.rokoroku.mbus.data.model.MapLine;
+import kr.rokoroku.mbus.data.model.Provider;
+import kr.rokoroku.mbus.data.model.Route;
+import kr.rokoroku.mbus.data.model.RouteType;
+import kr.rokoroku.mbus.data.model.Station;
 import retrofit.RestAdapter;
 import retrofit.RetrofitError;
 import retrofit.client.Client;
@@ -65,22 +65,22 @@ public class GbisRestClient implements ApiWrapperInterface {
 
     @Override
     public void searchRouteByKeyword(String keyword, Callback<List<Route>> callback) {
-        callback.onFailure(new ApiMethodNotSupportedException());
+        ApiFacade.getInstance().getGbisWebRestClient().searchRouteByKeyword(keyword, callback);
     }
 
     @Override
     public void searchStationByKeyword(String keyword, Callback<List<Station>> callback) {
-        callback.onFailure(new ApiMethodNotSupportedException());
+        ApiFacade.getInstance().getGbisWebRestClient().searchStationByKeyword(keyword, callback);
     }
 
     @Override
     public void searchStationByLocation(double latitude, double longitude, Callback<List<Station>> callback) {
-        callback.onFailure(new ApiMethodNotSupportedException());
+        ApiFacade.getInstance().getGbisWebRestClient().searchStationByLocation(latitude, longitude, callback);
     }
 
     @Override
     public void getRouteBaseInfo(String routeId, Callback<Route> callback) {
-        callback.onFailure(new ApiMethodNotSupportedException());
+        ApiFacade.getInstance().getGbisWebRestClient().getRouteBaseInfo(routeId, callback);
     }
 
     @Override
@@ -114,12 +114,12 @@ public class GbisRestClient implements ApiWrapperInterface {
 
     @Override
     public void getRouteMaplineInfo(String routeId, Callback<List<MapLine>> callback) {
-        callback.onFailure(new ApiMethodNotSupportedException());
+        ApiFacade.getInstance().getGbisWebRestClient().getRouteMaplineInfo(routeId, callback);
     }
 
     @Override
     public void getStationBaseInfo(String stationId, Callback<Station> callback) {
-        callback.onFailure(new ApiMethodNotSupportedException());
+        ApiFacade.getInstance().getGbisWebRestClient().getStationBaseInfo(stationId, callback);
     }
 
     @Override

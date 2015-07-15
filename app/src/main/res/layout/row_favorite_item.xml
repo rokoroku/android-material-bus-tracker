@@ -67,7 +67,7 @@
                         android:textStyle="bold" />
 
 
-                    <kr.rokoroku.mbus.widget.CardedTextView
+                    <kr.rokoroku.mbus.ui.widget.CardedTextView
                         android:id="@+id/item_label"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -135,7 +135,7 @@
                                     android:textStyle="bold" />
 
 
-                                <kr.rokoroku.mbus.widget.CardedTextView
+                                <kr.rokoroku.mbus.ui.widget.CardedTextView
                                     android:id="@+id/link_item_label"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"

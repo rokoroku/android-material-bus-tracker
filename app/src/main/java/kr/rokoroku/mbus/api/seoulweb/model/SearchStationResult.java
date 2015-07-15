@@ -9,8 +9,10 @@ import java.util.List;
  */
 public class SearchStationResult {
 
-    public ErrorEntity error;
-    public List<BusListEntity> busList;
+    @SerializedName("error")
+    public ResponseHeader header;
+    @SerializedName("busList")
+    public List<BusListEntity> result;
 
     public class BusListEntity {
         /**

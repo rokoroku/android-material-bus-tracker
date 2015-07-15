@@ -9,10 +9,13 @@ import java.util.List;
  */
 public class SearchRouteResult {
 
-    public ErrorEntity error;
-    public List<ResultListEntity> resultList;
+    @SerializedName("error")
+    public ResponseHeader header;
 
-    public class ResultListEntity {
+    @SerializedName("resultList")
+    public List<RouteEntity> resultList;
+
+    public class RouteEntity {
         /**
          * firstLowTm :
          * lastLowTm :

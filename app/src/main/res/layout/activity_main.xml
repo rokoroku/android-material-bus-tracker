@@ -25,7 +25,7 @@
 
     </android.support.v4.widget.SwipeRefreshLayout>
 
-    <kr.rokoroku.mbus.widget.FloatingActionLayout
+    <kr.rokoroku.mbus.ui.widget.FloatingActionLayout
         android:id="@+id/fab_layout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -68,6 +68,6 @@
         </com.github.clans.fab.FloatingActionMenu>
 
 
-    </kr.rokoroku.mbus.widget.FloatingActionLayout>
+    </kr.rokoroku.mbus.ui.widget.FloatingActionLayout>
 
 </android.support.design.widget.CoordinatorLayout>

@@ -3,6 +3,7 @@ package kr.rokoroku.mbus.api.seoulweb.core;
 import kr.rokoroku.mbus.api.seoulweb.model.RouteStationResult;
 import kr.rokoroku.mbus.api.seoulweb.model.SearchRouteResult;
 import kr.rokoroku.mbus.api.seoulweb.model.SearchStationResult;
+import kr.rokoroku.mbus.api.seoulweb.model.StationRouteResult;
 import kr.rokoroku.mbus.api.seoulweb.model.TopisMapLineResult;
 import retrofit.Callback;
 import retrofit.http.Field;
@@ -30,7 +31,7 @@ public interface SeoulWebRestInterface {
     @FormUrlEncoded
     @POST("//m.bus.go.kr/mBus/bus/getSearchByName.bms")
     void searchStation(@Field("stSrch") String keyword,
-                     Callback<SearchStationResult> callback);
+                       Callback<SearchStationResult> callback);
 
     @FormUrlEncoded
     @POST("//m.bus.go.kr/mBus/bus/getRouteAndPos.bms")
@@ -39,8 +40,8 @@ public interface SeoulWebRestInterface {
 
     @FormUrlEncoded
     @POST("//m.bus.go.kr/mBus/bus/getStationByUid.bms")
-    void getStationRoutes(@Field("arsId") String stationLocalId,
-                          Callback<RouteStationResult> callback);
+    void getStationInfos(@Field("arsId") String stationLocalId,
+                         Callback<StationRouteResult> callback);
 
     @GET("//topis.seoul.go.kr/renewal/ajaxData/getBusData.jsp?mode=routLine")
     void getRouteMapLine(@Query("rout_id") String routeId,

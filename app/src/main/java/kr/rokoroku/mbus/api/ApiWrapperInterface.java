@@ -2,12 +2,12 @@ package kr.rokoroku.mbus.api;
 
 import java.util.List;
 
-import kr.rokoroku.mbus.model.ArrivalInfo;
-import kr.rokoroku.mbus.model.BusLocation;
-import kr.rokoroku.mbus.model.MapLine;
-import kr.rokoroku.mbus.model.Provider;
-import kr.rokoroku.mbus.model.Route;
-import kr.rokoroku.mbus.model.Station;
+import kr.rokoroku.mbus.data.model.ArrivalInfo;
+import kr.rokoroku.mbus.data.model.BusLocation;
+import kr.rokoroku.mbus.data.model.MapLine;
+import kr.rokoroku.mbus.data.model.Provider;
+import kr.rokoroku.mbus.data.model.Route;
+import kr.rokoroku.mbus.data.model.Station;
 
 /**
  * Created by rok on 2015. 7. 13..

@@ -8,34 +8,41 @@ import com.google.gson.Gson;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import kr.rokoroku.mbus.BaseApplication;
-import kr.rokoroku.mbus.api.gbisweb.model.SearchAllResult;
-import kr.rokoroku.mbus.api.gbisweb.model.SearchMapLineResult;
-import kr.rokoroku.mbus.api.gbisweb.model.SearchRouteResult;
-import kr.rokoroku.mbus.api.gbisweb.model.SearchStationByPosResult;
-import kr.rokoroku.mbus.api.gbisweb.model.SearchStationResult;
+import kr.rokoroku.mbus.api.gbis.core.GbisException;
+import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchAllResult;
+import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchMapLineResult;
+import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchRouteResult;
+import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchStationByPosResult;
+import kr.rokoroku.mbus.api.gbisweb.model.GbisStationRouteResult;
 import kr.rokoroku.mbus.api.ApiMethodNotSupportedException;
 import kr.rokoroku.mbus.api.ApiWrapperInterface;
+import kr.rokoroku.mbus.core.ApiFacade;
 import kr.rokoroku.mbus.core.Database;
-import kr.rokoroku.mbus.model.ArrivalInfo;
-import kr.rokoroku.mbus.model.BusLocation;
-import kr.rokoroku.mbus.model.Direction;
-import kr.rokoroku.mbus.model.District;
-import kr.rokoroku.mbus.model.MapLine;
-import kr.rokoroku.mbus.model.Provider;
-import kr.rokoroku.mbus.model.Route;
-import kr.rokoroku.mbus.model.RouteStation;
-import kr.rokoroku.mbus.model.RouteType;
-import kr.rokoroku.mbus.model.Station;
-import kr.rokoroku.mbus.model.StationRoute;
+import kr.rokoroku.mbus.data.model.ArrivalInfo;
+import kr.rokoroku.mbus.data.model.BusLocation;
+import kr.rokoroku.mbus.data.model.Direction;
+import kr.rokoroku.mbus.data.model.District;
+import kr.rokoroku.mbus.data.model.MapLine;
+import kr.rokoroku.mbus.data.model.Provider;
+import kr.rokoroku.mbus.data.model.Route;
+import kr.rokoroku.mbus.data.model.RouteStation;
+import kr.rokoroku.mbus.data.model.RouteType;
+import kr.rokoroku.mbus.data.model.Station;
+import kr.rokoroku.mbus.data.model.StationRoute;
 import kr.rokoroku.mbus.util.GeoUtils;
+import kr.rokoroku.mbus.util.ProgressCallback;
+import kr.rokoroku.mbus.util.ViewUtils;
 import retrofit.RestAdapter;
 import retrofit.RetrofitError;
+import retrofit.android.AndroidLog;
 import retrofit.client.Client;
 import retrofit.client.Response;
 import retrofit.converter.GsonConverter;
@@ -50,8 +57,8 @@ public class GbisWebRestClient implements ApiWrapperInterface {
     private Client client;
     private Provider provider;
     private GbisWebRestInterface adapter;
-    private Map<String, WeakReference<SearchAllResult>> searchResultCache;
-    private Map<String, WeakReference<SearchRouteResult>> searchRouteResultCache;
+    private Map<String, WeakReference<GbisSearchAllResult>> searchResultCache;
+    private Map<String, WeakReference<GbisSearchRouteResult>> searchRouteResultCache;
     private Timer cacheTimer;
 
     public GbisWebRestClient(Client client) {
@@ -64,7 +71,8 @@ public class GbisWebRestClient implements ApiWrapperInterface {
             adapter = new RestAdapter.Builder()
                     .setEndpoint(BASE_URL)
                     .setClient(client)
-                    .setLogLevel(RestAdapter.LogLevel.BASIC)
+                    .setLog(new AndroidLog("GbisWebRestClient"))
+                    .setLogLevel(RestAdapter.LogLevel.HEADERS_AND_ARGS)
                     .setConverter(new GsonConverter(new Gson(), "UTF-8"))
                     .build()
                     .create(GbisWebRestInterface.class);
@@ -80,18 +88,18 @@ public class GbisWebRestClient implements ApiWrapperInterface {
     @Override
     public void searchRouteByKeyword(String keyword, Callback<List<Route>> callback) {
         final int[] page = {0, 0};
-        final SearchAllResult cachedSearchResult = getCachedSearchResult(keyword);
-        final retrofit.Callback<SearchAllResult> searchRouteCallback = new retrofit.Callback<SearchAllResult>() {
+        final GbisSearchAllResult cachedSearchResult = getCachedSearchResult(keyword);
+        final retrofit.Callback<GbisSearchAllResult> searchRouteCallback = new retrofit.Callback<GbisSearchAllResult>() {
             @Override
-            public void success(SearchAllResult gbisWebSearchAllResult, Response response) {
+            public void success(GbisSearchAllResult gbisWebSearchAllResult, Response response) {
                 List<Route> routeList = null;
                 if (gbisWebSearchAllResult != null && gbisWebSearchAllResult.isSuccess()) {
 
                     // put route entities
                     routeList = new ArrayList<>();
-                    SearchAllResult.ResultEntity.BusRouteEntity busRouteEntity = gbisWebSearchAllResult.getResult().getBusRoute();
+                    GbisSearchAllResult.ResultEntity.BusRouteEntity busRouteEntity = gbisWebSearchAllResult.getResult().getBusRoute();
                     if (busRouteEntity.getCount() > 0) {
-                        for (SearchAllResult.ResultEntity.BusRouteEntity.ListEntity listEntity : busRouteEntity.getList()) {
+                        for (GbisSearchAllResult.ResultEntity.BusRouteEntity.ListEntity listEntity : busRouteEntity.getList()) {
                             Route route = new Route(listEntity);
 
                             // exclude SEOUL route from GBIS result
@@ -123,25 +131,25 @@ public class GbisWebRestClient implements ApiWrapperInterface {
         if (cachedSearchResult != null) {
             searchRouteCallback.success(cachedSearchResult, null);
         } else {
-            getAdapter().searchAll(keyword, 0, 0, searchRouteCallback);
+            getAdapter().searchAll(keyword, 1, 1, searchRouteCallback);
         }
     }
 
     @Override
     public void searchStationByKeyword(String keyword, Callback<List<Station>> callback) {
-        final int[] page = {0, 0};
-        final SearchAllResult cachedSearchResult = getCachedSearchResult(keyword);
-        final retrofit.Callback<SearchAllResult> searchStationCallback = new retrofit.Callback<SearchAllResult>() {
+        final int[] page = {1, 1};
+        final GbisSearchAllResult cachedSearchResult = getCachedSearchResult(keyword);
+        final retrofit.Callback<GbisSearchAllResult> searchStationCallback = new retrofit.Callback<GbisSearchAllResult>() {
             @Override
-            public void success(SearchAllResult gbisWebSearchAllResult, Response response) {
+            public void success(GbisSearchAllResult gbisWebSearchAllResult, Response response) {
                 List<Station> stationList = null;
                 if (gbisWebSearchAllResult != null && gbisWebSearchAllResult.isSuccess()) {
 
                     // put station entities
                     stationList = new ArrayList<>();
-                    SearchAllResult.ResultEntity.BusStationEntity busStationEntity = gbisWebSearchAllResult.getResult().getBusStation();
+                    GbisSearchAllResult.ResultEntity.BusStationEntity busStationEntity = gbisWebSearchAllResult.getResult().getBusStation();
                     if (busStationEntity.getCount() > 0) {
-                        for (SearchAllResult.ResultEntity.BusStationEntity.ListEntity listEntity : busStationEntity.getList()) {
+                        for (GbisSearchAllResult.ResultEntity.BusStationEntity.ListEntity listEntity : busStationEntity.getList()) {
                             Station station = new Station(listEntity);
 
                             // exclude non-stop station
@@ -153,7 +161,7 @@ public class GbisWebRestClient implements ApiWrapperInterface {
 
                     // search one more time if there exist more entries
                     int stationCount = Integer.parseInt(gbisWebSearchAllResult.getResult().getBusStation().getTotalCount());
-                    if (cachedSearchResult == null && stationCount > 10 && page[0] < 1) {
+                    if (cachedSearchResult == null && stationCount > 10 && page[0] <= 1) {
                         getAdapter().searchAll(keyword, ++page[0], ++page[1], this);
                         return;
                     } else {
@@ -172,23 +180,23 @@ public class GbisWebRestClient implements ApiWrapperInterface {
         if (cachedSearchResult != null) {
             searchStationCallback.success(cachedSearchResult, null);
         } else {
-            getAdapter().searchAll(keyword, 0, 0, searchStationCallback);
+            getAdapter().searchAll(keyword, page[0], page[1], searchStationCallback);
         }
     }
 
     @Override
     public void searchStationByLocation(double latitude, double longitude, Callback<List<Station>> callback) {
         final Double[] mercator = GeoUtils.toMercator(longitude, latitude);
-        getAdapter().searchStationByPos(mercator[1], mercator[0], 1000, new retrofit.Callback<SearchStationByPosResult>() {
+        getAdapter().searchStationByPos(mercator[1], mercator[0], 1000, new retrofit.Callback<GbisSearchStationByPosResult>() {
             @Override
-            public void success(SearchStationByPosResult searchStationByPosResult, Response response) {
+            public void success(GbisSearchStationByPosResult gbisSearchStationByPosResult, Response response) {
                 List<Station> stationList = null;
-                if (searchStationByPosResult != null && searchStationByPosResult.isSuccess()) {
-                    List<SearchStationByPosResult.ResultEntity.ResultMapEntity.ListEntity> entityList
-                            = searchStationByPosResult.getResult().getResultMap().getList();
+                if (gbisSearchStationByPosResult != null && gbisSearchStationByPosResult.isSuccess()) {
+                    List<GbisSearchStationByPosResult.ResultEntity.ResultMapEntity.ListEntity> entityList
+                            = gbisSearchStationByPosResult.getResult().getResultMap().getList();
                     stationList = new ArrayList<>();
                     if (entityList != null) {
-                        for (SearchStationByPosResult.ResultEntity.ResultMapEntity.ListEntity listEntity : entityList) {
+                        for (GbisSearchStationByPosResult.ResultEntity.ResultMapEntity.ListEntity listEntity : entityList) {
                             Station station = new Station(listEntity.getStationId(), Provider.GYEONGGI);
                             String localId = listEntity.getStaNo().trim();
                             if (!TextUtils.isEmpty(localId)) {
@@ -215,18 +223,14 @@ public class GbisWebRestClient implements ApiWrapperInterface {
 
     @Override
     public void getRouteBaseInfo(String routeId, Callback<Route> callback) {
-        final SearchRouteResult cachedSearchRouteResult = getCachedSearchRouteResult(routeId);
-        final retrofit.Callback<SearchRouteResult> resultCallback = new retrofit.Callback<SearchRouteResult>() {
+        final GbisSearchRouteResult cachedResult = getCachedSearchRouteResult(routeId);
+        final retrofit.Callback<GbisSearchRouteResult> resultCallback = new retrofit.Callback<GbisSearchRouteResult>() {
             @Override
-            public void success(SearchRouteResult searchResult, Response response) {
-                Route route = Database.getInstance().getRoute(provider, routeId);
-                if (route == null) route = new Route(routeId, null, provider);
+            public void success(GbisSearchRouteResult searchResult, Response response) {
+                Route route = null;
                 if (searchResult != null && searchResult.isSuccess()) {
                     putSearchRouteResultCache(routeId, searchResult);
-                    SearchRouteResult.ResultEntity resultEntity = searchResult.getResult();
-                    route.setGbisRouteEntity(resultEntity);
-                    route.setGbisStationEntity(resultEntity);
-                    route.setGbisRealtimeBusEntity(resultEntity);
+                    route = new Route(searchResult.getResult());
                 }
                 callback.onSuccess(route);
             }
@@ -236,8 +240,9 @@ public class GbisWebRestClient implements ApiWrapperInterface {
                 callback.onFailure(error);
             }
         };
-        if (cachedSearchRouteResult != null) {
-            resultCallback.success(cachedSearchRouteResult, null);
+        if (cachedResult != null) {
+            resultCallback.success(cachedResult, null);
+
         } else {
             getAdapter().getRouteInfo(routeId, resultCallback);
         }
@@ -245,38 +250,45 @@ public class GbisWebRestClient implements ApiWrapperInterface {
 
     @Override
     public void getRouteRealtimeInfo(String routeId, Callback<List<BusLocation>> callback) {
-        getAdapter().getRouteInfo(routeId, new retrofit.Callback<SearchRouteResult>() {
+        final GbisSearchRouteResult cachedResult = getCachedSearchRouteResult(routeId);
+        final retrofit.Callback<GbisSearchRouteResult> resultCallback = new retrofit.Callback<GbisSearchRouteResult>() {
             @Override
-            public void success(SearchRouteResult searchResult, Response response) {
-                Route route = Database.getInstance().getRoute(provider, routeId);
-                if (route == null) route = new Route(routeId, null, provider);
+            public void success(GbisSearchRouteResult searchResult, Response response) {
                 if (searchResult != null && searchResult.isSuccess()) {
-                    SearchRouteResult.ResultEntity resultEntity = searchResult.getResult();
-                    route.setGbisRouteEntity(resultEntity);
-                    route.setGbisStationEntity(resultEntity);
-                    route.setGbisRealtimeBusEntity(resultEntity);
+                    putSearchRouteResultCache(routeId, searchResult);
+                    GbisSearchRouteResult.ResultEntity resultEntity = searchResult.getResult();
+                    Route route = new Route(resultEntity);
+                    callback.onSuccess(route.getBusLocationList());
+
+                } else {
+                    callback.onSuccess(null);
                 }
-                callback.onSuccess(route.getBusLocationList());
             }
 
             @Override
             public void failure(RetrofitError error) {
                 callback.onFailure(error);
             }
-        });
+        };
+        if (cachedResult != null) {
+            resultCallback.success(cachedResult, null);
+
+        } else {
+            getAdapter().getRouteInfo(routeId, resultCallback);
+        }
     }
 
     @Override
     public void getRouteMaplineInfo(String routeId, Callback<List<MapLine>> callback) {
-        getAdapter().getRouteMapLine(routeId, new retrofit.Callback<SearchMapLineResult>() {
+        getAdapter().getRouteMapLine(routeId, new retrofit.Callback<GbisSearchMapLineResult>() {
             @Override
-            public void success(SearchMapLineResult searchMapLineResult, Response response) {
+            public void success(GbisSearchMapLineResult gbisSearchMapLineResult, Response response) {
                 List<MapLine> mapLineList = null;
-                if (searchMapLineResult != null && searchMapLineResult.isSuccess()) {
-                    SearchMapLineResult.ResultEntity.GgEntity resultEntity = searchMapLineResult.getResult().getGg();
+                if (gbisSearchMapLineResult != null && gbisSearchMapLineResult.isSuccess()) {
+                    GbisSearchMapLineResult.ResultEntity.GgEntity resultEntity = gbisSearchMapLineResult.getResult().getGg();
 
                     mapLineList = new ArrayList<>();
-                    for (SearchMapLineResult.ResultEntity.GgEntity.UpLineEntity.ListEntity listEntity : resultEntity.getUpLine().getList()) {
+                    for (GbisSearchMapLineResult.ResultEntity.GgEntity.UpLineEntity.ListEntity listEntity : resultEntity.getUpLine().getList()) {
                         if (TextUtils.isEmpty(listEntity.getLinkId())) {
                             MapLine mapLine = new MapLine();
                             mapLine.setDirection(Direction.UP);
@@ -290,7 +302,7 @@ public class GbisWebRestClient implements ApiWrapperInterface {
                         }
                     }
 
-                    for (SearchMapLineResult.ResultEntity.GgEntity.DownLineEntity.ListEntity listEntity : resultEntity.getDownLine().getList()) {
+                    for (GbisSearchMapLineResult.ResultEntity.GgEntity.DownLineEntity.ListEntity listEntity : resultEntity.getDownLine().getList()) {
                         if (TextUtils.isEmpty(listEntity.getLinkId())) {
                             MapLine mapLine = new MapLine();
                             mapLine.setDirection(Direction.DOWN);
@@ -320,92 +332,139 @@ public class GbisWebRestClient implements ApiWrapperInterface {
 
     @Override
     public void getStationBaseInfo(String stationId, Callback<Station> callback) {
-        getAdapter().getStationInfo(stationId, new retrofit.Callback<SearchStationResult>() {
+        getAdapter().getStationInfo(stationId, new retrofit.Callback<GbisStationRouteResult>() {
             @Override
-            public void success(SearchStationResult searchStationResult, Response response) {
-                Station station = null;
-                if (searchStationResult != null && searchStationResult.isSuccess()) {
-                    station = Database.getInstance().getStation(provider, stationId);
-                    if (station == null) station = new Station(stationId, provider);
+            public void success(GbisStationRouteResult gbisStationRouteResult, Response response) {
+                if (gbisStationRouteResult != null && gbisStationRouteResult.isSuccess()) {
+                    Station station = Database.getInstance().getStation(getProvider(), stationId);
+                    if (station == null) station = new Station(stationId, getProvider());
+                    station.setName(gbisStationRouteResult.getResult().getStationNm());
 
                     //TODO: handle case if localId is null
                     String localId = station.getLocalIdByProvider(provider);
-                    SearchStationResult.ResultEntity resultEntity = searchStationResult.getResult();
-
-                    // 1. parse retrieved data
-                    station.setName(resultEntity.getStationNm());
-                    Map<String, StationRoute> stationRouteMap = new HashMap<>();
-                    for (SearchStationResult.ResultEntity.BusStationInfoEntity busStationInfoEntity : resultEntity.getBusStationInfo()) {
-                        StationRoute stationRoute = new StationRoute(busStationInfoEntity, localId);
-                        stationRouteMap.put(stationRoute.getRouteId(), stationRoute);
-                    }
-
-                    // 2. set arrivalinfo if presents
-                    for (SearchStationResult.ResultEntity.BusArrivalInfoEntity busArrivalInfoEntity : resultEntity.getBusArrivalInfo()) {
-                        ArrivalInfo arrivalInfo = new ArrivalInfo(busArrivalInfoEntity);
-                        StationRoute stationRoute = stationRouteMap.get(arrivalInfo.getRouteId());
-                        if (stationRoute != null) {
-                            stationRoute.setRouteType(RouteType.valueOfGbis(busArrivalInfoEntity.getRouteTypeCd()));
-                        }
-                    }
-
-                    // 3. retrieve route's meta data if not presented
-                    List<StationRoute> unknownRoutes = new ArrayList<>();
-                    for (StationRoute stationRoute : stationRouteMap.values()) {
-                        if (stationRoute.getRoute() == null) {
-                            unknownRoutes.add(stationRoute);
-                        }
-                    }
-
-                    int remainTaskSize = unknownRoutes.size();
-                    if (remainTaskSize > 0) {
-                        final int[] progress = {0};
-                        final Throwable[] error = {null};
-                        final Station finalStation = station;
-                        for (StationRoute unknownTypeRoute : unknownRoutes) {
-                            getRouteBaseInfo(unknownTypeRoute.getRouteId(), new Callback<Route>() {
-                                @Override
-                                public void onSuccess(Route result) {
-                                    if (result != null && result.getRouteStationList() != null) {
-                                        for (RouteStation routeStation : result.getRouteStationList()) {
-                                            if (routeStation.getId().equals(stationId)) {
-                                                unknownTypeRoute.setSequence(routeStation.getSequence());
-                                            }
-                                        }
-                                    }
-                                    checkCompletion();
-                                }
-
-                                @Override
-                                public void onFailure(Throwable t) {
-                                    t.printStackTrace();
-                                    error[0] = t;
-                                    checkCompletion();
-                                }
-
-                                private void checkCompletion() {
-                                    int currentTask = ++progress[0];
-                                    if (currentTask >= remainTaskSize) {
-                                        finalStation.setStationRouteList(stationRouteMap.values());
-                                        Throwable throwable = error[0];
-                                        if (throwable != null) {
-                                            callback.onFailure(throwable);
-                                        } else {
-                                            callback.onSuccess(finalStation);
+                    if (localId == null) {
+                        searchStationByKeyword(station.getName(), new Callback<List<Station>>() {
+                            @Override
+                            public void onSuccess(List<Station> result) {
+                                Station resultStation = null;
+                                if (result != null) {
+                                    for (Station searchResult : result) {
+                                        if (stationId.equals(searchResult.getId())) {
+                                            resultStation = searchResult;
+                                            break;
                                         }
                                     }
                                 }
-                            });
-                        }
-                        return;
+                                if (resultStation != null) {
+                                    GbisStationRouteResult.ResultEntity resultEntity = gbisStationRouteResult.getResult();
+                                    handleResult(resultStation, resultEntity, callback);
+
+                                } else {
+                                    callback.onFailure(new GbisException(GbisException.ERROR_NO_RESULT, "CANNOT FIND STATION: " + stationId));
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(Throwable t) {
+                                callback.onFailure(t);
+                            }
+                        });
+                    } else {
+                        GbisStationRouteResult.ResultEntity resultEntity = gbisStationRouteResult.getResult();
+                        handleResult(station, resultEntity, callback);
                     }
+                } else {
+                    callback.onSuccess(null);
                 }
-                callback.onSuccess(station);
             }
 
             @Override
             public void failure(RetrofitError error) {
                 callback.onFailure(error);
+            }
+
+            private void handleResult(Station station, GbisStationRouteResult.ResultEntity resultEntity, Callback<Station> callback) {
+                String localId = station.getLocalIdByProvider(provider);
+
+                // 1. parse retrieved data
+                final Map<String, StationRoute> stationRouteMap = new HashMap<>();
+                final Set<StationRoute> gbisStationRoutes = new HashSet<>();
+                for (GbisStationRouteResult.ResultEntity.BusStationInfoEntity busStationInfoEntity : resultEntity.getBusStationInfo()) {
+                    StationRoute stationRoute = new StationRoute(busStationInfoEntity, localId);
+                    stationRouteMap.put(stationRoute.getRouteId(), stationRoute);
+                }
+
+                // 2. set arrivalinfo if presents
+                for (GbisStationRouteResult.ResultEntity.BusArrivalInfoEntity busArrivalInfoEntity : resultEntity.getBusArrivalInfo()) {
+                    ArrivalInfo arrivalInfo = new ArrivalInfo(busArrivalInfoEntity);
+                    StationRoute stationRoute = stationRouteMap.get(arrivalInfo.getRouteId());
+                    if (stationRoute != null) {
+                        RouteType routeType = RouteType.valueOfGbis(busArrivalInfoEntity.getRouteTypeCd());
+                        stationRoute.setArrivalInfo(arrivalInfo);
+                        stationRoute.setRouteType(routeType);
+                        stationRoute.setDestination(busArrivalInfoEntity.getRouteDestName());
+                        if(!RouteType.checkSeoulRoute(routeType)) {
+                            gbisStationRoutes.add(stationRoute);
+                        }
+                    }
+                }
+
+                // 3. filter routes where RouteType is unknown
+                final List<StationRoute> unknownRoutes = new ArrayList<>();
+                for (StationRoute stationRoute : stationRouteMap.values()) {
+                    if (stationRoute.getRouteType() == null) {
+                        unknownRoutes.add(stationRoute);
+                    }
+                }
+
+                // 4. retrieve unknown typed route's meta data
+                final Station finalStation = station;
+                final ProgressCallback.ProgressRunner progressRunner = new ProgressCallback.ProgressRunner(new ApiFacade.SimpleProgressCallback() {
+                    @Override
+                    public void onComplete(boolean success) {
+                        if (success) {
+                            for (StationRoute stationRoute : unknownRoutes) {
+                                RouteType routeType = stationRoute.getRouteType();
+                                if(!RouteType.checkSeoulRoute(routeType)) {
+                                    gbisStationRoutes.add(stationRoute);
+                                }
+                            }
+                            finalStation.putStationRouteList(gbisStationRoutes);
+                        }
+                        ViewUtils.runOnUiThread(() -> callback.onSuccess(finalStation));
+                    }
+
+                    @Override
+                    public void onError(int progress, Throwable t) {
+                        ViewUtils.runOnUiThread(() -> callback.onFailure(t));
+                    }
+                }, unknownRoutes.size(), false);
+                for (StationRoute unknownRoute : unknownRoutes) {
+                    getRouteBaseInfo(unknownRoute.getRouteId(), new Callback<Route>() {
+                        @Override
+                        public void onSuccess(Route result) {
+                            if (result != null) {
+                                unknownRoute.setRoute(result);
+
+                                List<RouteStation> routeStationList = result.getRouteStationList();
+                                if (routeStationList != null) {
+                                    for (RouteStation routeStation : routeStationList) {
+                                        if (routeStation.getId().equals(stationId)) {
+                                            unknownRoute.setSequence(routeStation.getSequence());
+                                        }
+                                    }
+                                }
+                            }
+
+                            progressRunner.progress();
+                        }
+
+                        @Override
+                        public void onFailure(Throwable t) {
+                            progressRunner.error(t);
+                        }
+                    });
+                }
             }
         });
     }
@@ -420,20 +479,20 @@ public class GbisWebRestClient implements ApiWrapperInterface {
         callback.onFailure(new ApiMethodNotSupportedException());
     }
 
-    private synchronized void putSearchResultCache(String keyword, SearchAllResult searchAllResult) {
+    private synchronized void putSearchResultCache(String keyword, GbisSearchAllResult gbisSearchAllResult) {
         if (searchResultCache == null) {
             searchResultCache = new HashMap<>();
         }
-        searchResultCache.put(keyword, new WeakReference<>(searchAllResult));
+        searchResultCache.put(keyword, new WeakReference<>(gbisSearchAllResult));
     }
 
-    private SearchAllResult getCachedSearchResult(String keyword) {
+    private GbisSearchAllResult getCachedSearchResult(String keyword) {
         if (searchResultCache != null) {
-            WeakReference<SearchAllResult> reference = searchResultCache.get(keyword);
+            WeakReference<GbisSearchAllResult> reference = searchResultCache.get(keyword);
             if (reference != null) {
-                SearchAllResult searchAllResult = reference.get();
-                if (searchAllResult != null) {
-                    return searchAllResult;
+                GbisSearchAllResult gbisSearchAllResult = reference.get();
+                if (gbisSearchAllResult != null) {
+                    return gbisSearchAllResult;
                 } else synchronized (this) {
                     searchResultCache.remove(keyword);
                 }
@@ -442,12 +501,12 @@ public class GbisWebRestClient implements ApiWrapperInterface {
         return null;
     }
 
-    private synchronized void putSearchRouteResultCache(String routeId, SearchRouteResult searchRouteResult) {
+    private synchronized void putSearchRouteResultCache(String routeId, GbisSearchRouteResult gbisSearchRouteResult) {
         if (searchRouteResultCache == null) {
             searchRouteResultCache = new HashMap<>();
         }
-        if (!searchResultCache.containsKey(routeId)) {
-            searchRouteResultCache.put(routeId, new WeakReference<>(searchRouteResult));
+        if (!searchRouteResultCache.containsKey(routeId)) {
+            searchRouteResultCache.put(routeId, new WeakReference<>(gbisSearchRouteResult));
 
             if (cacheTimer == null) {
                 cacheTimer = new Timer();
@@ -468,13 +527,13 @@ public class GbisWebRestClient implements ApiWrapperInterface {
         }
     }
 
-    private SearchRouteResult getCachedSearchRouteResult(String routeId) {
+    private GbisSearchRouteResult getCachedSearchRouteResult(String routeId) {
         if (searchRouteResultCache != null) {
-            WeakReference<SearchRouteResult> reference = searchRouteResultCache.get(routeId);
+            WeakReference<GbisSearchRouteResult> reference = searchRouteResultCache.get(routeId);
             if (reference != null) {
-                SearchRouteResult searchRouteResult = reference.get();
-                if (searchRouteResult != null) {
-                    return searchRouteResult;
+                GbisSearchRouteResult gbisSearchRouteResult = reference.get();
+                if (gbisSearchRouteResult != null) {
+                    return gbisSearchRouteResult;
                 } else synchronized (this) {
                     searchRouteResultCache.remove(routeId);
                 }

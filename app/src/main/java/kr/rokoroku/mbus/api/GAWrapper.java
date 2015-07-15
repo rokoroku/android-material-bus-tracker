@@ -8,11 +8,11 @@ import kr.rokoroku.mbus.api.gbis.model.GbisBaseInfo;
 import kr.rokoroku.mbus.api.gbis.model.GbisBusArrivalList;
 import kr.rokoroku.mbus.api.gbis.model.GbisBusLocationList;
 import kr.rokoroku.mbus.api.gbisweb.core.GbisWebRestInterface;
-import kr.rokoroku.mbus.api.gbisweb.model.SearchAllResult;
-import kr.rokoroku.mbus.api.gbisweb.model.SearchMapLineResult;
-import kr.rokoroku.mbus.api.gbisweb.model.SearchRouteResult;
-import kr.rokoroku.mbus.api.gbisweb.model.SearchStationByPosResult;
-import kr.rokoroku.mbus.api.gbisweb.model.SearchStationResult;
+import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchAllResult;
+import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchMapLineResult;
+import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchRouteResult;
+import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchStationByPosResult;
+import kr.rokoroku.mbus.api.gbisweb.model.GbisStationRouteResult;
 import kr.rokoroku.mbus.api.seoul.core.SeoulBusRestInterface;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusArrivalList;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusLocationList;
@@ -22,6 +22,7 @@ import kr.rokoroku.mbus.api.seoul.model.SeoulBusRouteStationList;
 import kr.rokoroku.mbus.api.seoul.model.SeoulStationInfoList;
 import kr.rokoroku.mbus.api.seoulweb.core.SeoulWebRestInterface;
 import kr.rokoroku.mbus.api.seoulweb.model.RouteStationResult;
+import kr.rokoroku.mbus.api.seoulweb.model.StationRouteResult;
 import kr.rokoroku.mbus.api.seoulweb.model.TopisMapLineResult;
 import retrofit.Callback;
 import retrofit.http.Field;
@@ -167,9 +168,8 @@ public class GAWrapper {
             }
 
             @Override
-            public void getStationRoutes(@Field("arsId") String stationLocalId,
-                                         Callback<RouteStationResult> callback) {
-                seoulWebRestInterface.getStationRoutes(stationLocalId, callback);
+            public void getStationInfos(@Field("arsId") String stationLocalId, Callback<StationRouteResult> callback) {
+                seoulWebRestInterface.getStationInfos(stationLocalId, callback);
             }
 
             @Override
@@ -238,7 +238,7 @@ public class GAWrapper {
             public void searchAll(@Field("searchKeyword") String keyword,
                                   @Field("pageOfRoute") int pageOfRoute,
                                   @Field("pageOfBus") int pageOfBus,
-                                  Callback<SearchAllResult> callback) {
+                                  Callback<GbisSearchAllResult> callback) {
                 gbisWebRestInterface.searchAll(keyword, pageOfRoute, pageOfBus, callback);
             }
 
@@ -246,25 +246,25 @@ public class GAWrapper {
             public void searchStationByPos(@Field("lat") double EPSGlatitude,
                                            @Field("lon") double EPSGlongitude,
                                            @Field("radius") int radius,
-                                           Callback<SearchStationByPosResult> callback) {
+                                           Callback<GbisSearchStationByPosResult> callback) {
                 gbisWebRestInterface.searchStationByPos(EPSGlatitude, EPSGlongitude, radius, callback);
             }
 
             @Override
             public void getRouteInfo(@Field("routeId") String routeId,
-                                     Callback<SearchRouteResult> callback) {
+                                     Callback<GbisSearchRouteResult> callback) {
                 gbisWebRestInterface.getRouteInfo(routeId, callback);
             }
 
             @Override
             public void getStationInfo(@Field("stationId") String stationId,
-                                       Callback<SearchStationResult> callback) {
+                                       Callback<GbisStationRouteResult> callback) {
                 gbisWebRestInterface.getStationInfo(stationId, callback);
             }
 
             @Override
             public void getRouteMapLine(@Field("routeId") String routeId,
-                                        Callback<SearchMapLineResult> callback) {
+                                        Callback<GbisSearchMapLineResult> callback) {
                 gbisWebRestInterface.getRouteMapLine(routeId, callback);
             }
         };

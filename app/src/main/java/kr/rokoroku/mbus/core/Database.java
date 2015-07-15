@@ -21,12 +21,12 @@ import java.util.Random;
 import java.util.Set;
 
 import kr.rokoroku.mbus.BaseApplication;
-import kr.rokoroku.mbus.model.Favorite;
-import kr.rokoroku.mbus.model.FavoriteGroup;
-import kr.rokoroku.mbus.model.Provider;
-import kr.rokoroku.mbus.model.Route;
-import kr.rokoroku.mbus.model.SearchHistory;
-import kr.rokoroku.mbus.model.Station;
+import kr.rokoroku.mbus.data.model.Favorite;
+import kr.rokoroku.mbus.data.model.FavoriteGroup;
+import kr.rokoroku.mbus.data.model.Provider;
+import kr.rokoroku.mbus.data.model.Route;
+import kr.rokoroku.mbus.data.model.SearchHistory;
+import kr.rokoroku.mbus.data.model.Station;
 
 /**
  * Created by rok on 2015. 6. 7..
@@ -66,18 +66,32 @@ public class Database {
     private Set<SearchHistory> searchHistoryTable;
 
     private Database() {
-        //open (or create) database
-        createOrLoadFile();
-        createOrLoadTables();
+        try {
+            //open (or create) database
+            createOrLoadFile();
+            createOrLoadTables();
 
+        } catch (Exception e) {
+            Log.e(TAG, "Exception in Database", e);
+
+            Context context = contextWeakReference.get();
+            if (context == null) context = BaseApplication.getInstance();
+            File file = new File(context.getCacheDir().getAbsolutePath(), "data.db");
+
+            if (file.delete()) {
+                createOrLoadFile();
+                createOrLoadTables();
+            }
+        }
         //printAll();
     }
 
     private synchronized void createOrLoadFile() {
-        Context context = contextWeakReference.get();
-        if(context == null) context = BaseApplication.getInstance();
 
+        Context context = contextWeakReference.get();
+        if (context == null) context = BaseApplication.getInstance();
         File file = new File(context.getCacheDir().getAbsolutePath(), "data.db");
+
         try {
             this.db = DBMaker
                     .fileDB(file)
@@ -86,13 +100,6 @@ public class Database {
                     .make();
         } catch (Exception e) {
             Log.e(TAG, "Exception in Database", e);
-            if(file.delete()) {
-                this.db = DBMaker
-                        .fileDB(file)
-                        .asyncWriteEnable()
-                        .cacheHardRefEnable()
-                        .make();
-            }
         }
     }
 
@@ -120,7 +127,6 @@ public class Database {
         }
 
         this.searchHistoryTable = db.hashSetCreate(TABLE_SEARCH_HISTORY)
-                .serializer(SearchHistory.serializer)
                 .expireMaxSize(5)
                 .makeOrGet();
 
@@ -178,9 +184,26 @@ public class Database {
         return null;
     }
 
+    public synchronized void putRoute(Route route) {
+        putRoute(route.getProvider(), route);
+    }
+
     public synchronized void putRoute(Provider provider, Route route) {
         Map<String, Route> routeMap = routeTable.get(provider);
-        routeMap.put(route.getId(), route);
+        final String key = route.getId();
+        if (key != null) {
+            routeMap.put(key, route);
+        }
+    }
+
+    public synchronized void putRoutes(Provider provider, Collection<Route> routes) {
+        Map<String, Route> routeMap = routeTable.get(provider);
+        for (Route route : routes) {
+            String routeId = route.getId();
+            if (!routeMap.containsKey(routeId)) {
+                routeMap.put(routeId, route);
+            }
+        }
     }
 
     public Station getStation(Provider provider, String stationId) {
@@ -197,7 +220,7 @@ public class Database {
         else return null;
     }
 
-    public void putStation(Station station) {
+    public synchronized void putStationForEachProvider(Station station) {
         putStation(station.getProvider(), station);
 
         List<Station.ExternalEntry> externalEntries = station.getExternalEntries();
@@ -215,9 +238,18 @@ public class Database {
         }
     }
 
+    public synchronized void putStationsForEachProvider(Collection<Station> station) {
+        for (Station entry : station) {
+            putStationForEachProvider(entry);
+        }
+    }
+
     public synchronized void putStation(Provider provider, Station station) {
         Map<String, Station> stationMap = stationTable.get(provider);
-        stationMap.put(station.getId(), station);
+        final String key = station.getId();
+        if (key != null) {
+            stationMap.put(key, station);
+        }
     }
 
     public synchronized void putStations(Provider provider, Collection<Station> stations) {
@@ -284,10 +316,10 @@ public class Database {
         for (Favorite favorite : bookmarkTable.values()) {
             Log.d(TAG, "favorite: " + favorite.toString());
             for (FavoriteGroup favoriteGroup : favorite.getFavoriteGroups()) {
-                Log.d(TAG, "favoriteGroup: "+ favoriteGroup.toString());
-                for (int i=0; i<favoriteGroup.size(); i++) {
-                    FavoriteGroup.FavoriteItem favoriteItem =favoriteGroup.get(i);
-                    Log.d(TAG, "favoriteGroupItem: "+ favoriteItem.toString());
+                Log.d(TAG, "favoriteGroup: " + favoriteGroup.toString());
+                for (int i = 0; i < favoriteGroup.size(); i++) {
+                    FavoriteGroup.FavoriteItem favoriteItem = favoriteGroup.get(i);
+                    Log.d(TAG, "favoriteGroupItem: " + favoriteItem.toString());
                 }
             }
             for (Map<String, Integer> stringIntegerMap : favorite.getColoredRouteTable().values()) {

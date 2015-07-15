@@ -2,30 +2,32 @@ package kr.rokoroku.mbus.api.seoulweb.core;
 
 import com.google.android.gms.maps.model.LatLng;
 
-import java.text.ParseException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
+import kr.rokoroku.mbus.api.seoul.core.SeoulBusException;
 import kr.rokoroku.mbus.api.seoulweb.model.SearchRouteResult;
 import kr.rokoroku.mbus.api.seoulweb.model.SearchStationResult;
+import kr.rokoroku.mbus.api.seoulweb.model.StationRouteResult;
 import kr.rokoroku.mbus.api.seoulweb.model.TopisMapLineResult;
 import kr.rokoroku.mbus.api.ApiMethodNotSupportedException;
 import kr.rokoroku.mbus.api.ApiWrapperInterface;
 import kr.rokoroku.mbus.core.Database;
-import kr.rokoroku.mbus.model.ArrivalInfo;
-import kr.rokoroku.mbus.model.BusLocation;
-import kr.rokoroku.mbus.model.Direction;
-import kr.rokoroku.mbus.model.District;
-import kr.rokoroku.mbus.model.MapLine;
-import kr.rokoroku.mbus.model.Provider;
-import kr.rokoroku.mbus.model.Route;
-import kr.rokoroku.mbus.model.RouteStation;
-import kr.rokoroku.mbus.model.RouteType;
-import kr.rokoroku.mbus.model.Station;
+import kr.rokoroku.mbus.data.model.ArrivalInfo;
+import kr.rokoroku.mbus.data.model.BusLocation;
+import kr.rokoroku.mbus.data.model.Direction;
+import kr.rokoroku.mbus.data.model.MapLine;
+import kr.rokoroku.mbus.data.model.Provider;
+import kr.rokoroku.mbus.data.model.Route;
+import kr.rokoroku.mbus.data.model.RouteStation;
+import kr.rokoroku.mbus.data.model.RouteType;
+import kr.rokoroku.mbus.data.model.Station;
 import kr.rokoroku.mbus.util.GeoUtils;
-import kr.rokoroku.mbus.util.TimeUtils;
 import retrofit.RestAdapter;
 import retrofit.RetrofitError;
+import retrofit.android.AndroidLog;
 import retrofit.client.Client;
 import retrofit.client.Response;
 
@@ -48,7 +50,8 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
             adapter = new RestAdapter.Builder()
                     .setEndpoint("http:")
                     .setClient(client)
-                    .setLogLevel(RestAdapter.LogLevel.BASIC)
+                    .setLog(new AndroidLog("SeoulWebRestClient"))
+                    .setLogLevel(RestAdapter.LogLevel.FULL)
                     .setConverter(new TopisJsonConverter())
                     .build()
                     .create(SeoulWebRestInterface.class);
@@ -63,37 +66,37 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
 
     @Override
     public void searchRouteByKeyword(String keyword, Callback<List<Route>> callback) {
-        getAdapter().searchRoute(keyword, new retrofit.Callback<SearchRouteResult>() {
+        String encoded;
+        try {
+            encoded = URLEncoder.encode(keyword, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            encoded = keyword;
+        }
+        getAdapter().searchRoute(encoded, new retrofit.Callback<SearchRouteResult>() {
             @Override
             public void success(SearchRouteResult searchRouteResult, Response response) {
-                List<Route> result = null;
-                if (searchRouteResult != null && searchRouteResult.error.errorCode.equals("0000")) {
-                    result = new ArrayList<>();
-                    for (SearchRouteResult.ResultListEntity resultEntity : searchRouteResult.resultList) {
-                        Route route = new Route(resultEntity.busRouteId, resultEntity.busRouteNm, provider);
-                        route.setType(RouteType.valueOfTopis(resultEntity.routeType));
-
-                        if (!RouteType.RED_GYEONGGI.equals(route.getType())) {
-                            route.setAllocNormal(resultEntity.term);
-                            try {
-                                route.setFirstUpTime(TimeUtils.getGbisDateFormat().format(TimeUtils.getSeoulBusDateFormat().parse(resultEntity.firstBusTm)));
-                                route.setLastUpTime(TimeUtils.getGbisDateFormat().format(TimeUtils.getSeoulBusDateFormat().parse(resultEntity.firstBusTm)));
-                            } catch (ParseException e) {
-                                e.printStackTrace();
+                if (searchRouteResult != null) {
+                    if (searchRouteResult.header.isSuccess()) {
+                        List<Route> result = new ArrayList<>();
+                        if (searchRouteResult.resultList != null) {
+                            for (SearchRouteResult.RouteEntity resultEntity : searchRouteResult.resultList) {
+                                Route route = new Route(resultEntity);
+                                if (RouteType.checkSeoulRoute(route.getType())) {
+                                    result.add(route);
+                                }
                             }
-                            route.setStartStationName(resultEntity.stStationNm);
-                            route.setEndStationName(resultEntity.edStationNm);
-                            String[] split = resultEntity.corpNm.split(" ");
-                            route.setCompanyName(split[0]);
-                            route.setCompanyTel(split[1]);
-                            route.setRegionName("서울");
-                            route.setDistrict(District.SEOUL);
-                            route.setProvider(Provider.SEOUL);
-                            result.add(route);
                         }
+                        callback.onSuccess(result);
+
+                    } else {
+                        SeoulBusException exception = new SeoulBusException(
+                                Integer.parseInt(searchRouteResult.header.errorCode),
+                                searchRouteResult.header.errorMessage);
+                        callback.onFailure(exception);
                     }
+                } else {
+                    callback.onFailure(new SeoulBusException(SeoulBusException.ERROR_NO_RESULT, "NO RESPONSE"));
                 }
-                callback.onSuccess(result);
             }
 
             @Override
@@ -105,24 +108,33 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
 
     @Override
     public void searchStationByKeyword(String keyword, Callback<List<Station>> callback) {
-        getAdapter().searchStation(keyword, new retrofit.Callback<SearchStationResult>() {
+        String encoded;
+        try {
+            encoded = URLEncoder.encode(keyword, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            encoded = keyword;
+        }
+        getAdapter().searchStation(encoded, new retrofit.Callback<SearchStationResult>() {
             @Override
             public void success(SearchStationResult searchStationResult, Response response) {
                 List<Station> result = null;
-                if(searchStationResult != null && searchStationResult.error.isSuccess()) {
-                    result = new ArrayList<Station>();
-                    for (SearchStationResult.BusListEntity busListEntity : searchStationResult.busList) {
-                        Station station = new Station(busListEntity.stId, provider);
-                        if (!"0".equals(busListEntity.arsId)) {
-                            station.setLocalId(busListEntity.arsId);
+                if (searchStationResult != null && searchStationResult.header.isSuccess()) {
+                    result = new ArrayList<>();
+                    if (searchStationResult.result != null) {
+                        for (SearchStationResult.BusListEntity busListEntity : searchStationResult.result) {
+                            Station station = new Station(busListEntity.stId, provider);
+                            station.setName(busListEntity.stNm);
+                            if (!"0".equals(busListEntity.arsId)) {
+                                station.setLocalId(busListEntity.arsId);
+                            }
+                            Double x = Double.valueOf(busListEntity.tmX);
+                            Double y = Double.valueOf(busListEntity.tmY);
+                            LatLng latLng = GeoUtils.convertTm(x, y);
+                            station.setLatitude(latLng.latitude);
+                            station.setLongitude(latLng.longitude);
+                            station.setCity("서울시");
+                            result.add(station);
                         }
-                        Double x = Double.valueOf(busListEntity.tmX);
-                        Double y = Double.valueOf(busListEntity.tmY);
-                        LatLng latLng = GeoUtils.convertTm(x, y);
-                        station.setLatitude(latLng.latitude);
-                        station.setLongitude(latLng.longitude);
-                        station.setCity("서울시");
-                        result.add(station);
                     }
                 }
                 callback.onSuccess(result);
@@ -163,7 +175,7 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
                     //get turn station if available
                     RouteStation turnStation = null;
                     Route route = Database.getInstance().getRoute(provider, routeId);
-                    if(route != null) {
+                    if (route != null) {
                         List<RouteStation> routeStationList = route.getRouteStationList();
                         if (routeStationList != null && route.getTurnStationSeq() != -1) {
                             for (RouteStation routeStation : routeStationList) {
@@ -204,8 +216,63 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
     }
 
     @Override
-    public void getStationBaseInfo(String stationId, Callback<Station> callback) {
-        callback.onFailure(new ApiMethodNotSupportedException());
+    public void getStationBaseInfo(String arsId, Callback<Station> callback) {
+        getAdapter().getStationInfos(arsId, new retrofit.Callback<StationRouteResult>() {
+            @Override
+            public void success(StationRouteResult stationRouteResult, Response response) {
+                if (stationRouteResult != null && stationRouteResult.header.isSuccess()) {
+                    final Station station = new Station(stationRouteResult);
+                    callback.onSuccess(station);
+
+//                    // filter routes where RouteType is unknown
+//                    List<StationRoute> unknownRoutes = new ArrayList<>();
+//                    for (StationRoute stationRoute : station.getStationRouteList()) {
+//                        if (stationRoute.getRouteType() == null) {
+//                            unknownRoutes.add(stationRoute);
+//                        }
+//                    }
+//
+//                    // retrieve unknown typed route's meta data
+//                    final ProgressCallback.ProgressRunner progressRunner = new ProgressCallback.ProgressRunner(new ApiFacade.SimpleProgressCallback() {
+//                        @Override
+//                        public void onComplete(boolean success) {
+//                            callback.onSuccess(station);
+//                        }
+//
+//                        @Override
+//                        public void onError(int progress, Throwable t) {
+//                            callback.onFailure(t);
+//                        }
+//                    }, unknownRoutes.size());
+//                    for (StationRoute unknownTypeRoute : unknownRoutes) {
+//                        getRouteBaseInfo(unknownTypeRoute.getRouteId(), new Callback<Route>() {
+//                            @Override
+//                            public void onSuccess(Route result) {
+//                                if(result != null && unknownTypeRoute.getRouteId().equals(result.getId())) {
+//                                    unknownTypeRoute.setRoute(result);
+//                                    Database.getInstance().putRoute(result.getProvider(), result);
+//                                }
+//                                progressRunner.progress();
+//                            }
+//
+//                            @Override
+//                            public void onFailure(Throwable t) {
+//                                progressRunner.error(t);
+//                            }
+//                        });
+//                    }
+                } else if (stationRouteResult != null) {
+                    callback.onFailure(new SeoulBusException(Integer.parseInt(stationRouteResult.header.errorCode), stationRouteResult.header.errorMessage));
+                } else {
+                    callback.onSuccess(null);
+                }
+            }
+
+            @Override
+            public void failure(RetrofitError error) {
+                callback.onFailure(error);
+            }
+        });
     }
 
     @Override

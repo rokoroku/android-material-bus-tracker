@@ -37,13 +37,14 @@ import java.util.List;
 import kr.rokoroku.mbus.core.ApiFacade;
 import kr.rokoroku.mbus.core.Database;
 import kr.rokoroku.mbus.core.LocationClient;
-import kr.rokoroku.mbus.model.Direction;
-import kr.rokoroku.mbus.model.MapLine;
-import kr.rokoroku.mbus.model.Route;
-import kr.rokoroku.mbus.model.RouteStation;
-import kr.rokoroku.mbus.model.RouteType;
-import kr.rokoroku.mbus.model.Station;
+import kr.rokoroku.mbus.data.model.Direction;
+import kr.rokoroku.mbus.data.model.MapLine;
+import kr.rokoroku.mbus.data.model.Route;
+import kr.rokoroku.mbus.data.model.RouteStation;
+import kr.rokoroku.mbus.data.model.RouteType;
+import kr.rokoroku.mbus.data.model.Station;
 import kr.rokoroku.mbus.util.ThemeUtils;
+import kr.rokoroku.mbus.util.ViewUtils;
 import retrofit.Callback;
 import retrofit.RetrofitError;
 import retrofit.client.Response;
@@ -133,7 +134,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         this.mMap = map;
 
-        int paddingTop = ThemeUtils.getStatusBarHeight(this) + ThemeUtils.getDimension(this, android.R.attr.actionBarSize);
+        int paddingTop = ViewUtils.getStatusBarHeight(this) + ThemeUtils.getDimension(this, android.R.attr.actionBarSize);
         map.setPadding(0, paddingTop, 0, 0);
         map.setMyLocationEnabled(true);
         map.setOnCameraChangeListener(this);
@@ -346,7 +347,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             setSupportActionBar(mToolbar);
 
             CoordinatorLayout.LayoutParams layoutParams = (CoordinatorLayout.LayoutParams) mToolbar.getLayoutParams();
-            layoutParams.topMargin = ThemeUtils.getStatusBarHeight(this);
+            layoutParams.topMargin = ViewUtils.getStatusBarHeight(this);
 
             // init marquee animation to  toolbar title
             Field f = mToolbar.getClass().getDeclaredField("mTitleTextView");

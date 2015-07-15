@@ -34,14 +34,14 @@ import com.quinny898.library.persistentsearch.SearchResult;
 import java.util.ArrayList;
 import java.util.Set;
 
-import kr.rokoroku.mbus.adapter.FavoriteAdapter;
-import kr.rokoroku.mbus.adapter.FavoriteDataProvider;
+import kr.rokoroku.mbus.ui.adapter.FavoriteAdapter;
+import kr.rokoroku.mbus.data.FavoriteDataProvider;
 import kr.rokoroku.mbus.core.Database;
 import kr.rokoroku.mbus.core.FavoriteFacade;
-import kr.rokoroku.mbus.model.Favorite;
-import kr.rokoroku.mbus.model.FavoriteGroup;
-import kr.rokoroku.mbus.model.Route;
-import kr.rokoroku.mbus.model.SearchHistory;
+import kr.rokoroku.mbus.data.model.Favorite;
+import kr.rokoroku.mbus.data.model.FavoriteGroup;
+import kr.rokoroku.mbus.data.model.Route;
+import kr.rokoroku.mbus.data.model.SearchHistory;
 import kr.rokoroku.mbus.util.ThemeUtils;
 
 
