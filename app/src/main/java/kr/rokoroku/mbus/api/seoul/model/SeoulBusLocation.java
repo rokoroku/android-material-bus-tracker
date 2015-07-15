@@ -9,41 +9,41 @@ import org.simpleframework.xml.Root;
 @Root(name = "itemList")
 public class SeoulBusLocation {
     @Element
-    private String stopFlag;// 정류소도착여부 (0:운행중, 1:도착)
+    private String stopFlag;    // 정류소도착여부 (0:운행중, 1:도착)
     @Element
-    private String rtDist;// 노선옵셋거리 (Km)
+    private String rtDist;      // 노선옵셋거리 (Km)
     @Element
     private String lastStnId;
     @Element
-    private String plainNo;// 차량번호
+    private String plainNo;     // 차량번호
     @Element
-    private String sectDist; // 구간옵셋거리 (Km)
+    private String sectDist;    // 구간옵셋거리 (Km)
     @Element
     private String fullSectDist;// 정류소간 거리
     @Element
     private String nextStTm;    // 다음정류소도착소요시간
     @Element
-    private String sectionId;// 구간ID
+    private String sectionId;   // 구간ID
     @Element
-    private int sectOrd;// 구간순번
+    private int sectOrd;        // 구간순번
     @Element
-    private int lastStnOrd; // 마지막 구간
+    private int lastStnOrd;     // 마지막 구간
     @Element
     private String dataTm;
     @Element
-    private String lastStTm;// 종점도착소요시간
+    private String lastStTm;    // 종점도착소요시간
     @Element
-    private String trnstnid;// 회차지 정류소ID
+    private String trnstnid;    // 회차지 정류소ID
     @Element
-    private String vehId;// 버스 ID
+    private String vehId;       // 버스 ID
     @Element
     private String busType;     // 차량유형 (0:일반버스, 1:저상버스, 2:굴절버스)
     @Element
-    private String gpsX;
+    private Double gpsX;
     @Element
-    private String gpsY;
+    private Double gpsY;
     @Element
-    private String lstbusyn;// 해당차량 운행여부
+    private String lstbusyn;    // 해당차량 운행여부
     @Element
     private String isrunyn;     // 막차여부
 
@@ -111,7 +111,7 @@ public class SeoulBusLocation {
         this.busType = busType;
     }
 
-    public void setGpsX(String gpsX) {
+    public void setGpsX(Double gpsX) {
         this.gpsX = gpsX;
     }
 
@@ -119,7 +119,7 @@ public class SeoulBusLocation {
         this.isrunyn = isrunyn;
     }
 
-    public void setGpsY(String gpsY) {
+    public void setGpsY(Double gpsY) {
         this.gpsY = gpsY;
     }
 
@@ -187,7 +187,7 @@ public class SeoulBusLocation {
         return busType;
     }
 
-    public String getGpsX() {
+    public Double getGpsX() {
         return gpsX;
     }
 
@@ -195,7 +195,7 @@ public class SeoulBusLocation {
         return isrunyn;
     }
 
-    public String getGpsY() {
+    public Double getGpsY() {
         return gpsY;
     }
 }

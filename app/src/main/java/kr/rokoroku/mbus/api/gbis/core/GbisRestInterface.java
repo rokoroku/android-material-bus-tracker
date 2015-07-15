@@ -44,9 +44,9 @@ public interface GbisRestInterface {
      * @param callback
      */
     @GET("/busarrivalservice")
-    void getBusArrivalListByRouteId(@Query("stationId") String stationId,
-                                    @Query("routeId") String routeId,
-                                    Callback<GbisBusArrivalList> callback);
+    void getBusArrivalList(@Query("stationId") String stationId,
+                           @Query("routeId") String routeId,
+                           Callback<GbisBusArrivalList> callback);
 
     /**
      * 기반정보 조회
@@ -56,60 +56,4 @@ public interface GbisRestInterface {
     @GET("/baseinfoservice")
     void getBaseInfo(Callback<GbisBaseInfo> callback);
 
-
-    /**
-     * Google analytics Wrapper
-     */
-    abstract class GAWrappedClient implements GbisRestInterface {
-
-        private GbisRestInterface gbisRestInterface;
-
-        public GAWrappedClient(GbisRestInterface gbisRestInterface) {
-            this.gbisRestInterface = gbisRestInterface;
-        }
-
-        @Override
-        public void getBaseInfo(Callback<GbisBaseInfo> callback) {
-            if (BaseApplication.tracker != null)
-                BaseApplication.tracker.send(new HitBuilders.EventBuilder()
-                        .setCategory("GBIS")
-                        .setLabel("Base Info Service")
-                        .setAction("getBaseInfo")
-                        .build());
-            gbisRestInterface.getBaseInfo(callback);
-        }
-
-        @Override
-        public void getBusLocationList(@Query("routeId") String routeId, Callback<GbisBusLocationList> callback) {
-            if (BaseApplication.tracker != null)
-                BaseApplication.tracker.send(new HitBuilders.EventBuilder()
-                        .setCategory("GBIS")
-                        .setLabel("Bus Location Service")
-                        .setAction("getBusLocationList")
-                        .build());
-            gbisRestInterface.getBusLocationList(routeId, callback);
-        }
-
-        @Override
-        public void getBusArrivalList(@Query("stationId") String stationId, Callback<GbisBusArrivalList> callback) {
-            if (BaseApplication.tracker != null)
-                BaseApplication.tracker.send(new HitBuilders.EventBuilder()
-                        .setCategory("GBIS")
-                        .setLabel("Bus Arrival Service")
-                        .setAction("getBusArrivalList")
-                        .build());
-            gbisRestInterface.getBusArrivalList(stationId, callback);
-        }
-
-        @Override
-        public void getBusArrivalListByRouteId(@Query("stationId") String stationId, @Query("routeId") String routeId, Callback<GbisBusArrivalList> callback) {
-            if (BaseApplication.tracker != null)
-                BaseApplication.tracker.send(new HitBuilders.EventBuilder()
-                        .setCategory("GBIS")
-                        .setLabel("Bus Arrival Service")
-                        .setAction("getBusArrivalListByRouteId")
-                        .build());
-            gbisRestInterface.getBusArrivalListByRouteId(stationId, routeId, callback);
-        }
-    }
 }

@@ -20,7 +20,7 @@
         android:background="@android:color/transparent"
         android:layout_gravity="top"/>
 
-    <kr.rokoroku.mbus.widget.FloatingActionLayout
+    <kr.rokoroku.mbus.ui.widget.FloatingActionLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end">
@@ -41,5 +41,5 @@
             app:fab_shadowXOffset="0dp"
             app:fab_shadowYOffset="1dp" />
 
-    </kr.rokoroku.mbus.widget.FloatingActionLayout>
+    </kr.rokoroku.mbus.ui.widget.FloatingActionLayout>
 </android.support.design.widget.CoordinatorLayout>

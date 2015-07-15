@@ -1,15 +1,12 @@
 package kr.rokoroku.mbus;
 
 import android.app.Application;
-import android.location.Location;
 
 import com.google.android.gms.analytics.GoogleAnalytics;
 import com.google.android.gms.analytics.Tracker;
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.GoogleApiClient;
 
-import kr.rokoroku.mbus.core.ApiCaller;
-import kr.rokoroku.mbus.core.DatabaseHelper;
+import kr.rokoroku.mbus.core.ApiFacade;
+import kr.rokoroku.mbus.core.DatabaseFacade;
 import kr.rokoroku.mbus.core.LocationClient;
 
 /**
@@ -33,9 +30,9 @@ public class BaseApplication extends Application {
         super.onCreate();
         instance = this;
 
-        DatabaseHelper.init(this);
+        DatabaseFacade.init(this);
         LocationClient.init(this);
-        ApiCaller.init(this);
+        ApiFacade.init(this);
 
         analytics = GoogleAnalytics.getInstance(this);
         analytics.setLocalDispatchPeriod(1800);

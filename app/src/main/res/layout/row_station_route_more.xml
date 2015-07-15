@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<kr.rokoroku.mbus.widget.SplitCardView xmlns:android="http://schemas.android.com/apk/res/android"
+<kr.rokoroku.mbus.ui.widget.SplitCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:card_view="http://schemas.android.com/apk/res-auto"
     android:id="@+id/card_view"
     card_view:cardCornerRadius="4dp"
@@ -29,4 +29,4 @@
         android:layout_marginLeft="8dp"
         android:layout_marginStart="8dp" />
 
-</kr.rokoroku.mbus.widget.SplitCardView>
+</kr.rokoroku.mbus.ui.widget.SplitCardView>

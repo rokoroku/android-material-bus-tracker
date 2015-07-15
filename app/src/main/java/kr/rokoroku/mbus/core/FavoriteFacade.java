@@ -5,10 +5,10 @@ import android.support.annotation.AttrRes;
 import android.support.annotation.Nullable;
 
 import kr.rokoroku.mbus.R;
-import kr.rokoroku.mbus.model.Favorite;
-import kr.rokoroku.mbus.model.Provider;
-import kr.rokoroku.mbus.model.Route;
-import kr.rokoroku.mbus.model.Station;
+import kr.rokoroku.mbus.data.model.Favorite;
+import kr.rokoroku.mbus.data.model.Provider;
+import kr.rokoroku.mbus.data.model.Route;
+import kr.rokoroku.mbus.data.model.Station;
 import kr.rokoroku.mbus.util.ThemeUtils;
 
 /**
@@ -99,7 +99,7 @@ public class FavoriteFacade {
 
     public Favorite getCurrentFavorite() {
         if(currentFavorite == null) {
-            Favorite storedFavorite = DatabaseHelper.getInstance().getBookmark(DatabaseHelper.DEFAULT_FAVORITE_ID);
+            Favorite storedFavorite = DatabaseFacade.getInstance().getBookmark(DatabaseFacade.DEFAULT_FAVORITE_ID);
             currentFavorite = new Favorite(storedFavorite);
         }
         return currentFavorite;

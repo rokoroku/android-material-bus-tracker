@@ -6,21 +6,15 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.Nullable;
-import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.FusedLocationProviderApi;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
-
-import kr.rokoroku.mbus.BaseApplication;
-import kr.rokoroku.mbus.util.TimeUtils;
 
 /**
  * Created by rok on 2015. 6. 28..
@@ -50,12 +44,6 @@ public class LocationClient implements GoogleApiClient.ConnectionCallbacks,
 
     public LocationClient(Context context) {
         this(context, null);
-    }
-
-    public boolean isGooglePlayServiceAvailable() {
-        // Getting Google Play availability status
-        int availablilty = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(mContext);
-        return availablilty == ConnectionResult.SUCCESS;
     }
 
     protected synchronized void buildDeviceLocationManager(Context context) {
@@ -125,6 +113,12 @@ public class LocationClient implements GoogleApiClient.ConnectionCallbacks,
         return locationManager.getBestProvider(criteria, true);
     }
 
+
+    public boolean isGooglePlayServiceAvailable() {
+        // Getting Google Play availability status
+        int availablilty = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(mContext);
+        return availablilty == ConnectionResult.SUCCESS;
+    }
 
     public void start(boolean force) {
 

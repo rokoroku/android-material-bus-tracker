@@ -108,7 +108,7 @@ public interface SeoulBusRestInterface {
     @GET("/arrive/getArrInfoByRoute")
     void getArrivalInfo(@Query("stId") String stationId,
                         @Query("busRouteId") String routeId,
-                        @Query("ord") String stationSeq,
+                        @Query("ord") int stationSeq,
                         Callback<SeoulBusArrivalList> callback);
 
     /**
@@ -121,115 +121,4 @@ public interface SeoulBusRestInterface {
     void getArrivalInfo(@Query("busRouteId") String routeId,
                         Callback<SeoulBusArrivalList> callback);
 
-    /**
-     * Google analytics Wrapper
-     */
-    abstract class GAWrappedClient implements SeoulBusRestInterface {
-
-        private SeoulBusRestInterface seoulBusRestInterface;
-
-        public GAWrappedClient(SeoulBusRestInterface seoulBusRestInterface) {
-            this.seoulBusRestInterface = seoulBusRestInterface;
-        }
-
-        @Override
-        public void getArrivalInfo(@Query("busRouteId") String routeId, Callback<SeoulBusArrivalList> callback) {
-            if (BaseApplication.tracker != null)
-                BaseApplication.tracker.send(new HitBuilders.EventBuilder()
-                        .setCategory("SEOUL")
-                        .setLabel("Bus Arrival Service")
-                        .setAction("getArrInfoByRoute")
-                        .build());
-            seoulBusRestInterface.getArrivalInfo(routeId, callback);
-        }
-
-        @Override
-        public void getArrivalInfo(@Query("stId") String stationId, @Query("busRouteId") String routeId, @Query("ord") String stationSeq, Callback<SeoulBusArrivalList> callback) {
-            if (BaseApplication.tracker != null)
-                BaseApplication.tracker.send(new HitBuilders.EventBuilder()
-                        .setCategory("SEOUL")
-                        .setLabel("Bus Arrival Service")
-                        .setAction("getArrInfoByRouteAll")
-                        .build());
-            seoulBusRestInterface.getArrivalInfo(stationId, routeId, stationSeq, callback);
-        }
-
-        @Override
-        public void searchRouteListByName(@Query("strSrch") String busNumber, Callback<SeoulBusRouteInfoList> callback) {
-            if (BaseApplication.tracker != null)
-                BaseApplication.tracker.send(new HitBuilders.EventBuilder()
-                        .setCategory("SEOUL")
-                        .setLabel("Bus Route Info Service")
-                        .setAction("getBusRouteList")
-                        .build());
-            seoulBusRestInterface.searchRouteListByName(busNumber, callback);
-        }
-
-        @Override
-        public void getRouteInfo(@Query("busRouteId") String busRouteId, Callback<SeoulBusRouteInfoList> callback) {
-            if (BaseApplication.tracker != null)
-                BaseApplication.tracker.send(new HitBuilders.EventBuilder()
-                        .setCategory("SEOUL")
-                        .setLabel("Bus Route Info Service")
-                        .setAction("getRouteInfo")
-                        .build());
-            seoulBusRestInterface.searchRouteListByName(busRouteId, callback);
-        }
-
-        @Override
-        public void getRouteStationList(@Query("busRouteId") String busRouteId, Callback<SeoulBusRouteStationList> callback) {
-            if (BaseApplication.tracker != null)
-                BaseApplication.tracker.send(new HitBuilders.EventBuilder()
-                        .setCategory("SEOUL")
-                        .setLabel("Bus Route Info Service")
-                        .setAction("getStationByRoute")
-                        .build());
-            seoulBusRestInterface.getRouteStationList(busRouteId, callback);
-        }
-
-        @Override
-        public void getRouteBusPositionList(@Query("busRouteId") String busRouteId, Callback<SeoulBusLocationList> callback) {
-            if (BaseApplication.tracker != null)
-                BaseApplication.tracker.send(new HitBuilders.EventBuilder()
-                        .setCategory("SEOUL")
-                        .setLabel("Bus Route Info Service")
-                        .setAction("getBusPosByRtid")
-                        .build());
-            seoulBusRestInterface.getRouteBusPositionList(busRouteId, callback);
-        }
-
-        @Override
-        public void searchStationListByName(@Query("stSrch") String stationName, Callback<SeoulStationInfoList> callback) {
-            if (BaseApplication.tracker != null)
-                BaseApplication.tracker.send(new HitBuilders.EventBuilder()
-                        .setCategory("SEOUL")
-                        .setLabel("Bus Station Info Service")
-                        .setAction("getStationByName")
-                        .build());
-            seoulBusRestInterface.searchStationListByName(stationName, callback);
-        }
-
-        @Override
-        public void searchStationListByPos(@Query("tmX") double longitude, @Query("tmY") double latitude, @Query("radius") int radius, Callback<SeoulStationInfoList> callback) {
-            if (BaseApplication.tracker != null)
-                BaseApplication.tracker.send(new HitBuilders.EventBuilder()
-                        .setCategory("SEOUL")
-                        .setLabel("Bus Station Info Service")
-                        .setAction("getStationByPos")
-                        .build());
-            seoulBusRestInterface.searchStationListByPos(longitude, latitude, radius, callback);
-        }
-
-        @Override
-        public void getRouteByStation(@Query("arsId") String arsId, Callback<SeoulBusRouteByStationList> callback) {
-            if (BaseApplication.tracker != null)
-                BaseApplication.tracker.send(new HitBuilders.EventBuilder()
-                        .setCategory("SEOUL")
-                        .setLabel("Bus Station Info Service")
-                        .setAction("getRouteByStation")
-                        .build());
-            seoulBusRestInterface.getRouteByStation(arsId, callback);
-        }
-
-    }
 }

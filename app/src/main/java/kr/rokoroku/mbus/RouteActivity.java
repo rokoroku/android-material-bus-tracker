@@ -16,7 +16,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
-import com.github.clans.fab.*;
+import com.github.clans.fab.FloatingActionButton;
+import com.github.clans.fab.FloatingActionMenu;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.maps.model.LatLng;
 import com.h6ah4i.android.widget.advrecyclerview.animator.GeneralItemAnimator;
@@ -29,28 +30,28 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import kr.rokoroku.mbus.adapter.RouteAdapter;
-import kr.rokoroku.mbus.adapter.RouteDataProvider;
-import kr.rokoroku.mbus.core.ApiCaller;
-import kr.rokoroku.mbus.core.DatabaseHelper;
+import kr.rokoroku.mbus.core.DatabaseFacade;
+import kr.rokoroku.mbus.ui.adapter.RouteAdapter;
+import kr.rokoroku.mbus.data.RouteDataProvider;
+import kr.rokoroku.mbus.core.ApiFacade;
 import kr.rokoroku.mbus.core.FavoriteFacade;
 import kr.rokoroku.mbus.core.LocationClient;
-import kr.rokoroku.mbus.model.FavoriteGroup;
-import kr.rokoroku.mbus.model.Route;
-import kr.rokoroku.mbus.model.RouteStation;
-import kr.rokoroku.mbus.model.RouteType;
-import kr.rokoroku.mbus.model.Station;
+import kr.rokoroku.mbus.data.model.FavoriteGroup;
+import kr.rokoroku.mbus.data.model.Route;
+import kr.rokoroku.mbus.data.model.RouteStation;
+import kr.rokoroku.mbus.data.model.RouteType;
+import kr.rokoroku.mbus.data.model.Station;
 import kr.rokoroku.mbus.util.GeoUtils;
 import kr.rokoroku.mbus.util.ThemeUtils;
 import kr.rokoroku.mbus.util.TimeUtils;
 import kr.rokoroku.mbus.util.ViewUtils;
-import kr.rokoroku.mbus.widget.FloatingActionLayout;
 
 
 public class RouteActivity extends AbstractBaseActivity
         implements SwipeRefreshLayout.OnRefreshListener {
 
-    private static final String SAVED_STATE_EXPANDABLE_ITEM_MANAGER = "12345";
+    private static final String SAVED_STATE_EXPANDABLE_ITEM_MANAGER = "expandable_state";
+
     public static final String EXTRA_KEY_ROUTE = "route";
     public static final String EXTRA_KEY_REDIRECT_STATION_ID = "station_id";
 
@@ -58,7 +59,6 @@ public class RouteActivity extends AbstractBaseActivity
     private SwipeRefreshLayout mSwipeRefreshLayout;
 
     private CoordinatorLayout mCoordinatorLayout;
-    private FloatingActionLayout mFloatingActionLayout;
     private FloatingActionMenu mPlusButton;
     private FloatingActionButton mLocationButton;
     private FloatingActionButton mAddFavoriteButton;
@@ -92,7 +92,6 @@ public class RouteActivity extends AbstractBaseActivity
         mRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_layout);
 
-        mFloatingActionLayout = (FloatingActionLayout) findViewById(R.id.fab_layout);
         mPlusButton = (FloatingActionMenu) findViewById(R.id.fab_plus);
         mLocationButton = (FloatingActionButton) findViewById(R.id.fab_location);
         mAddFavoriteButton = (FloatingActionButton) findViewById(R.id.fab_bookmark);
@@ -116,10 +115,11 @@ public class RouteActivity extends AbstractBaseActivity
     @Override
     protected void onResume() {
         super.onResume();
-        if (TimeUtils.checkShouldUpdate(mRouteDataProvider.getLastUpdateTime())) {
-            refreshData(mRouteDataProvider);
-        } else {
+        if (!refreshData(false)) {
             scheduleTimer(5000);
+        }
+        if (mBusRouteAdapter != null) {
+            mBusRouteAdapter.notifyDataSetChanged();
         }
     }
 
@@ -136,96 +136,119 @@ public class RouteActivity extends AbstractBaseActivity
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
 
-        //get extra
+        // get extras from new intent
         Route route = intent.getParcelableExtra(EXTRA_KEY_ROUTE);
+        mRedirectStationId = intent.getStringExtra(EXTRA_KEY_REDIRECT_STATION_ID);
         if (route == null) {
             finish();
 
         } else {
-            Route storedRoute = DatabaseHelper.getInstance().getRoute(route.getProvider(), route.getId());
+            Route storedRoute = DatabaseFacade.getInstance().getRoute(route.getProvider(), route.getId());
             if (storedRoute != null) route = storedRoute;
 
             if (mRouteDataProvider == null) mRouteDataProvider = new RouteDataProvider(route);
             else mRouteDataProvider.setRoute(route);
 
-            mRedirectStationId = intent.getStringExtra(EXTRA_KEY_REDIRECT_STATION_ID);
-
-            runOnUiThread(() -> refreshData(mRouteDataProvider));
+            if (mBusRouteAdapter != null) {
+                runOnUiThread(() -> refreshData(true));
+            }
         }
 
+        // set intent
         setIntent(intent);
     }
 
-    private synchronized void refreshData(RouteDataProvider routeDataProvider) {
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (mRouteDataProvider != null) {
+            final Route route = mRouteDataProvider.getRoute();
+            if (route.isRouteBaseInfoAvailable() && route.isRouteStationInfoAvailable()) {
+                DatabaseFacade.getInstance().putRoute(route);
+            }
+        }
+    }
+
+    private synchronized boolean refreshData(boolean force) {
+
+        Route route = mRouteDataProvider.getRoute();
+        setToolbarTitle(route);
 
         mSwipeRefreshLayout.setRefreshing(true);
 
-        Route route = routeDataProvider.getRoute();
-        setToolbarTitle(route);
+        if (TimeUtils.checkShouldUpdate(route.getLastUpdateTime()) || force) {
+            if (isRefreshing) return true;
+            else isRefreshing = true;
 
-        if (isRefreshing) return;
-        else isRefreshing = true;
-
-        final boolean needUpdateRouteInfo = !mRouteDataProvider.isRouteInfoAvailable() || route.getType() == null || route.getType().equals(RouteType.UNKNOWN);
-        ApiCaller.getInstance().fillRouteData(route.getId(), routeDataProvider, new ApiCaller.SimpleProgressCallback() {
-            @Override
-            public void onComplete(boolean success) {
-                mBusRouteAdapter.notifyDataSetChanged();
-                if (success) {
-                    if (needUpdateRouteInfo) {
-                        setToolbarTitle(routeDataProvider.getRoute());
-                    }
-                    ApiCaller.getInstance().fillRouteRealtimeLocation(routeDataProvider, new ApiCaller.SimpleProgressCallback() {
-                        @Override
-                        public void onComplete(boolean success) {
-                            if (success) {
-                                scheduleTimer(BaseApplication.REFRESH_INTERVAL);
-                            }
-                            mSwipeRefreshLayout.postDelayed(() -> {
-                                isRefreshing = false;
-                                mSwipeRefreshLayout.setRefreshing(false);
-                                if (mRedirectStationId != null) {
-                                    redirectTo(mRedirectStationId);
-                                    mRedirectStationId = null;
+            final boolean needUpdateRouteInfo = !mRouteDataProvider.isRouteInfoAvailable() || route.getType() == null || route.getType().equals(RouteType.UNKNOWN);
+            ApiFacade.getInstance().getRouteData(route, mRouteDataProvider, new ApiFacade.SimpleProgressCallback() {
+                @Override
+                public void onComplete(boolean success) {
+                    mBusRouteAdapter.notifyDataSetChanged();
+                    if (success) {
+                        if (needUpdateRouteInfo) {
+                            setToolbarTitle(mRouteDataProvider.getRoute());
+                        }
+                        ApiFacade.getInstance().getRouteRealtimeData(route, mRouteDataProvider, new ApiFacade.SimpleProgressCallback() {
+                            @Override
+                            public void onComplete(boolean success) {
+                                if (success) {
+                                    scheduleTimer(BaseApplication.REFRESH_INTERVAL);
                                 }
-                            }, 500);
-                            if (mRefreshActionItem != null) mRefreshActionItem.setActionView(null);
-                        }
+                                mSwipeRefreshLayout.postDelayed(() -> {
+                                    isRefreshing = false;
+                                    mSwipeRefreshLayout.setRefreshing(false);
+                                    if (mRedirectStationId != null) {
+                                        redirectTo(mRedirectStationId);
+                                        mRedirectStationId = null;
+                                    }
+                                }, 500);
+                                if (mRefreshActionItem != null)
+                                    mRefreshActionItem.setActionView(null);
+                            }
 
-                        @Override
-                        public void onProgressUpdate(int current, int target) {
-                            mBusRouteAdapter.notifyDataSetChanged();
-                            //mGroupExpandListener.onGroupExpand(0, false);
-                        }
+                            @Override
+                            public void onProgressUpdate(int current, int target) {
+                                mBusRouteAdapter.notifyDataSetChanged();
+                                //mGroupExpandListener.onGroupExpand(0, false);
+                            }
 
-                        @Override
-                        public void onError(int progress, Throwable t) {
-                            t.printStackTrace();
-                            Toast.makeText(RouteActivity.this, t.getMessage(), Toast.LENGTH_LONG).show();
-                        }
-                    });
-                } else {
-                    mSwipeRefreshLayout.postDelayed(() -> {
-                        isRefreshing = false;
-                        mSwipeRefreshLayout.setRefreshing(false);
-                    }, 500);
+                            @Override
+                            public void onError(int progress, Throwable t) {
+                                t.printStackTrace();
+                                Toast.makeText(RouteActivity.this, t.getMessage(), Toast.LENGTH_LONG).show();
+                            }
+                        });
+                    } else {
+                        mSwipeRefreshLayout.postDelayed(() -> {
+                            isRefreshing = false;
+                            mSwipeRefreshLayout.setRefreshing(false);
+                        }, 500);
+                    }
                 }
-            }
 
-            @Override
-            public void onProgressUpdate(int current, int target) {
+                @Override
+                public void onProgressUpdate(int current, int target) {
+                    mBusRouteAdapter.notifyDataSetChanged();
+                    //mGroupExpandListener.onGroupExpand(0, false);
+                    Log.d("RouteActivity", String.format("onProgressUpdate (%d/%d)", current, target));
+                }
+
+                @Override
+                public void onError(int progress, Throwable t) {
+                    t.printStackTrace();
+                    Toast.makeText(RouteActivity.this, "error", Toast.LENGTH_LONG).show();
+                }
+            });
+            return true;
+
+        } else if (!isRefreshing) {
+            mSwipeRefreshLayout.postDelayed(() -> {
+                mSwipeRefreshLayout.setRefreshing(false);
                 mBusRouteAdapter.notifyDataSetChanged();
-                //mGroupExpandListener.onGroupExpand(0, false);
-                Log.d("RouteActivity", String.format("onProgressUpdate (%d/%d)", current, target));
-            }
-
-            @Override
-            public void onError(int progress, Throwable t) {
-                t.printStackTrace();
-                Toast.makeText(RouteActivity.this, "error", Toast.LENGTH_LONG).show();
-            }
-        });
-
+            }, 500);
+        }
+        return false;
     }
 
     private void redirectTo(String localStationId) {
@@ -266,6 +289,7 @@ public class RouteActivity extends AbstractBaseActivity
 
         //set data provider to adapter
         mBusRouteAdapter = new RouteAdapter(mRouteDataProvider);
+        mBusRouteAdapter.setExpandableItemManager(mRecyclerViewExpandableItemManager);
         RecyclerView.Adapter wrappedAdapter = mRecyclerViewExpandableItemManager.createWrappedAdapter(mBusRouteAdapter);       // wrap for expanding
 
         //set item layout
@@ -414,7 +438,7 @@ public class RouteActivity extends AbstractBaseActivity
 
     @Override
     public void onRefresh() {
-        refreshData(mRouteDataProvider);
+        refreshData(true);
     }
 
     @Override
@@ -460,7 +484,7 @@ public class RouteActivity extends AbstractBaseActivity
             public void run() {
                 runOnUiThread(() -> {
                     if (isActivityVisible()) {
-                        refreshData(mRouteDataProvider);
+                        refreshData(false);
                     }
                 });
             }
