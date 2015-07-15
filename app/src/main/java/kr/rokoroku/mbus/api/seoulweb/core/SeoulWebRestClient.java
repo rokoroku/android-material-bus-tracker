@@ -3,18 +3,26 @@ package kr.rokoroku.mbus.api.seoulweb.core;
 import com.google.android.gms.maps.model.LatLng;
 
 import java.io.UnsupportedEncodingException;
+import java.lang.ref.WeakReference;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
+import kr.rokoroku.mbus.BaseApplication;
 import kr.rokoroku.mbus.api.seoul.core.SeoulBusException;
+import kr.rokoroku.mbus.api.seoulweb.model.RouteStationResult;
 import kr.rokoroku.mbus.api.seoulweb.model.SearchRouteResult;
 import kr.rokoroku.mbus.api.seoulweb.model.SearchStationResult;
 import kr.rokoroku.mbus.api.seoulweb.model.StationRouteResult;
 import kr.rokoroku.mbus.api.seoulweb.model.TopisMapLineResult;
 import kr.rokoroku.mbus.api.ApiMethodNotSupportedException;
 import kr.rokoroku.mbus.api.ApiWrapperInterface;
-import kr.rokoroku.mbus.core.Database;
+import kr.rokoroku.mbus.api.seoulweb.model.TopisRealtimeResult;
+import kr.rokoroku.mbus.core.DatabaseFacade;
 import kr.rokoroku.mbus.data.model.ArrivalInfo;
 import kr.rokoroku.mbus.data.model.BusLocation;
 import kr.rokoroku.mbus.data.model.Direction;
@@ -39,6 +47,9 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
     private Client client;
     private Provider provider;
     private SeoulWebRestInterface adapter;
+
+    private Map<String, WeakReference<StationRouteResult>> stationRouteCache;
+    private Timer cacheTimer;
 
     public SeoulWebRestClient(Client client) {
         this.client = client;
@@ -155,17 +166,91 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
 
     @Override
     public void getRouteBaseInfo(String routeId, Callback<Route> callback) {
-        callback.onFailure(new ApiMethodNotSupportedException());
+        final retrofit.Callback<RouteStationResult> resultCallback = new retrofit.Callback<RouteStationResult>() {
+            @Override
+            public void success(RouteStationResult routeStationResult, Response response) {
+                if (routeStationResult != null && routeStationResult.header.isSuccess()) {
+                    Route route = DatabaseFacade.getInstance().getRoute(getProvider(), routeId);
+                    if (route == null) route = new Route(routeId, null, getProvider());
+                    final Route finalRoute = route;
+
+                    final ArrayList<RouteStation> routeStationList = new ArrayList<>();
+                    for (RouteStationResult.StationEntity stationEntity : routeStationResult.resultList) {
+                        if (route.getName() == null) route.setName(stationEntity.busRouteNm);
+                        RouteStation routeStation = new RouteStation(stationEntity);
+                        routeStationList.add(routeStation);
+                    }
+                    route.setRouteStationList(routeStationList);
+
+                    if (!route.isRouteBaseInfoAvailable()) {
+                        searchRouteByKeyword(route.getName().replaceAll("[^0-9]",""), new Callback<List<Route>>() {
+                            @Override
+                            public void onSuccess(List<Route> result) {
+                                if (result != null) {
+                                    for (Route retrievedRoute : result) {
+                                        if (retrievedRoute.getId().equals(routeId)) {
+                                            retrievedRoute.setRouteStationList(routeStationList);
+                                            callback.onSuccess(retrievedRoute);
+                                            return;
+                                        }
+                                    }
+                                }
+                                callback.onSuccess(finalRoute);
+                            }
+
+                            @Override
+                            public void onFailure(Throwable t) {
+                                callback.onSuccess(finalRoute);
+                            }
+                        });
+                    } else {
+                        callback.onSuccess(route);
+                    }
+                } else {
+                    callback.onSuccess(null);
+                }
+            }
+
+            @Override
+            public void failure(RetrofitError error) {
+                callback.onFailure(error);
+            }
+        };
+        getAdapter().getRouteStations(routeId, resultCallback);
     }
 
     @Override
     public void getRouteRealtimeInfo(String routeId, Callback<List<BusLocation>> callback) {
-        callback.onFailure(new ApiMethodNotSupportedException());
+        getAdapter().getTopisRealtimeRoute(routeId, new retrofit.Callback<TopisRealtimeResult>() {
+            @Override
+            public void success(TopisRealtimeResult topisRealtimeResult, Response response) {
+                List<BusLocation> busLocationList = null;
+                if (topisRealtimeResult != null && topisRealtimeResult.result != null) {
+                    RouteType routeType = null;
+                    Route route = DatabaseFacade.getInstance().getRoute(provider, routeId);
+                    if (route != null) routeType = route.getType();
+
+                    busLocationList = new ArrayList<>();
+                    for (TopisRealtimeResult.ResultEntity resultEntity : topisRealtimeResult.result) {
+                        BusLocation busLocation = new BusLocation(resultEntity);
+                        busLocation.setRouteId(routeId);
+                        busLocation.setType(routeType);
+                        busLocationList.add(busLocation);
+                    }
+                }
+                callback.onSuccess(busLocationList);
+            }
+
+            @Override
+            public void failure(RetrofitError error) {
+                callback.onFailure(error);
+            }
+        });
     }
 
     @Override
     public void getRouteMaplineInfo(String routeId, Callback<List<MapLine>> callback) {
-        getAdapter().getRouteMapLine(routeId, new retrofit.Callback<TopisMapLineResult>() {
+        getAdapter().getTopisRouteMapLine(routeId, new retrofit.Callback<TopisMapLineResult>() {
             @Override
             public void success(TopisMapLineResult topisMapLineResult, Response response) {
                 List<MapLine> mapLineList = null;
@@ -174,7 +259,7 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
 
                     //get turn station if available
                     RouteStation turnStation = null;
-                    Route route = Database.getInstance().getRoute(provider, routeId);
+                    Route route = DatabaseFacade.getInstance().getRoute(provider, routeId);
                     if (route != null) {
                         List<RouteStation> routeStationList = route.getRouteStationList();
                         if (routeStationList != null && route.getTurnStationSeq() != -1) {
@@ -217,52 +302,18 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
 
     @Override
     public void getStationBaseInfo(String arsId, Callback<Station> callback) {
-        getAdapter().getStationInfos(arsId, new retrofit.Callback<StationRouteResult>() {
+        final StationRouteResult cachedRouteStationResult = getCachedStationResult(arsId);
+        final retrofit.Callback<StationRouteResult> resultCallback = new retrofit.Callback<StationRouteResult>() {
             @Override
             public void success(StationRouteResult stationRouteResult, Response response) {
                 if (stationRouteResult != null && stationRouteResult.header.isSuccess()) {
                     final Station station = new Station(stationRouteResult);
                     callback.onSuccess(station);
 
-//                    // filter routes where RouteType is unknown
-//                    List<StationRoute> unknownRoutes = new ArrayList<>();
-//                    for (StationRoute stationRoute : station.getStationRouteList()) {
-//                        if (stationRoute.getRouteType() == null) {
-//                            unknownRoutes.add(stationRoute);
-//                        }
-//                    }
-//
-//                    // retrieve unknown typed route's meta data
-//                    final ProgressCallback.ProgressRunner progressRunner = new ProgressCallback.ProgressRunner(new ApiFacade.SimpleProgressCallback() {
-//                        @Override
-//                        public void onComplete(boolean success) {
-//                            callback.onSuccess(station);
-//                        }
-//
-//                        @Override
-//                        public void onError(int progress, Throwable t) {
-//                            callback.onFailure(t);
-//                        }
-//                    }, unknownRoutes.size());
-//                    for (StationRoute unknownTypeRoute : unknownRoutes) {
-//                        getRouteBaseInfo(unknownTypeRoute.getRouteId(), new Callback<Route>() {
-//                            @Override
-//                            public void onSuccess(Route result) {
-//                                if(result != null && unknownTypeRoute.getRouteId().equals(result.getId())) {
-//                                    unknownTypeRoute.setRoute(result);
-//                                    Database.getInstance().putRoute(result.getProvider(), result);
-//                                }
-//                                progressRunner.progress();
-//                            }
-//
-//                            @Override
-//                            public void onFailure(Throwable t) {
-//                                progressRunner.error(t);
-//                            }
-//                        });
-//                    }
                 } else if (stationRouteResult != null) {
-                    callback.onFailure(new SeoulBusException(Integer.parseInt(stationRouteResult.header.errorCode), stationRouteResult.header.errorMessage));
+                    SeoulBusException exception = new SeoulBusException(Integer.parseInt(stationRouteResult.header.errorCode), stationRouteResult.header.errorMessage);
+                    callback.onFailure(exception);
+
                 } else {
                     callback.onSuccess(null);
                 }
@@ -272,16 +323,116 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
             public void failure(RetrofitError error) {
                 callback.onFailure(error);
             }
-        });
+        };
+        if (cachedRouteStationResult != null) {
+            resultCallback.success(cachedRouteStationResult, null);
+
+        } else {
+            getAdapter().getStationInfos(arsId, resultCallback);
+        }
     }
 
     @Override
-    public void getStationArrivalInfo(String stationId, Callback<List<ArrivalInfo>> callback) {
-        callback.onFailure(new ApiMethodNotSupportedException());
+    public void getStationArrivalInfo(String arsId, Callback<List<ArrivalInfo>> callback) {
+        final StationRouteResult cachedRouteStationResult = getCachedStationResult(arsId);
+        final retrofit.Callback<StationRouteResult> resultCallback = new retrofit.Callback<StationRouteResult>() {
+            @Override
+            public void success(StationRouteResult stationRouteResult, Response response) {
+                if (stationRouteResult != null && stationRouteResult.header.isSuccess()) {
+                    Station station = new Station(stationRouteResult);
+                    callback.onSuccess(station.getArrivalInfoList());
+
+                } else if (stationRouteResult != null) {
+                    SeoulBusException exception = new SeoulBusException(Integer.parseInt(stationRouteResult.header.errorCode), stationRouteResult.header.errorMessage);
+                    callback.onFailure(exception);
+
+                } else {
+                    callback.onSuccess(null);
+                }
+            }
+
+            @Override
+            public void failure(RetrofitError error) {
+                callback.onFailure(error);
+            }
+        };
+        if (cachedRouteStationResult != null) {
+            resultCallback.success(cachedRouteStationResult, null);
+        } else {
+            getAdapter().getStationInfos(arsId, resultCallback);
+        }
     }
 
     @Override
-    public void getStationArrivalInfo(String stationId, String routeId, Callback<ArrivalInfo> callback) {
-        callback.onFailure(new ApiMethodNotSupportedException());
+    public void getStationArrivalInfo(String arsId, String routeId, Callback<ArrivalInfo> callback) {
+        final StationRouteResult cachedRouteStationResult = getCachedStationResult(arsId);
+        final retrofit.Callback<StationRouteResult> resultCallback = new retrofit.Callback<StationRouteResult>() {
+            @Override
+            public void success(StationRouteResult stationRouteResult, Response response) {
+                if (stationRouteResult != null && stationRouteResult.header.isSuccess()) {
+                    Station station = new Station(stationRouteResult);
+                    callback.onSuccess(station.getArrivalInfo(routeId));
+
+                } else if (stationRouteResult != null) {
+                    SeoulBusException exception = new SeoulBusException(Integer.parseInt(stationRouteResult.header.errorCode), stationRouteResult.header.errorMessage);
+                    callback.onFailure(exception);
+
+                } else {
+                    callback.onSuccess(null);
+                }
+            }
+
+            @Override
+            public void failure(RetrofitError error) {
+                callback.onFailure(error);
+            }
+        };
+        if (cachedRouteStationResult != null) {
+            resultCallback.success(cachedRouteStationResult, null);
+        } else {
+            getAdapter().getStationInfos(arsId, resultCallback);
+        }
+    }
+
+
+    private synchronized void putStationResultCache(String routeId, StationRouteResult routeStationResult) {
+        if (stationRouteCache == null) {
+            stationRouteCache = new HashMap<>();
+        }
+        if (!stationRouteCache.containsKey(routeId)) {
+            stationRouteCache.put(routeId, new WeakReference<>(routeStationResult));
+
+            if (cacheTimer == null) {
+                cacheTimer = new Timer();
+            }
+
+            int TTL = BaseApplication.REFRESH_INTERVAL / 2;
+            //noinspection ConstantConditions
+            if (TTL < 5000) TTL = 5000;
+
+            cacheTimer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    synchronized (SeoulWebRestClient.this) {
+                        stationRouteCache.remove(routeId);
+                    }
+                }
+            }, TTL);
+        }
+    }
+
+    private StationRouteResult getCachedStationResult(String routeId) {
+        if (stationRouteCache != null) {
+            WeakReference<StationRouteResult> reference = stationRouteCache.get(routeId);
+            if (reference != null) {
+                StationRouteResult cachedResult = reference.get();
+                if (cachedResult != null) {
+                    return cachedResult;
+                } else synchronized (this) {
+                    stationRouteCache.remove(routeId);
+                }
+            }
+        }
+        return null;
     }
 }

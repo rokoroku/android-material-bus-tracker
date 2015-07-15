@@ -30,10 +30,10 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import kr.rokoroku.mbus.core.DatabaseFacade;
 import kr.rokoroku.mbus.ui.adapter.RouteAdapter;
 import kr.rokoroku.mbus.data.RouteDataProvider;
 import kr.rokoroku.mbus.core.ApiFacade;
-import kr.rokoroku.mbus.core.Database;
 import kr.rokoroku.mbus.core.FavoriteFacade;
 import kr.rokoroku.mbus.core.LocationClient;
 import kr.rokoroku.mbus.data.model.FavoriteGroup;
@@ -143,7 +143,7 @@ public class RouteActivity extends AbstractBaseActivity
             finish();
 
         } else {
-            Route storedRoute = Database.getInstance().getRoute(route.getProvider(), route.getId());
+            Route storedRoute = DatabaseFacade.getInstance().getRoute(route.getProvider(), route.getId());
             if (storedRoute != null) route = storedRoute;
 
             if (mRouteDataProvider == null) mRouteDataProvider = new RouteDataProvider(route);
@@ -161,12 +161,10 @@ public class RouteActivity extends AbstractBaseActivity
     @Override
     protected void onStop() {
         super.onStop();
-        Log.d("RouteActivity", "onStop");
         if (mRouteDataProvider != null) {
             final Route route = mRouteDataProvider.getRoute();
             if (route.isRouteBaseInfoAvailable() && route.isRouteStationInfoAvailable()) {
-                Database.getInstance().putRoute(route);
-                Log.d("RouteActivity", "onStop222");
+                DatabaseFacade.getInstance().putRoute(route);
             }
         }
     }
@@ -291,6 +289,7 @@ public class RouteActivity extends AbstractBaseActivity
 
         //set data provider to adapter
         mBusRouteAdapter = new RouteAdapter(mRouteDataProvider);
+        mBusRouteAdapter.setExpandableItemManager(mRecyclerViewExpandableItemManager);
         RecyclerView.Adapter wrappedAdapter = mRecyclerViewExpandableItemManager.createWrappedAdapter(mBusRouteAdapter);       // wrap for expanding
 
         //set item layout

@@ -6,6 +6,7 @@ import android.os.Parcelable;
 import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchAllResult;
 import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchRouteResult;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusRouteInfo;
+import kr.rokoroku.mbus.api.seoulweb.model.RouteStationResult;
 import kr.rokoroku.mbus.api.seoulweb.model.SearchRouteResult;
 import kr.rokoroku.mbus.util.TimeUtils;
 
@@ -192,7 +193,7 @@ public class Route implements Parcelable, Serializable {
     }
 
     public boolean isRouteBaseInfoAvailable() {
-        return allocNormal != null;
+        return type != null;
     }
 
     public boolean isRouteStationInfoAvailable() {

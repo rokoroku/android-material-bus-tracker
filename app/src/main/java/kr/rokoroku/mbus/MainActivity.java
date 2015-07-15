@@ -34,9 +34,9 @@ import com.quinny898.library.persistentsearch.SearchResult;
 import java.util.ArrayList;
 import java.util.Set;
 
+import kr.rokoroku.mbus.core.DatabaseFacade;
 import kr.rokoroku.mbus.ui.adapter.FavoriteAdapter;
 import kr.rokoroku.mbus.data.FavoriteDataProvider;
-import kr.rokoroku.mbus.core.Database;
 import kr.rokoroku.mbus.core.FavoriteFacade;
 import kr.rokoroku.mbus.data.model.Favorite;
 import kr.rokoroku.mbus.data.model.FavoriteGroup;
@@ -215,7 +215,7 @@ public class MainActivity extends AbstractBaseActivity
 
         mAddNewEntryButton.setOnClickListener(v -> {
 
-            Route randomRoute = Database.getInstance().getRandomRoute();
+            Route randomRoute = DatabaseFacade.getInstance().getRandomRoute();
             if (randomRoute != null && randomRoute.getId() != null) {
                 int groupPosition = 0;
 
@@ -312,7 +312,7 @@ public class MainActivity extends AbstractBaseActivity
     protected void onStop() {
         super.onStop();
         Favorite currentFavorite = FavoriteFacade.getInstance().getCurrentFavorite();
-        Database.getInstance().putBookmark(currentFavorite.getName(), currentFavorite);
+        DatabaseFacade.getInstance().putBookmark(currentFavorite.getName(), currentFavorite);
     }
 
     @Override
@@ -370,7 +370,7 @@ public class MainActivity extends AbstractBaseActivity
 
     public void reloadSearchQuery() {
         if(mSearchBox != null) {
-            Set<SearchHistory> searchHistoryTable = Database.getInstance().getSearchHistoryTable();
+            Set<SearchHistory> searchHistoryTable = DatabaseFacade.getInstance().getSearchHistoryTable();
             ArrayList<SearchResult> arrayList = new ArrayList<>();
             for (SearchHistory searchHistory : searchHistoryTable) {
                 arrayList.add(new SearchResult(searchHistory.getTitle(), null));

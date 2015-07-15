@@ -52,7 +52,7 @@ public class StationDataProvider {
     }
 
     public boolean hasLinkedStation() {
-        return station != null && station.getExternalEntries() != null && !station.getExternalEntries().isEmpty();
+        return station != null && station.getRemoteEntries() != null && !station.getRemoteEntries().isEmpty();
     }
 
     public boolean isRouteInfoAvailable() {
@@ -83,7 +83,12 @@ public class StationDataProvider {
                     break;
             }
         }
-        return typedStationRouteTable.get(routeType);
+        List<StationRoute> typedTable = typedStationRouteTable.get(routeType);
+        if(typedTable == null) {
+            typedTable = new ArrayList<>();
+            typedStationRouteTable.put(routeType, typedTable);
+        }
+        return typedTable;
     }
 
     public Date getLastUpdateTime() {
@@ -126,10 +131,6 @@ public class StationDataProvider {
                 if (routeType == null) routeType = RouteType.UNKNOWN;
 
                 List<StationRoute> typedStationRouteList = getTypedStationRouteList(routeType);
-                if (typedStationRouteList == null) {
-                    typedStationRouteList = new ArrayList<>();
-                    typedStationRouteTable.put(routeType, typedStationRouteList);
-                }
 
                 boolean conflict = false;
                 for (StationRoute route : typedStationRouteList) {

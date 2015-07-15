@@ -24,6 +24,7 @@ import kr.rokoroku.mbus.api.seoulweb.core.SeoulWebRestInterface;
 import kr.rokoroku.mbus.api.seoulweb.model.RouteStationResult;
 import kr.rokoroku.mbus.api.seoulweb.model.StationRouteResult;
 import kr.rokoroku.mbus.api.seoulweb.model.TopisMapLineResult;
+import kr.rokoroku.mbus.api.seoulweb.model.TopisRealtimeResult;
 import retrofit.Callback;
 import retrofit.http.Field;
 import retrofit.http.Query;
@@ -168,14 +169,19 @@ public class GAWrapper {
             }
 
             @Override
-            public void getStationInfos(@Field("arsId") String stationLocalId, Callback<StationRouteResult> callback) {
-                seoulWebRestInterface.getStationInfos(stationLocalId, callback);
+            public void getStationInfos(@Field("arsId") String arsId, Callback<StationRouteResult> callback) {
+                seoulWebRestInterface.getStationInfos(arsId, callback);
             }
 
             @Override
-            public void getRouteMapLine(@Query("rout_id") String routeId,
-                                        Callback<TopisMapLineResult> callback) {
-                seoulWebRestInterface.getRouteMapLine(routeId, callback);
+            public void getTopisRouteMapLine(@Query("rout_id") String routeId,
+                                             Callback<TopisMapLineResult> callback) {
+                seoulWebRestInterface.getTopisRouteMapLine(routeId, callback);
+            }
+
+            @Override
+            public void getTopisRealtimeRoute(@Query("busRouteId") String routeId, Callback<TopisRealtimeResult> callback) {
+                seoulWebRestInterface.getTopisRealtimeRoute(routeId, callback);
             }
         };
     }

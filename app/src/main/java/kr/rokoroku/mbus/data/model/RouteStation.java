@@ -12,6 +12,7 @@ import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchAllResult;
 import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchRouteResult;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusRouteStation;
 import kr.rokoroku.mbus.api.seoul.model.SeoulStationInfo;
+import kr.rokoroku.mbus.api.seoulweb.model.RouteStationResult;
 
 import java.io.Serializable;
 
@@ -54,13 +55,15 @@ public class RouteStation extends Station implements Parcelable, Serializable {
         this.district = District.SEOUL;
     }
 
+    public RouteStation(RouteStationResult.StationEntity stationEntity) {
+        super(stationEntity);
+        this.routeId = stationEntity.busRouteId;
+        this.sequence = stationEntity.seq;
+        this.district = District.SEOUL;
+    }
+
     public boolean isBusStop() {
         return !TextUtils.isEmpty(getLocalId());
-//        if(Provider.GYEONGGI.equals(getProvider())) {
-//            return !TextUtils.isEmpty(getLocalId());
-//        } else {
-//            return true;
-//        }
     }
 
     public int getSequence() {

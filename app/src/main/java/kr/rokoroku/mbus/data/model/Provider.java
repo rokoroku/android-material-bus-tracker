@@ -54,4 +54,16 @@ public enum Provider {
         }
         return cityName;
     }
+
+    public String getProviderText() {
+        switch (this) {
+            case GYEONGGI:
+                return "경기버스정보시스템";
+            case SEOUL:
+                return "서울교통정보과";
+            case INCHEON:
+                return "인천버스정보시스템";
+        }
+        return null;
+    }
 }

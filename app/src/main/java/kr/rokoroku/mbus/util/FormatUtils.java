@@ -22,7 +22,6 @@ public class FormatUtils {
 
     public static String formatHeadingTo(Context context, StationRoute stationRoute) {
 
-
         if (stationRoute.getDestination() != null) {
             return context.getString(R.string.heading_to, stationRoute.getDestination());
 
@@ -89,10 +88,10 @@ public class FormatUtils {
             stringBuilder.append(entryString);
         }
 
-        List<Station.ExternalEntry> stationLinkedEntries = station.getExternalEntries();
+        List<Station.RemoteEntry> stationLinkedEntries = station.getRemoteEntries();
         if (stationLinkedEntries != null) {
-            for (Station.ExternalEntry externalEntry : stationLinkedEntries) {
-                String entryString = String.format("%s(%s)", externalEntry.getKey(), externalEntry.getProvider().getCityName(context));
+            for (Station.RemoteEntry remoteEntry : stationLinkedEntries) {
+                String entryString = String.format("%s(%s)", remoteEntry.getKey(), remoteEntry.getProvider().getCityName(context));
                 stringBuilder.append(", ").append(entryString);
             }
         }

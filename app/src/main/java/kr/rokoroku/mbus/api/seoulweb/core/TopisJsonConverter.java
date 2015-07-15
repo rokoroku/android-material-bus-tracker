@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.lang.reflect.Type;
 
 import kr.rokoroku.mbus.api.seoulweb.model.TopisMapLineResult;
+import kr.rokoroku.mbus.api.seoulweb.model.TopisRealtimeResult;
 import retrofit.converter.ConversionException;
 import retrofit.converter.Converter;
 import retrofit.converter.GsonConverter;
@@ -26,7 +27,7 @@ public class TopisJsonConverter implements Converter {
 
     @Override
     public Object fromBody(TypedInput body, Type type) throws ConversionException {
-        if (type.equals(TopisMapLineResult.class)) try {
+        if (type.equals(TopisMapLineResult.class) || type.equals(TopisRealtimeResult.class)) try {
 
             //read string
             StringBuffer stringBuffer = new StringBuffer();

@@ -6,7 +6,7 @@ package kr.rokoroku.mbus.api;
 public class ApiMethodNotSupportedException extends Exception {
 
     public ApiMethodNotSupportedException() {
-        super();
+        super("Api doesn't support given method.");
     }
 
     public ApiMethodNotSupportedException(String detailMessage) {

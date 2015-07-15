@@ -22,7 +22,7 @@ import android.widget.TextView;
 
 import java.lang.reflect.Field;
 
-import kr.rokoroku.mbus.core.Database;
+import kr.rokoroku.mbus.core.DatabaseFacade;
 import kr.rokoroku.mbus.util.ThemeUtils;
 
 /**
@@ -137,7 +137,7 @@ public abstract class AbstractBaseActivity extends AppCompatActivity implements 
     @Override
     protected void onStop() {
         super.onStop();
-        Database.getInstance().commitAsync();
+        DatabaseFacade.getInstance().commitAsync();
     }
 
     @Override

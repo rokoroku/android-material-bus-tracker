@@ -9,7 +9,7 @@ import kr.rokoroku.mbus.api.gbis.model.GbisBusLocation;
 import kr.rokoroku.mbus.api.gbis.model.GbisBusLocationList;
 import kr.rokoroku.mbus.api.ApiWrapperInterface;
 import kr.rokoroku.mbus.core.ApiFacade;
-import kr.rokoroku.mbus.core.Database;
+import kr.rokoroku.mbus.core.DatabaseFacade;
 import kr.rokoroku.mbus.data.model.ArrivalInfo;
 import kr.rokoroku.mbus.data.model.BusLocation;
 import kr.rokoroku.mbus.data.model.MapLine;
@@ -88,21 +88,20 @@ public class GbisRestClient implements ApiWrapperInterface {
         getAdapter().getBusLocationList(routeId, new retrofit.Callback<GbisBusLocationList>() {
             @Override
             public void success(GbisBusLocationList locationList, Response response) {
-                ArrayList<BusLocation> result = null;
+                List<BusLocation> busLocationList = null;
                 if (locationList != null) {
-                    result = new ArrayList<>();
-
-                    Route route = Database.getInstance().getRoute(provider, routeId);
+                    busLocationList = new ArrayList<>();
                     RouteType routeType = null;
+                    Route route = DatabaseFacade.getInstance().getRoute(provider, routeId);
                     if (route != null) routeType = route.getType();
 
                     for (GbisBusLocation gbisBusLocation : locationList.getItems()) {
                         BusLocation busLocation = new BusLocation(gbisBusLocation);
                         busLocation.setType(routeType);
-                        result.add(busLocation);
+                        busLocationList.add(busLocation);
                     }
                 }
-                callback.onSuccess(result);
+                callback.onSuccess(busLocationList);
             }
 
             @Override

@@ -31,7 +31,7 @@ import kr.rokoroku.mbus.data.model.Station;
 /**
  * Created by rok on 2015. 6. 7..
  */
-public class Database {
+public class DatabaseFacade {
 
     public static final String TABLE_ROUTE_PREFIX = "route_";
     public static final String TABLE_STATION_PREFIX = "station_";
@@ -43,15 +43,15 @@ public class Database {
 
     private static final String TAG = "DBHelper";
 
-    private static Database instance;
+    private static DatabaseFacade instance;
     private static WeakReference<Context> contextWeakReference;
 
     public static void init(Context context) {
         contextWeakReference = new WeakReference<>(context);
-        instance = new Database();
+        instance = new DatabaseFacade();
     }
 
-    public static Database getInstance() {
+    public static DatabaseFacade getInstance() {
         return instance;
     }
 
@@ -65,14 +65,14 @@ public class Database {
     private Map<Provider, Set<String>> hiddenStationRouteTable;
     private Set<SearchHistory> searchHistoryTable;
 
-    private Database() {
+    private DatabaseFacade() {
         try {
             //open (or create) database
             createOrLoadFile();
             createOrLoadTables();
 
         } catch (Exception e) {
-            Log.e(TAG, "Exception in Database", e);
+            Log.e(TAG, "Exception in DatabaseFacade", e);
 
             Context context = contextWeakReference.get();
             if (context == null) context = BaseApplication.getInstance();
@@ -99,7 +99,7 @@ public class Database {
                     .cacheHardRefEnable()
                     .make();
         } catch (Exception e) {
-            Log.e(TAG, "Exception in Database", e);
+            Log.e(TAG, "Exception in DatabaseFacade", e);
         }
     }
 
@@ -223,14 +223,14 @@ public class Database {
     public synchronized void putStationForEachProvider(Station station) {
         putStation(station.getProvider(), station);
 
-        List<Station.ExternalEntry> externalEntries = station.getExternalEntries();
+        List<Station.RemoteEntry> externalEntries = station.getRemoteEntries();
         if (externalEntries != null && !externalEntries.isEmpty()) {
-            for (Station.ExternalEntry externalEntry : externalEntries) {
-                Station externalStation = getStationWithSecondaryKey(externalEntry.getProvider(), externalEntry.getKey());
+            for (Station.RemoteEntry remoteEntry : externalEntries) {
+                Station externalStation = getStationWithSecondaryKey(remoteEntry.getProvider(), remoteEntry.getKey());
 
                 if (externalStation != null) {
                     Station newStation = new Station(externalStation);
-                    newStation.addExternalEntry(new Station.ExternalEntry(station.getProvider(), station.getLocalId()));
+                    newStation.addRemoteEntry(new Station.RemoteEntry(station.getProvider(), station.getLocalId()));
                     newStation.setStationRouteList(station.getStationRouteList());
                     putStation(newStation.getProvider(), newStation);
                 }
@@ -281,7 +281,7 @@ public class Database {
             commitTask = new AsyncTask<Void, Void, Void>() {
                 @Override
                 protected Void doInBackground(Void[] params) {
-                    synchronized (Database.this) {
+                    synchronized (DatabaseFacade.this) {
                         try {
                             db.commit();
                         } catch (Exception e) {

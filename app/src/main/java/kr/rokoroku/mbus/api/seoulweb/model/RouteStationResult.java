@@ -21,7 +21,7 @@ public class RouteStationResult {
          * sectSpdCol : SpeedRed
          * stationNo : 22099
          * fullSectDist : 0
-         * section : 0
+         * section : 0, (95175) -> ?
          * sectSpd : 0
          * arsId : 22099
          * busRouteNm : 서초08
@@ -39,26 +39,27 @@ public class RouteStationResult {
          * gpsY : 37.454268392806995
          * direction : 양재역
          */
-        public String stationNm;
-        public String sectSpdCol;
+        public String arsId;
+        @SerializedName("station")
+        public String stationId;
         public String stationNo;
-        public String fullSectDist;
+        public String stationNm;
+        public String busRouteId;
+        public String busRouteNm;
+        public String routeType;
+        public int seq;
         public String section;
         public String sectSpd;
-        public String arsId;
-        public String busRouteNm;
         public String existYn;
         public String trnstnid;
         public String lastTm;
-        public String station;
         public String transYn;
         public String beginTm;
         public String busType;
-        public String routeType;
-        public String seq;
-        public String gpsX;
-        public String busRouteId;
-        public String gpsY;
+        public double gpsX;
+        public double gpsY;
         public String direction;
+        public String sectSpdCol;
+        public String fullSectDist;
     }
 }

@@ -21,10 +21,10 @@ import com.quinny898.library.persistentsearch.SearchResult;
 import java.util.ArrayList;
 import java.util.Set;
 
+import kr.rokoroku.mbus.core.DatabaseFacade;
 import kr.rokoroku.mbus.ui.adapter.SearchAdapter;
 import kr.rokoroku.mbus.data.SearchDataProvider;
 import kr.rokoroku.mbus.core.ApiFacade;
-import kr.rokoroku.mbus.core.Database;
 import kr.rokoroku.mbus.data.model.SearchHistory;
 import kr.rokoroku.mbus.util.ThemeUtils;
 
@@ -96,7 +96,7 @@ public class SearchActivity extends AbstractBaseActivity
 
     public void reloadSearchQuery() {
         if(mSearchBox != null) {
-            Set<SearchHistory> searchHistoryTable = Database.getInstance().getSearchHistoryTable();
+            Set<SearchHistory> searchHistoryTable = DatabaseFacade.getInstance().getSearchHistoryTable();
             ArrayList<SearchResult> arrayList = new ArrayList<>();
             for (SearchHistory searchHistory : searchHistoryTable) {
                 arrayList.add(new SearchResult(searchHistory.getTitle(), null));
@@ -134,7 +134,7 @@ public class SearchActivity extends AbstractBaseActivity
             }
         }
 
-        Set<SearchHistory> searchHistoryTable = Database.getInstance().getSearchHistoryTable();
+        Set<SearchHistory> searchHistoryTable = DatabaseFacade.getInstance().getSearchHistoryTable();
         SearchHistory searchHistory = new SearchHistory(keyword);
 
         //noinspection StatementWithEmptyBody

@@ -1,5 +1,7 @@
 package kr.rokoroku.mbus.api.seoul.core;
 
+import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,8 +18,9 @@ import kr.rokoroku.mbus.api.seoul.model.SeoulBusRouteStationList;
 import kr.rokoroku.mbus.api.seoul.model.SeoulStationInfo;
 import kr.rokoroku.mbus.api.seoul.model.SeoulStationInfoList;
 import kr.rokoroku.mbus.api.ApiWrapperInterface;
+import kr.rokoroku.mbus.api.seoulweb.core.SeoulWebRestClient;
 import kr.rokoroku.mbus.core.ApiFacade;
-import kr.rokoroku.mbus.core.Database;
+import kr.rokoroku.mbus.core.DatabaseFacade;
 import kr.rokoroku.mbus.data.model.ArrivalInfo;
 import kr.rokoroku.mbus.data.model.BusLocation;
 import kr.rokoroku.mbus.data.model.MapLine;
@@ -44,6 +47,7 @@ public class SeoulBusRestClient implements ApiWrapperInterface {
     private Client client;
     private Provider provider;
     private SeoulBusRestInterface adapter;
+    private SeoulWebRestClient webClient;
 
     public SeoulBusRestClient(Client client, String apiKey) {
         this.client = client;
@@ -69,6 +73,16 @@ public class SeoulBusRestClient implements ApiWrapperInterface {
         return adapter;
     }
 
+    public SeoulWebRestClient getWebClient() {
+        if(webClient == null) {
+            webClient = ApiFacade.getInstance().getSeoulWebRestClient();
+            if(webClient == null) {
+                webClient = new SeoulWebRestClient(client);
+            }
+        }
+        return webClient;
+    }
+
     @Override
     public Provider getProvider() {
         return provider;
@@ -76,7 +90,7 @@ public class SeoulBusRestClient implements ApiWrapperInterface {
 
     @Override
     public void searchRouteByKeyword(String keyword, Callback<List<Route>> callback) {
-        ApiFacade.getInstance().getSeoulWebRestClient().searchRouteByKeyword(keyword, new Callback<List<Route>>() {
+        getWebClient().searchRouteByKeyword(keyword, new Callback<List<Route>>() {
             @Override
             public void onSuccess(List<Route> result) {
                 callback.onSuccess(result);
@@ -113,7 +127,7 @@ public class SeoulBusRestClient implements ApiWrapperInterface {
 
     @Override
     public void searchStationByKeyword(String keyword, Callback<List<Station>> callback) {
-        ApiFacade.getInstance().getSeoulWebRestClient().searchStationByKeyword(keyword, new Callback<List<Station>>() {
+        getWebClient().searchStationByKeyword(keyword, new Callback<List<Station>>() {
             @Override
             public void onSuccess(List<Station> result) {
                 callback.onSuccess(result);
@@ -173,37 +187,60 @@ public class SeoulBusRestClient implements ApiWrapperInterface {
 
     @Override
     public void getRouteBaseInfo(String routeId, Callback<Route> callback) {
-        getAdapter().getRouteInfo(routeId, new retrofit.Callback<SeoulBusRouteInfoList>() {
+        getWebClient().getRouteBaseInfo(routeId, new Callback<Route>() {
             @Override
-            public void success(SeoulBusRouteInfoList seoulBusRouteInfoList, Response response) {
-                Route route = null;
-                if (seoulBusRouteInfoList != null && seoulBusRouteInfoList.getItems() != null) {
-                    route = Database.getInstance().getRoute(provider, routeId);
-                    if (route == null) route = new Route(routeId, null, provider);
+            public void onSuccess(Route result) {
+                callback.onSuccess(result);
+            }
 
-                    if (!seoulBusRouteInfoList.getItems().isEmpty()) {
-                        route.setSeoulBusInfo(seoulBusRouteInfoList.getItems().get(0));
-                    }
-                }
+            @Override
+            public void onFailure(Throwable t) {
+                Route route = DatabaseFacade.getInstance().getRoute(getProvider(), routeId);
+                if(route != null && shouldUseWebInterface(route.getType())) {
+                    callback.onFailure(t);
 
-                if (route != null) {
-                    final Route resultRoute = route;
-                    getAdapter().getRouteStationList(routeId, new retrofit.Callback<SeoulBusRouteStationList>() {
+                } else {
+                    getAdapter().getRouteInfo(routeId, new retrofit.Callback<SeoulBusRouteInfoList>() {
                         @Override
-                        public void success(SeoulBusRouteStationList seoulBusRouteStationList, Response response) {
-                            if (seoulBusRouteStationList != null) {
-                                List<RouteStation> routeStationList = new ArrayList<>();
-                                for (SeoulBusRouteStation entity : seoulBusRouteStationList.getItems()) {
-                                    RouteStation routeStation = new RouteStation(entity);
-                                    routeStationList.add(routeStation);
-                                    if (entity.getTrnstnid().equals(entity.getStationId())) {
-                                        resultRoute.setTurnStationSeq(entity.getSeq());
-                                        resultRoute.setTurnStationId(entity.getTrnstnid());
-                                    }
+                        public void success(SeoulBusRouteInfoList seoulBusRouteInfoList, Response response) {
+                            Route route = null;
+                            if (seoulBusRouteInfoList != null && seoulBusRouteInfoList.getItems() != null) {
+                                route = DatabaseFacade.getInstance().getRoute(provider, routeId);
+                                if (route == null) route = new Route(routeId, null, provider);
+
+                                if (!seoulBusRouteInfoList.getItems().isEmpty()) {
+                                    route.setSeoulBusInfo(seoulBusRouteInfoList.getItems().get(0));
                                 }
-                                resultRoute.setRouteStationList(routeStationList);
                             }
-                            callback.onSuccess(resultRoute);
+
+                            if (route != null) {
+                                final Route resultRoute = route;
+                                getAdapter().getRouteStationList(routeId, new retrofit.Callback<SeoulBusRouteStationList>() {
+                                    @Override
+                                    public void success(SeoulBusRouteStationList seoulBusRouteStationList, Response response) {
+                                        if (seoulBusRouteStationList != null) {
+                                            List<RouteStation> routeStationList = new ArrayList<>();
+                                            for (SeoulBusRouteStation entity : seoulBusRouteStationList.getItems()) {
+                                                RouteStation routeStation = new RouteStation(entity);
+                                                routeStationList.add(routeStation);
+                                                if (entity.getTrnstnid().equals(entity.getStationId())) {
+                                                    resultRoute.setTurnStationSeq(entity.getSeq());
+                                                    resultRoute.setTurnStationId(entity.getTrnstnid());
+                                                }
+                                            }
+                                            resultRoute.setRouteStationList(routeStationList);
+                                        }
+                                        callback.onSuccess(resultRoute);
+                                    }
+
+                                    @Override
+                                    public void failure(RetrofitError error) {
+                                        callback.onFailure(error);
+                                    }
+                                });
+                            } else {
+                                callback.onFailure(new SeoulBusException(SeoulBusException.ERROR_NO_RESULT, "ROUTE NOT FOUND"));
+                            }
                         }
 
                         @Override
@@ -211,131 +248,141 @@ public class SeoulBusRestClient implements ApiWrapperInterface {
                             callback.onFailure(error);
                         }
                     });
-                } else {
-                    callback.onFailure(new SeoulBusException(SeoulBusException.ERROR_NO_RESULT, "ROUTE NOT FOUND"));
                 }
-            }
-
-            @Override
-            public void failure(RetrofitError error) {
-                callback.onFailure(error);
             }
         });
     }
 
     @Override
     public void getRouteRealtimeInfo(String routeId, Callback<List<BusLocation>> callback) {
-        getAdapter().getRouteBusPositionList(routeId, new retrofit.Callback<SeoulBusLocationList>() {
-            @Override
-            public void success(SeoulBusLocationList seoulBusLocationList, Response response) {
-                List<BusLocation> busLocationList = null;
-                if (seoulBusLocationList != null) {
-                    busLocationList = new ArrayList<>();
-                    for (SeoulBusLocation entity : seoulBusLocationList.getItems()) {
-                        BusLocation busLocation = new BusLocation(entity);
-                        busLocationList.add(busLocation);
-                    }
-                }
-                callback.onSuccess(busLocationList);
-            }
-
-            @Override
-            public void failure(RetrofitError error) {
-                callback.onFailure(error);
-            }
-        });
-    }
-
-    @Override
-    public void getRouteMaplineInfo(String routeId, Callback<List<MapLine>> callback) {
-        ApiFacade.getInstance().getSeoulWebRestClient().getRouteMaplineInfo(routeId, callback);
-    }
-
-    @Override
-    public void getStationBaseInfo(String stationId, Callback<Station> callback) {
-        String arsId = null;
-        Station station = Database.getInstance().getStation(provider, stationId);
-        if (station != null) {
-            arsId = station.getLocalIdByProvider(provider);
-        }
-        if (arsId != null) {
-            final String finalArsId = arsId;
-            getAdapter().getRouteByStation(arsId, new retrofit.Callback<SeoulBusRouteByStationList>() {
+        Route route = DatabaseFacade.getInstance().getRoute(getProvider(), routeId);
+        if(route != null && shouldUseWebInterface(route.getType())) {
+            getWebClient().getRouteRealtimeInfo(routeId, callback);
+        } else {
+            getAdapter().getRouteBusPositionList(routeId, new retrofit.Callback<SeoulBusLocationList>() {
                 @Override
-                public void success(SeoulBusRouteByStationList routeByStationList, Response response) {
-                    Station station = null;
-                    if (routeByStationList != null && routeByStationList.getItems() != null) {
-                        station = Database.getInstance().getStation(provider, stationId);
-                        if (station == null) station = new Station(stationId, provider);
+                public void success(SeoulBusLocationList seoulBusLocationList, Response response) {
+                    List<BusLocation> busLocationList = null;
+                    if (seoulBusLocationList != null) {
+                        RouteType routeType = null;
+                        Route route = DatabaseFacade.getInstance().getRoute(provider, routeId);
+                        if (route != null) routeType = route.getType();
 
-                        // 1. parse retrieved data
-                        List<StationRoute> stationRoutes = new ArrayList<>();
-                        for (SeoulBusRouteByStation routeByStation : routeByStationList.getItems()) {
-                            StationRoute stationRoute = new StationRoute(routeByStation, finalArsId);
-
-                            // exclude non-Seoul route
-                            if (RouteType.checkSeoulRoute(stationRoute.getRouteType())) {
-                                stationRoutes.add(stationRoute);
-                            }
-                        }
-
-                        // 2. retrieve route's meta data if not presented
-                        List<StationRoute> unknownRoutes = new ArrayList<>();
-                        for (StationRoute stationRoute : stationRoutes) {
-                            if (stationRoute.getRoute() == null) {
-                                unknownRoutes.add(stationRoute);
-                            }
-                        }
-
-                        int remainTaskSize = unknownRoutes.size();
-                        if (remainTaskSize > 0) {
-                            final int[] progress = {0};
-                            final Throwable[] error = {null};
-                            final Station finalStation = station;
-                            for (StationRoute unknownTypeRoute : unknownRoutes) {
-                                getRouteBaseInfo(unknownTypeRoute.getRouteId(), new Callback<Route>() {
-                                    @Override
-                                    public void onSuccess(Route result) {
-                                        if (result != null && result.getRouteStationList() != null) {
-                                            for (RouteStation routeStation : result.getRouteStationList()) {
-                                                if (routeStation.getId().equals(stationId)) {
-                                                    unknownTypeRoute.setSequence(routeStation.getSequence());
-                                                }
-                                            }
-                                        }
-                                        checkCompletion();
-                                    }
-
-                                    @Override
-                                    public void onFailure(Throwable t) {
-                                        t.printStackTrace();
-                                        error[0] = t;
-                                        checkCompletion();
-                                    }
-
-                                    private void checkCompletion() {
-                                        int currentTask = ++progress[0];
-                                        if (currentTask >= remainTaskSize) {
-                                            finalStation.setStationRouteList(stationRoutes);
-                                            Throwable throwable = error[0];
-                                            if (throwable != null) {
-                                                callback.onFailure(throwable);
-                                            } else {
-                                                callback.onSuccess(finalStation);
-                                            }
-                                        }
-                                    }
-                                });
-                            }
-                            return;
+                        busLocationList = new ArrayList<>();
+                        for (SeoulBusLocation entity : seoulBusLocationList.getItems()) {
+                            BusLocation busLocation = new BusLocation(entity);
+                            busLocation.setRouteId(routeId);
+                            busLocation.setType(routeType);
+                            busLocationList.add(busLocation);
                         }
                     }
-                    callback.onSuccess(station);
+                    callback.onSuccess(busLocationList);
                 }
 
                 @Override
                 public void failure(RetrofitError error) {
                     callback.onFailure(error);
+                }
+            });
+        }
+    }
+
+    @Override
+    public void getRouteMaplineInfo(String routeId, Callback<List<MapLine>> callback) {
+        getWebClient().getRouteMaplineInfo(routeId, callback);
+    }
+
+    @Override
+    public void getStationBaseInfo(String stationId, Callback<Station> callback) {
+        Station station = DatabaseFacade.getInstance().getStation(provider, stationId);
+        if (station != null && station.getLocalId() != null && !station.isLocalRouteInfoAvailable()) {
+            final String arsId = station.getLocalId();
+            getWebClient().getStationBaseInfo(arsId, new Callback<Station>() {
+                @Override
+                public void onSuccess(Station result) {
+                    callback.onSuccess(result);
+                }
+
+                @Override
+                public void onFailure(Throwable t) {
+                    getAdapter().getRouteByStation(arsId, new retrofit.Callback<SeoulBusRouteByStationList>() {
+                        @Override
+                        public void success(SeoulBusRouteByStationList routeByStationList, Response response) {
+                            Station station = null;
+                            if (routeByStationList != null && routeByStationList.getItems() != null) {
+                                station = DatabaseFacade.getInstance().getStation(provider, stationId);
+                                if (station == null) station = new Station(stationId, provider);
+
+                                // 1. parse retrieved data
+                                List<StationRoute> stationRoutes = new ArrayList<>();
+                                for (SeoulBusRouteByStation routeByStation : routeByStationList.getItems()) {
+                                    StationRoute stationRoute = new StationRoute(routeByStation, arsId);
+
+                                    // exclude non-Seoul route
+                                    if (RouteType.checkSeoulRoute(stationRoute.getRouteType())) {
+                                        stationRoutes.add(stationRoute);
+                                    }
+                                }
+
+                                // 2. retrieve route's meta data if not presented
+                                List<StationRoute> unknownRoutes = new ArrayList<>();
+                                for (StationRoute stationRoute : stationRoutes) {
+                                    if (stationRoute.getRoute() == null) {
+                                        unknownRoutes.add(stationRoute);
+                                    }
+                                }
+
+                                int remainTaskSize = unknownRoutes.size();
+                                if (remainTaskSize > 0) {
+                                    final int[] progress = {0};
+                                    final Throwable[] error = {null};
+                                    final Station finalStation = station;
+                                    for (StationRoute unknownTypeRoute : unknownRoutes) {
+                                        getRouteBaseInfo(unknownTypeRoute.getRouteId(), new Callback<Route>() {
+                                            @Override
+                                            public void onSuccess(Route result) {
+                                                if (result != null && result.getRouteStationList() != null) {
+                                                    for (RouteStation routeStation : result.getRouteStationList()) {
+                                                        if (routeStation.getId().equals(stationId)) {
+                                                            unknownTypeRoute.setSequence(routeStation.getSequence());
+                                                        }
+                                                    }
+                                                }
+                                                checkCompletion();
+                                            }
+
+                                            @Override
+                                            public void onFailure(Throwable t) {
+                                                t.printStackTrace();
+                                                error[0] = t;
+                                                checkCompletion();
+                                            }
+
+                                            private void checkCompletion() {
+                                                int currentTask = ++progress[0];
+                                                if (currentTask >= remainTaskSize) {
+                                                    finalStation.setStationRouteList(stationRoutes);
+                                                    Throwable throwable = error[0];
+                                                    if (throwable != null) {
+                                                        callback.onFailure(throwable);
+                                                    } else {
+                                                        callback.onSuccess(finalStation);
+                                                    }
+                                                }
+                                            }
+                                        });
+                                    }
+                                    return;
+                                }
+                            }
+                            callback.onSuccess(station);
+                        }
+
+                        @Override
+                        public void failure(RetrofitError error) {
+                            callback.onFailure(error);
+                        }
+                    });
                 }
             });
 
@@ -344,13 +391,15 @@ public class SeoulBusRestClient implements ApiWrapperInterface {
             callback.onSuccess(station);
 
         } else {
-            callback.onFailure(new SeoulBusException(SeoulBusException.ERROR_INVALID_PARAMETER, "ILLEGAL_STATE_STATION"));
+            SeoulBusException exception = new SeoulBusException(SeoulBusException.ERROR_INVALID_PARAMETER, "ILLEGAL_STATION_ID");
+            Log.e("SeoulBusRestClient", "getStationBaseInfo", exception);
+            callback.onFailure(exception);
         }
     }
 
     @Override
     public void getStationArrivalInfo(String stationId, Callback<List<ArrivalInfo>> callback) {
-        ApiFacade.getInstance().getSeoulWebRestClient().getStationArrivalInfo(stationId, new Callback<List<ArrivalInfo>>() {
+        getWebClient().getStationArrivalInfo(stationId, new Callback<List<ArrivalInfo>>() {
             @Override
             public void onSuccess(List<ArrivalInfo> result) {
                 callback.onSuccess(result);
@@ -359,7 +408,7 @@ public class SeoulBusRestClient implements ApiWrapperInterface {
             @Override
             public void onFailure(Throwable t) {
 
-                final Station station = Database.getInstance().getStation(provider, stationId);
+                final Station station = DatabaseFacade.getInstance().getStation(provider, stationId);
                 final List<ArrivalInfo> arrivalInfoList = new ArrayList<>();
                 final List<StationRoute> stationRouteList = station.getStationRouteList();
                 final ProgressCallback.ProgressRunner progressRunner
@@ -387,7 +436,7 @@ public class SeoulBusRestClient implements ApiWrapperInterface {
                         getStationArrivalInfo(stationId, stationRoute.getRouteId(), new Callback<ArrivalInfo>() {
                             @Override
                             public void onSuccess(ArrivalInfo result) {
-                                if(result != null) {
+                                if (result != null) {
                                     stationRoute.setArrivalInfo(result);
                                     arrivalInfoList.add(result);
                                 }
@@ -409,58 +458,79 @@ public class SeoulBusRestClient implements ApiWrapperInterface {
 
     @Override
     public void getStationArrivalInfo(String stationId, String routeId, Callback<ArrivalInfo> callback) {
-        int sequence = -1;
 
-        Station station = Database.getInstance().getStation(provider, stationId);
+        Station station = DatabaseFacade.getInstance().getStation(getProvider(), stationId);
         if (station != null) {
-            StationRoute stationRoute = station.getStationRoute(routeId);
-            if (stationRoute != null) sequence = stationRoute.getSequence();
-        }
-//        else {
-//            getStationBaseInfo(stationId, new Callback<Station>() {
-//                @Override
-//                public void onSuccess(Station result) {
-//                    if(result != null) {
-//                        Database.getInstance().putStation(provider, result);
-//                        getStationArrivalInfo(stationId, routeId, callback);
-//                    } else {
-//                        onFailure(new SeoulBusException(SeoulBusException.ERROR_NO_RESULT, "STATION NOT FOUND"));
-//                    }
-//                }
-//
-//                @Override
-//                public void onFailure(Throwable t) {
-//                    callback.onFailure(t);
-//                }
-//            });
-//        }
+            getWebClient().getStationArrivalInfo(station.getLocalId(), routeId, new Callback<ArrivalInfo>() {
+                @Override
+                public void onSuccess(ArrivalInfo result) {
+                    callback.onSuccess(result);
+                }
 
-        final retrofit.Callback<SeoulBusArrivalList> innerCallback
-                = new retrofit.Callback<SeoulBusArrivalList>() {
-            @Override
-            public void success(SeoulBusArrivalList seoulBusArrivalList, Response response) {
-                ArrivalInfo arrivalInfo = null;
-                if (seoulBusArrivalList != null) {
-                    for (SeoulBusArrival seoulBusArrival : seoulBusArrivalList.getItems()) {
-                        if (routeId.equals(seoulBusArrival.getBusRouteId())) {
-                            arrivalInfo = new ArrivalInfo(seoulBusArrival);
-                            break;
+                @Override
+                public void onFailure(Throwable t) {
+                    int sequence = -1;
+                    final retrofit.Callback<SeoulBusArrivalList> innerCallback = new retrofit.Callback<SeoulBusArrivalList>() {
+                        @Override
+                        public void success(SeoulBusArrivalList seoulBusArrivalList, Response response) {
+                            ArrivalInfo arrivalInfo = null;
+                            if (seoulBusArrivalList != null) {
+                                for (SeoulBusArrival seoulBusArrival : seoulBusArrivalList.getItems()) {
+                                    if (routeId.equals(seoulBusArrival.getBusRouteId())) {
+                                        arrivalInfo = new ArrivalInfo(seoulBusArrival);
+                                        break;
+                                    }
+                                }
+                            }
+                            callback.onSuccess(arrivalInfo);
+                        }
+
+                        @Override
+                        public void failure(RetrofitError error) {
+                            callback.onFailure(error);
+                        }
+                    };
+                    final StationRoute stationRoute = station.getStationRoute(routeId);
+
+                    if (stationRoute != null) {
+                        sequence = stationRoute.getSequence();
+                        RouteType routeType = stationRoute.getRouteType();
+                        if (shouldUseWebInterface(routeType)) {
+                            callback.onFailure(t);
+                            return;
                         }
                     }
-                }
-                callback.onSuccess(arrivalInfo);
-            }
+                    if (sequence != -1) {
+                        getAdapter().getArrivalInfo(stationId, routeId, sequence, innerCallback);
+                    } else {
+                        getAdapter().getArrivalInfo(routeId, innerCallback);
+                    }
 
-            @Override
-            public void failure(RetrofitError error) {
-                callback.onFailure(error);
-            }
-        };
-        if (sequence != -1) {
-            getAdapter().getArrivalInfo(stationId, routeId, sequence, innerCallback);
+                }
+            });
+
         } else {
-            getAdapter().getArrivalInfo(routeId, innerCallback);
+            getStationBaseInfo(stationId, new Callback<Station>() {
+                @Override
+                public void onSuccess(Station result) {
+                    if (result != null) {
+                        DatabaseFacade.getInstance().putStation(provider, result);
+                        getStationArrivalInfo(stationId, routeId, callback);
+                    } else {
+                        onFailure(new SeoulBusException(SeoulBusException.ERROR_NO_RESULT, "STATION NOT FOUND"));
+                    }
+                }
+
+                @Override
+                public void onFailure(Throwable t) {
+                    callback.onFailure(t);
+                }
+            });
         }
+
     }
 
+    private boolean shouldUseWebInterface(RouteType routeType) {
+        return RouteType.GREEN_SEOUL_LOCAL.equals(routeType);
+    }
 }

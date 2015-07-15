@@ -34,7 +34,7 @@ public class ArrivalInfo implements Parcelable {
         this.isDriveEnd = "Y".equals(gbisBusArrival.getDrvEnd());
         this.timestamp = System.currentTimeMillis();
 
-        if(!TextUtils.isEmpty(gbisBusArrival.getPlateNo1())) {
+        if (!TextUtils.isEmpty(gbisBusArrival.getPlateNo1())) {
             this.busArrivalItem1 = new BusArrivalItem();
             this.busArrivalItem1.plateNumber = gbisBusArrival.getPlateNo1();
             this.busArrivalItem1.predictTime = new Date(System.currentTimeMillis() + Integer.parseInt(gbisBusArrival.getPredictTime1()) * 60000);
@@ -44,7 +44,7 @@ public class ArrivalInfo implements Parcelable {
             this.busArrivalItem1.isDelayed = "Y".equals(gbisBusArrival.getDelayYn1());
         }
 
-        if(!TextUtils.isEmpty(gbisBusArrival.getPlateNo2())) {
+        if (!TextUtils.isEmpty(gbisBusArrival.getPlateNo2())) {
             this.busArrivalItem2 = new BusArrivalItem();
             this.busArrivalItem2.plateNumber = gbisBusArrival.getPlateNo2();
             this.busArrivalItem2.predictTime = new Date(System.currentTimeMillis() + Integer.parseInt(gbisBusArrival.getPredictTime2()) * 60000);
@@ -61,7 +61,7 @@ public class ArrivalInfo implements Parcelable {
         this.isDriveEnd = "Y".equals(entity.getDrvEnd());
         this.timestamp = System.currentTimeMillis();
 
-        if(!TextUtils.isEmpty(entity.getPlateNo1())) {
+        if (!TextUtils.isEmpty(entity.getPlateNo1())) {
             this.busArrivalItem1 = new BusArrivalItem();
             this.busArrivalItem1.vehicleId = entity.getVehId1();
             this.busArrivalItem1.plateNumber = entity.getPlateNo1();
@@ -72,7 +72,7 @@ public class ArrivalInfo implements Parcelable {
             this.busArrivalItem1.isDelayed = "Y".equals(entity.getDelayYn1());
         }
 
-        if(!TextUtils.isEmpty(entity.getPlateNo2())) {
+        if (!TextUtils.isEmpty(entity.getPlateNo2())) {
             this.busArrivalItem2 = new BusArrivalItem();
             this.busArrivalItem2.vehicleId = entity.getVehId2();
             this.busArrivalItem2.plateNumber = entity.getPlateNo2();
@@ -90,7 +90,7 @@ public class ArrivalInfo implements Parcelable {
         this.timestamp = System.currentTimeMillis();
 
         int stationOrd = Integer.parseInt(entity.getStaOrd());
-        if(!entity.getVehId1().equals(entity.getVehId2())) {
+        if (!entity.getVehId1().equals(entity.getVehId2())) {
             if (!"0".equals(entity.getVehId1()) && !entity.getIsLast1().startsWith("-")) {
                 this.busArrivalItem1 = new BusArrivalItem();
                 this.busArrivalItem1.vehicleId = entity.getVehId1();
@@ -122,30 +122,28 @@ public class ArrivalInfo implements Parcelable {
         this.timestamp = System.currentTimeMillis();
 
         int stationOrd = routeEntity.staOrd;
-        if(!routeEntity.vehId1.equals(routeEntity.vehId2)) {
-            if (!"0".equals(routeEntity.vehId1) && !routeEntity.isLast1.startsWith("-")) {
-                this.busArrivalItem1 = new BusArrivalItem();
-                this.busArrivalItem1.vehicleId = routeEntity.vehId1;
-                this.busArrivalItem1.plateNumber = routeEntity.plainNo1;
-                this.busArrivalItem1.predictTime = new Date(System.currentTimeMillis() + routeEntity.traTime1 * 1000);
-                this.busArrivalItem1.behind = stationOrd - routeEntity.sectOrd1;
-                this.busArrivalItem1.remainSeat = "1".equals(routeEntity.isFullFlag1) ? 0 : -1;
-                this.busArrivalItem1.isLowPlate = !"0".equals(routeEntity.busType1);
-                this.busArrivalItem1.isLastBus = "-2".equals(routeEntity.isLast1);
-                this.isDriveEnd |= this.busArrivalItem1.isLastBus;
-            }
+        if (!"0".equals(routeEntity.vehId1)) {
+            this.busArrivalItem1 = new BusArrivalItem();
+            this.busArrivalItem1.vehicleId = routeEntity.vehId1;
+            this.busArrivalItem1.plateNumber = routeEntity.plainNo1;
+            this.busArrivalItem1.predictTime = new Date(System.currentTimeMillis() + routeEntity.traTime1 * 1000);
+            this.busArrivalItem1.behind = stationOrd - routeEntity.sectOrd1;
+            this.busArrivalItem1.remainSeat = "1".equals(routeEntity.isFullFlag1) ? 0 : -1;
+            this.busArrivalItem1.isLowPlate = !"0".equals(routeEntity.busType1);
+            this.busArrivalItem1.isLastBus = "-2".equals(routeEntity.isLast1);
+            this.isDriveEnd |= this.busArrivalItem1.isLastBus;
+        }
 
-            if (!"0".equals(routeEntity.vehId2) && !routeEntity.isLast2.startsWith("-")) {
-                this.busArrivalItem2 = new BusArrivalItem();
-                this.busArrivalItem2.vehicleId = routeEntity.vehId2;
-                this.busArrivalItem2.plateNumber = routeEntity.plainNo2;
-                this.busArrivalItem2.predictTime = new Date(System.currentTimeMillis() + routeEntity.traTime1 * 1000);
-                this.busArrivalItem2.behind = stationOrd - routeEntity.sectOrd2;
-                this.busArrivalItem2.remainSeat = "1".equals(routeEntity.isFullFlag1) ? 0 : -1;
-                this.busArrivalItem2.isLowPlate = !"0".equals(routeEntity.busType2);
-                this.busArrivalItem2.isLastBus = "-2".equals(routeEntity.isLast2);
-                this.isDriveEnd |= this.busArrivalItem2.isLastBus;
-            }
+        if (!"0".equals(routeEntity.vehId2)) {
+            this.busArrivalItem2 = new BusArrivalItem();
+            this.busArrivalItem2.vehicleId = routeEntity.vehId2;
+            this.busArrivalItem2.plateNumber = routeEntity.plainNo2;
+            this.busArrivalItem2.predictTime = new Date(System.currentTimeMillis() + routeEntity.traTime1 * 1000);
+            this.busArrivalItem2.behind = stationOrd - routeEntity.sectOrd2;
+            this.busArrivalItem2.remainSeat = "1".equals(routeEntity.isFullFlag1) ? 0 : -1;
+            this.busArrivalItem2.isLowPlate = !"0".equals(routeEntity.busType2);
+            this.busArrivalItem2.isLastBus = "-2".equals(routeEntity.isLast2);
+            this.isDriveEnd |= this.busArrivalItem2.isLastBus;
         }
         this.isDriveEnd = "-2".equals(routeEntity.isLast1) || "-2".equals(routeEntity.isLast2);
     }

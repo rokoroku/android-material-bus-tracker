@@ -221,15 +221,15 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
         holder.mRouteId = stationRoute.getRouteId();
 
         if (stationRoute.getArrivalInfo() == null || TimeUtils.checkShouldUpdate(stationRoute.getArrivalInfo().getTimestamp())) {
-            ApiFacade.getInstance().fillArrivalInfoData(station, stationRoute, new ApiFacade.SimpleProgressCallback() {
+            ApiFacade.getInstance().fillArrivalInfo(station, stationRoute, new ApiFacade.SimpleProgressCallback() {
                 @Override
                 public void onComplete(boolean success) {
-                    if (success) holder.setItem(stationRoute.getArrivalInfo());
+                    holder.setItem(stationRoute.getArrivalInfo());
                 }
 
                 @Override
                 public void onError(int progress, Throwable t) {
-                    Toast.makeText(holder.itemView.getContext(), t.getCause().getMessage(), Toast.LENGTH_LONG).show();
+                    Toast.makeText(holder.itemView.getContext(), t.getMessage(), Toast.LENGTH_LONG).show();
                     holder.setItem(null);
                 }
             });

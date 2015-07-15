@@ -25,7 +25,7 @@ import kr.rokoroku.mbus.api.gbisweb.model.GbisStationRouteResult;
 import kr.rokoroku.mbus.api.ApiMethodNotSupportedException;
 import kr.rokoroku.mbus.api.ApiWrapperInterface;
 import kr.rokoroku.mbus.core.ApiFacade;
-import kr.rokoroku.mbus.core.Database;
+import kr.rokoroku.mbus.core.DatabaseFacade;
 import kr.rokoroku.mbus.data.model.ArrivalInfo;
 import kr.rokoroku.mbus.data.model.BusLocation;
 import kr.rokoroku.mbus.data.model.Direction;
@@ -317,7 +317,7 @@ public class GbisWebRestClient implements ApiWrapperInterface {
                     }
                 }
                 if (mapLineList != null) {
-                    Route route = Database.getInstance().getRoute(provider, routeId);
+                    Route route = DatabaseFacade.getInstance().getRoute(provider, routeId);
                     if (route != null) route.setMapLineList(mapLineList);
                 }
                 callback.onSuccess(mapLineList);
@@ -336,7 +336,7 @@ public class GbisWebRestClient implements ApiWrapperInterface {
             @Override
             public void success(GbisStationRouteResult gbisStationRouteResult, Response response) {
                 if (gbisStationRouteResult != null && gbisStationRouteResult.isSuccess()) {
-                    Station station = Database.getInstance().getStation(getProvider(), stationId);
+                    Station station = DatabaseFacade.getInstance().getStation(getProvider(), stationId);
                     if (station == null) station = new Station(stationId, getProvider());
                     station.setName(gbisStationRouteResult.getResult().getStationNm());
 

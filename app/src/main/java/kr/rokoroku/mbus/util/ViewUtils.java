@@ -38,6 +38,11 @@ public class ViewUtils {
         }
     }
 
+    public static void runOnUiThread(Runnable runnable, long delay) {
+        if(sHandler == null) sHandler = new Handler(Looper.getMainLooper());
+        sHandler.postDelayed(runnable, delay);
+    }
+
     public static float dpToPixel(float dp, Resources resources) {
         DisplayMetrics metrics = resources.getDisplayMetrics();
         return metrics.density * dp;

@@ -8,6 +8,9 @@ import com.google.android.gms.maps.model.LatLng;
 import kr.rokoroku.mbus.api.gbis.model.GbisBusLocation;
 import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchRouteResult;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusLocation;
+import kr.rokoroku.mbus.api.seoulweb.model.RouteStationResult;
+import kr.rokoroku.mbus.api.seoulweb.model.TopisRealtimeResult;
+import kr.rokoroku.mbus.core.DatabaseFacade;
 import kr.rokoroku.mbus.util.GeoUtils;
 
 public class BusLocation implements Comparable<BusLocation>, Parcelable {
@@ -26,13 +29,8 @@ public class BusLocation implements Comparable<BusLocation>, Parcelable {
     private boolean isLastBus = false;
     private LatLng latLng;
 
-    public BusLocation() {
-
-    }
-
     public BusLocation(SeoulBusLocation entity) {
         this.id = entity.getVehId();
-        this.type = RouteType.valueOfTopis(entity.getBusType());
         this.plateNumber = entity.getPlainNo();
         this.currentStationId = entity.getSectionId();
         this.isLowPlate = "1".equals(entity.getBusType());  //차량유형 (0:일반버스, 1:저상버스, 2:굴절버스)
@@ -63,6 +61,16 @@ public class BusLocation implements Comparable<BusLocation>, Parcelable {
         this.remainSeat = gbisBusLocation.getRemainSeatCnt();
         this.isLowPlate = gbisBusLocation.getLowPlate() == 1;
         this.isLastBus = gbisBusLocation.getEndBus() == 1;
+    }
+
+    public BusLocation(TopisRealtimeResult.ResultEntity resultEntity) {
+        this.id = resultEntity.vehId;
+        this.plateNumber = resultEntity.plainNo;
+        this.currentStationId = resultEntity.sectionId;
+        this.stationSeq = resultEntity.sectOrd;
+        this.isLowPlate = "1".equals(resultEntity.busType);
+        this.isLastBus = "Y".equalsIgnoreCase(resultEntity.lstbusyn);
+        this.latLng = new LatLng(resultEntity.gpsY, resultEntity.gpsX);
     }
 
     public String getId() {

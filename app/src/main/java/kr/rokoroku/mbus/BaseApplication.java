@@ -6,7 +6,7 @@ import com.google.android.gms.analytics.GoogleAnalytics;
 import com.google.android.gms.analytics.Tracker;
 
 import kr.rokoroku.mbus.core.ApiFacade;
-import kr.rokoroku.mbus.core.Database;
+import kr.rokoroku.mbus.core.DatabaseFacade;
 import kr.rokoroku.mbus.core.LocationClient;
 
 /**
@@ -30,7 +30,7 @@ public class BaseApplication extends Application {
         super.onCreate();
         instance = this;
 
-        Database.init(this);
+        DatabaseFacade.init(this);
         LocationClient.init(this);
         ApiFacade.init(this);
 

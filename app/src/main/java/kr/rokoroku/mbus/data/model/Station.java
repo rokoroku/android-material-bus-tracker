@@ -23,6 +23,7 @@ import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchAllResult;
 import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchRouteResult;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusRouteStation;
 import kr.rokoroku.mbus.api.seoul.model.SeoulStationInfo;
+import kr.rokoroku.mbus.api.seoulweb.model.RouteStationResult;
 import kr.rokoroku.mbus.api.seoulweb.model.StationRouteResult;
 import kr.rokoroku.mbus.util.GeoUtils;
 
@@ -36,7 +37,7 @@ public class Station implements Parcelable, Serializable {
     private Double latitude;
     private Provider provider;
 
-    private List<ExternalEntry> externalEntryList;
+    private List<RemoteEntry> remoteEntryList;
     private List<StationRoute> stationRouteList;
     private transient Date lastUpdateTime;
     private transient Map<String, ArrivalInfo> temporalArrivalInfos ;
@@ -58,7 +59,7 @@ public class Station implements Parcelable, Serializable {
         this.latitude = other.latitude;
         this.longitude = other.longitude;
         this.provider = other.provider;
-        this.externalEntryList = other.externalEntryList;
+        this.remoteEntryList = other.remoteEntryList;
         this.stationRouteList = other.stationRouteList;
     }
 
@@ -77,8 +78,8 @@ public class Station implements Parcelable, Serializable {
         this.provider = Provider.GYEONGGI;
 
         String mobileNoSi = stationEntity.getMobileNoSi();
-        ExternalEntry externalEntry = ExternalEntry.createFromCityString(city, mobileNoSi);
-        if (externalEntry != null) addExternalEntry(externalEntry);
+        RemoteEntry remoteEntry = RemoteEntry.createFromCityString(city, mobileNoSi);
+        if (remoteEntry != null) addRemoteEntry(remoteEntry);
     }
 
     public Station(GbisSearchAllResult.ResultEntity.BusStationEntity.ListEntity listEntity) {
@@ -96,8 +97,8 @@ public class Station implements Parcelable, Serializable {
         this.provider = Provider.GYEONGGI;
 
         String stationNoSi = listEntity.getStationNoSi();
-        ExternalEntry externalEntry = ExternalEntry.createFromCityString(city, stationNoSi);
-        if (externalEntry != null) addExternalEntry(externalEntry);
+        RemoteEntry remoteEntry = RemoteEntry.createFromCityString(city, stationNoSi);
+        if (remoteEntry != null) addRemoteEntry(remoteEntry);
 
     }
 
@@ -105,9 +106,7 @@ public class Station implements Parcelable, Serializable {
         this.id = seoulStationInfo.getStId();
         this.name = seoulStationInfo.getStNm();
         this.city = "서울시";
-        String arsId = seoulStationInfo.getArsId();
-        if ("0".equals(arsId)) arsId = null;
-        this.localId = arsId;
+        this.setLocalId(seoulStationInfo.getArsId());
         Double x = Double.valueOf(seoulStationInfo.getTmX());
         Double y = Double.valueOf(seoulStationInfo.getTmY());
         LatLng latLng = GeoUtils.convertTm(x, y);
@@ -122,9 +121,7 @@ public class Station implements Parcelable, Serializable {
         this.id = seoulBusRouteStation.getStationId();
         this.name = seoulBusRouteStation.getStationNm();
         this.city = "서울시";
-        String arsId = seoulBusRouteStation.getStationNo();
-        if ("0".equals(arsId)) arsId = null;
-        this.localId = arsId;
+        this.setLocalId(seoulBusRouteStation.getStationNo());
         this.latitude = Double.valueOf(seoulBusRouteStation.getGpsY());
         this.longitude = Double.valueOf(seoulBusRouteStation.getGpsX());
         this.provider = Provider.SEOUL;
@@ -133,13 +130,12 @@ public class Station implements Parcelable, Serializable {
     public Station(StationRouteResult stationRouteResult) {
         if (stationRouteResult.result != null) {
             List<StationRoute> stationRouteList = new ArrayList<>();
-            List<ArrivalInfo> arrivalInfoList = new ArrayList<>();
 
             for (StationRouteResult.RouteEntity routeEntity : stationRouteResult.result) {
                 if (this.getId() == null) {
                     this.setId(routeEntity.stId);
                 }
-                if (this.getLocalId() == null && !routeEntity.arsId.equals("0")) {
+                if (this.getLocalId() == null) {
                     this.setLocalId(routeEntity.arsId);
                 }
                 if (this.getName() == null) {
@@ -148,19 +144,28 @@ public class Station implements Parcelable, Serializable {
 
                 StationRoute stationRoute = new StationRoute(routeEntity);
                 ArrivalInfo arrivalInfo = new ArrivalInfo(routeEntity);
+                stationRoute.setArrivalInfo(arrivalInfo);
 
                 // exclude non-seoul entry
                 if(RouteType.checkSeoulRoute(stationRoute.getRouteType())) {
                     stationRouteList.add(stationRoute);
-                    arrivalInfoList.add(arrivalInfo);
                 }
             }
 
             this.setCity("서울시");
             this.setStationRouteList(stationRouteList);
-            this.setArrivalInfos(arrivalInfoList);
             this.setProvider(Provider.SEOUL);
         }
+    }
+
+    public Station(RouteStationResult.StationEntity stationEntity) {
+        this.id = stationEntity.stationId;
+        this.name = stationEntity.stationNm;
+        this.setLocalId(stationEntity.stationNo);
+        this.city = "서울시";
+        this.latitude = stationEntity.gpsY;
+        this.longitude = stationEntity.gpsX;
+        this.provider = Provider.SEOUL;
     }
 
     public String getId() {
@@ -192,6 +197,7 @@ public class Station implements Parcelable, Serializable {
     }
 
     public void setLocalId(String localId) {
+        if("0".equals(localId) || "미정차".equals(localId)) localId = null;
         this.localId = localId;
     }
 
@@ -199,26 +205,26 @@ public class Station implements Parcelable, Serializable {
         if (this.provider.equals(provider)) {
             return localId;
         }
-        if (externalEntryList != null) {
-            for (ExternalEntry externalEntry : externalEntryList) {
-                if (externalEntry.getProvider().equals(provider)) return externalEntry.getKey();
+        if (remoteEntryList != null) {
+            for (RemoteEntry remoteEntry : remoteEntryList) {
+                if (remoteEntry.getProvider().equals(provider)) return remoteEntry.getKey();
             }
         }
         return null;
     }
 
-    public void addExternalEntry(ExternalEntry externalEntry) {
-        if (this.provider.equals(externalEntry.getProvider())) {
+    public void addRemoteEntry(RemoteEntry remoteEntry) {
+        if (this.provider.equals(remoteEntry.getProvider())) {
             return;
         }
-        if (externalEntryList == null) externalEntryList = new ArrayList<>();
-        if (!externalEntryList.contains(externalEntry)) {
-            externalEntryList.add(externalEntry);
+        if (remoteEntryList == null) remoteEntryList = new ArrayList<>();
+        if (!remoteEntryList.contains(remoteEntry)) {
+            remoteEntryList.add(remoteEntry);
         }
     }
 
-    public List<ExternalEntry> getExternalEntries() {
-        return externalEntryList;
+    public List<RemoteEntry> getRemoteEntries() {
+        return remoteEntryList;
     }
 
     public Double getLongitude() {
@@ -260,6 +266,18 @@ public class Station implements Parcelable, Serializable {
         } else {
             return temporalArrivalInfos != null ? temporalArrivalInfos.get(routeId) : null;
         }
+    }
+
+    public List<ArrivalInfo> getArrivalInfoList() {
+        if(getStationRouteList() != null) {
+            List<ArrivalInfo> arrivalInfoList = new ArrayList<>();
+            for (StationRoute stationRoute : getStationRouteList()) {
+                ArrivalInfo arrivalInfo = getArrivalInfo(stationRoute.getRouteId());
+                arrivalInfoList.add(arrivalInfo);
+            }
+            return arrivalInfoList;
+        }
+        return null;
     }
 
     public void putArrivalInfo(ArrivalInfo arrivalInfo) {
@@ -333,20 +351,20 @@ public class Station implements Parcelable, Serializable {
         return stationRouteList != null;
     }
 
-    public boolean isEveryRouteInfosAvailable() {
+    public boolean isEveryRouteInfoAvailable() {
         if(!isLocalRouteInfoAvailable()) return false;
-        if(externalEntryList != null) {
-            for(ExternalEntry externalEntry : externalEntryList) {
-                Provider linkEntryProvider = externalEntry.getProvider();
+        if(remoteEntryList != null) {
+            for(RemoteEntry remoteEntry : remoteEntryList) {
+                Provider linkEntryProvider = remoteEntry.getProvider();
                 if(!linkEntryProvider.equals(provider)) {
-                    if(!isExternalRouteInfoAvailable(linkEntryProvider)) return false;
+                    if(!isRemoteRouteInfoAvailable(linkEntryProvider)) return false;
                 }
             }
         }
         return true;
     }
 
-    public boolean isExternalRouteInfoAvailable(Provider provider) {
+    public boolean isRemoteRouteInfoAvailable(Provider provider) {
         if(isLocalRouteInfoAvailable()) {
             for (StationRoute stationRoute : stationRouteList) {
                 if(stationRoute.getProvider().equals(provider)) return true;
@@ -365,7 +383,7 @@ public class Station implements Parcelable, Serializable {
                 ", longitude=" + String.format("%.6f", longitude) +
                 ", latitude=" + String.format("%.6f", latitude) +
                 ", provider=" + provider +
-                ", externalEntryList=" + externalEntryList +
+                ", remoteEntryList=" + remoteEntryList +
                 ", stationRouteList=" + stationRouteList +
                 ", lastUpdateTime=" + lastUpdateTime +
                 ", temporalArrivalInfos=" + temporalArrivalInfos +
@@ -387,9 +405,9 @@ public class Station implements Parcelable, Serializable {
         dest.writeValue(this.latitude);
         dest.writeInt(this.provider == null ? -1 : this.provider.ordinal());
         dest.writeByte(stationRouteList == null ? (byte) 0 : (byte) 1);
-        dest.writeByte(externalEntryList == null ? (byte) 0 : (byte) 1);
+        dest.writeByte(remoteEntryList == null ? (byte) 0 : (byte) 1);
         if (stationRouteList != null) dest.writeTypedList(stationRouteList);
-        if (externalEntryList != null) dest.writeTypedList(externalEntryList);
+        if (remoteEntryList != null) dest.writeTypedList(remoteEntryList);
         dest.writeLong(lastUpdateTime != null ? lastUpdateTime.getTime() : -1);
     }
 
@@ -409,8 +427,8 @@ public class Station implements Parcelable, Serializable {
             this.stationRouteList = in.createTypedArrayList(StationRoute.CREATOR);
         }
         if (isLinkedEntryListExist) {
-            this.externalEntryList = new ArrayList<>();
-            this.externalEntryList = in.createTypedArrayList(ExternalEntry.CREATOR);
+            this.remoteEntryList = new ArrayList<>();
+            this.remoteEntryList = in.createTypedArrayList(RemoteEntry.CREATOR);
         }
         long tmpLastUpdateTime = in.readLong();
         this.lastUpdateTime = tmpLastUpdateTime == -1 ? null : new Date(tmpLastUpdateTime);
@@ -426,11 +444,11 @@ public class Station implements Parcelable, Serializable {
         }
     };
 
-    public static class ExternalEntry implements Parcelable, Serializable {
+    public static class RemoteEntry implements Parcelable, Serializable {
         private Provider provider;
         private String key;
 
-        public ExternalEntry(Provider provider, String key) {
+        public RemoteEntry(Provider provider, String key) {
             this.provider = provider;
             this.key = key;
         }
@@ -472,31 +490,31 @@ public class Station implements Parcelable, Serializable {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            ExternalEntry externalEntry = (ExternalEntry) o;
+            RemoteEntry remoteEntry = (RemoteEntry) o;
 
-            if (provider != null && provider != externalEntry.provider) return false;
-            if (key != null) return key.equals(externalEntry.key);
+            if (provider != null && provider != remoteEntry.provider) return false;
+            if (key != null) return key.equals(remoteEntry.key);
             return false;
         }
 
-        protected ExternalEntry(Parcel in) {
+        protected RemoteEntry(Parcel in) {
             this.key = in.readString();
             int tmpProvider = in.readInt();
             this.provider = tmpProvider == -1 ? null : Provider.values()[tmpProvider];
         }
 
-        public static final Creator<ExternalEntry> CREATOR = new Creator<ExternalEntry>() {
-            public ExternalEntry createFromParcel(Parcel source) {
-                return new ExternalEntry(source);
+        public static final Creator<RemoteEntry> CREATOR = new Creator<RemoteEntry>() {
+            public RemoteEntry createFromParcel(Parcel source) {
+                return new RemoteEntry(source);
             }
 
-            public ExternalEntry[] newArray(int size) {
-                return new ExternalEntry[size];
+            public RemoteEntry[] newArray(int size) {
+                return new RemoteEntry[size];
             }
         };
 
-        public static ExternalEntry createFromCityString(String city, String key) {
-            ExternalEntry externalEntry = null;
+        public static RemoteEntry createFromCityString(String city, String key) {
+            RemoteEntry remoteEntry = null;
             if (!TextUtils.isEmpty(key)) {
                 key = key.trim();
                 if (city != null) switch (city) {
@@ -504,21 +522,21 @@ public class Station implements Parcelable, Serializable {
                     case "남동구":
                     case "계양구":
                     case "서구":
-                        externalEntry = new ExternalEntry(Provider.INCHEON, key);
+                        remoteEntry = new RemoteEntry(Provider.INCHEON, key);
                         break;
 
                     default:
-                        externalEntry = new ExternalEntry(Provider.SEOUL, key);
+                        remoteEntry = new RemoteEntry(Provider.SEOUL, key);
                         break;
                 }
             }
-            return externalEntry;
+            return remoteEntry;
         }
 
 
         @Override
         public String toString() {
-            return "ExternalEntry{" +
+            return "RemoteEntry{" +
                     "provider=" + provider +
                     ", key='" + key + '\'' +
                     '}';

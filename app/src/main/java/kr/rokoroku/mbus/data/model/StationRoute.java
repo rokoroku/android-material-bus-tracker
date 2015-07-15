@@ -17,7 +17,7 @@ import java.io.Serializable;
 import kr.rokoroku.mbus.api.gbisweb.model.GbisStationRouteResult;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusRouteByStation;
 import kr.rokoroku.mbus.api.seoulweb.model.StationRouteResult;
-import kr.rokoroku.mbus.core.Database;
+import kr.rokoroku.mbus.core.DatabaseFacade;
 
 public class StationRoute implements Parcelable, Serializable, Comparable<StationRoute> {
 
@@ -68,15 +68,17 @@ public class StationRoute implements Parcelable, Serializable, Comparable<Statio
         this.provider = Provider.SEOUL;
         this.sequence = routeEntity.staOrd;
         this.destination = routeEntity.adirection;
-        String[] split = routeEntity.sectNm.split("~");
-        if (split.length >= 1) this.firstStationName = split[0];
-        if (split.length >= 2) this.lastStationName = split[1];
+        if (routeEntity.sectNm != null) {
+            String[] split = routeEntity.sectNm.split("~");
+            if (split.length >= 1) this.firstStationName = split[0];
+            if (split.length >= 2) this.lastStationName = split[1];
+        }
         if (sequence == 0) sequence = -1;
     }
 
     public Route getRoute() {
         if (route == null && routeId != null)
-            route = Database.getInstance().getRoute(provider, routeId);
+            route = DatabaseFacade.getInstance().getRoute(provider, routeId);
         return route;
     }
 

@@ -23,10 +23,10 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import kr.rokoroku.mbus.core.DatabaseFacade;
 import kr.rokoroku.mbus.ui.adapter.StationAdapter;
 import kr.rokoroku.mbus.data.StationDataProvider;
 import kr.rokoroku.mbus.core.ApiFacade;
-import kr.rokoroku.mbus.core.Database;
 import kr.rokoroku.mbus.core.FavoriteFacade;
 import kr.rokoroku.mbus.data.model.FavoriteGroup;
 import kr.rokoroku.mbus.data.model.Station;
@@ -128,7 +128,7 @@ public class StationActivity extends AbstractBaseActivity
             finish();
 
         } else {
-            Station storedStation = Database.getInstance().getStation(station.getProvider(), station.getId());
+            Station storedStation = DatabaseFacade.getInstance().getStation(station.getProvider(), station.getId());
             if (storedStation != null) station = storedStation;
 
             if (mStationDataProvider == null)
@@ -149,8 +149,8 @@ public class StationActivity extends AbstractBaseActivity
         super.onStop();
         if(mStationDataProvider != null) {
             final Station station = mStationDataProvider.getStation();
-            if(station.isEveryRouteInfosAvailable()) {
-                Database.getInstance().putStationForEachProvider(station);
+            if(station.isEveryRouteInfoAvailable()) {
+                DatabaseFacade.getInstance().putStationForEachProvider(station);
             }
         }
     }
@@ -173,7 +173,7 @@ public class StationActivity extends AbstractBaseActivity
                     mBusStationAdapter.notifyDataSetChanged();
                     Log.d("StationActivity", "upperOnComplete " + success);
                     if (success && mStationDataProvider.getRawStationRouteList() != null) {
-                        if (!mStationDataProvider.getStation().isEveryRouteInfosAvailable() && !retried) {
+                        if (!mStationDataProvider.getStation().isEveryRouteInfoAvailable() && !retried) {
                             ApiFacade.getInstance().fillArrivalInfo(station, null, this);
                             retried = true;
 

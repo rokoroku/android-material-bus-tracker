@@ -25,6 +25,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.h6ah4i.android.widget.advrecyclerview.expandable.RecyclerViewExpandableItemManager;
 import com.h6ah4i.android.widget.advrecyclerview.utils.AbstractExpandableItemAdapter;
 import com.h6ah4i.android.widget.advrecyclerview.utils.AbstractExpandableItemViewHolder;
 
@@ -34,6 +35,7 @@ import kr.rokoroku.mbus.core.ApiFacade;
 import kr.rokoroku.mbus.data.RouteDataProvider;
 import kr.rokoroku.mbus.data.model.ArrivalInfo;
 import kr.rokoroku.mbus.data.model.BusLocation;
+import kr.rokoroku.mbus.data.model.Provider;
 import kr.rokoroku.mbus.data.model.Route;
 import kr.rokoroku.mbus.data.model.RouteStation;
 import kr.rokoroku.mbus.data.model.RouteType;
@@ -66,6 +68,7 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
 
     private final RouteDataProvider mDataProvider;
     private int mExpandedPosition;
+    private RecyclerViewExpandableItemManager mExpandableItemManager;
     private WeakReference<RouteAdapter.BusArrivalViewHolder> mBusArrivalViewHolderReference;
 
     private Timer mTimer;
@@ -77,6 +80,10 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
         // ExpandableItemAdapter requires stable ID, and also
         // have to implement the getGroupItemId()/getChildItemId() methods appropriately.
         setHasStableIds(true);
+    }
+
+    public void setExpandableItemManager(RecyclerViewExpandableItemManager mExpandableItemManager) {
+        this.mExpandableItemManager = mExpandableItemManager;
     }
 
     @Override
@@ -125,7 +132,8 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
                 return ITEM_FOOTER;
             } else {
                 RouteDataProvider.RouteListItemData itemData = mDataProvider.getItem(groupPosition - 1);
-                if (itemData.getType().equals(RouteDataProvider.RouteListItemData.Type.BUS)) return ITEM_BUS;
+                if (itemData.getType().equals(RouteDataProvider.RouteListItemData.Type.BUS))
+                    return ITEM_BUS;
                 else return ITEM_STATION;
             }
         } else {
@@ -165,6 +173,8 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
             return;
 
         } else if (viewType == ITEM_FOOTER) {
+            FooterViewHolder footerViewHolder = (FooterViewHolder) holder;
+            footerViewHolder.setItem(mDataProvider.getRoute().getProvider());
             return;
         }
 
@@ -241,21 +251,21 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
         }
         holder.mContainer.setCardBackgroundColor(ThemeUtils.dimColor(favoriteStationColor.getColor(context), 0.95f));
 
-        if (routeStation != null &&
-                (routeStation.getArrivalInfo() == null || TimeUtils.checkShouldUpdate(routeStation.getLastUpdateTime()))) {
-            StationRoute tempStationRoute = new StationRoute(mDataProvider.getRoute(), routeStation.getLocalId());
-            ApiFacade.getInstance().fillArrivalInfoData(routeStation, tempStationRoute, new ApiFacade.SimpleProgressCallback() {
+        if (routeStation != null && (routeStation.getArrivalInfo() == null || TimeUtils.checkShouldUpdate(routeStation.getLastUpdateTime()))) {
+            StationRoute stationRoute = routeStation.getStationRoute(routeStation.getRouteId());
+            if (stationRoute == null) stationRoute = new StationRoute(mDataProvider.getRoute(), routeStation.getLocalId());
+
+            final StationRoute finalStationRoute = stationRoute;
+            ApiFacade.getInstance().fillArrivalInfo(routeStation, stationRoute, new ApiFacade.SimpleProgressCallback() {
                 @Override
                 public void onComplete(boolean success) {
-                    if (success) {
-                        holder.setItem(routeStation.getArrivalInfo());
-                    }
+                    holder.setItem(finalStationRoute.getArrivalInfo());
                 }
 
                 @Override
                 public void onError(int progress, Throwable t) {
+                    Toast.makeText(holder.itemView.getContext(), t.getMessage(), Toast.LENGTH_LONG).show();
                     holder.setItem(null);
-                    Toast.makeText(holder.itemView.getContext(), t.getCause().getMessage(), Toast.LENGTH_LONG).show();
                     holder.mStationId = routeStation.getId();
                 }
             });
@@ -269,7 +279,6 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
         }
         RouteDataProvider.RouteListItemData dataAfter = getItem(groupPosition + 1);
         holder.mContainer.setRoundBottom(dataAfter == null || RouteDataProvider.RouteListItemData.Type.BUS.equals(dataAfter.getType()));
-
     }
 
     @Override
@@ -302,7 +311,7 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
             case ITEM_HEADER:
                 return new HeaderViewHolder(inflater.inflate(R.layout.row_route_header, parent, false));
             case ITEM_FOOTER:
-                return new BaseViewHolder(inflater.inflate(R.layout.row_footer_layout, parent, false));
+                return new FooterViewHolder(inflater.inflate(R.layout.row_footer_layout, parent, false));
         }
         return null;
     }
@@ -354,6 +363,21 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
         }
     }
 
+    public class FooterViewHolder extends BaseViewHolder {
+        public TextView mFooterText;
+
+        public FooterViewHolder(View v) {
+            super(v);
+            mFooterText = (TextView) v.findViewById(R.id.footer_text);
+        }
+
+        public void setItem(Provider provider) {
+            if(provider != null) {
+                Context context = itemView.getContext();
+                mFooterText.setText(context.getString(R.string.powered_by, provider.getProviderText()));
+            }
+        }
+    }
     public class BusViewHolder extends BaseViewHolder {
 
         public ImageView mBusIcon;
@@ -384,9 +408,9 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
             itemView.setClickable(false);
 
             Drawable drawable = mBusIcon.getDrawable();
-            if(drawable instanceof AnimationDrawable) {
+            if (drawable instanceof AnimationDrawable) {
                 AnimationDrawable animationDrawable = (AnimationDrawable) drawable;
-                if(!animationDrawable.isRunning()) {
+                if (!animationDrawable.isRunning()) {
                     animationDrawable.start();
                 }
             }
@@ -418,8 +442,8 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
             mStationTitle.setText(routeStation.getName());
             String localId = routeStation.getLocalId();
             String description = routeStation.getCity();
-            if(!TextUtils.isEmpty(localId)) {
-                description = description + " - " + localId;
+            if (!TextUtils.isEmpty(localId)) {
+                description = description + ", " + localId;
             }
 
             mStationDescription.setText(description);
@@ -514,7 +538,7 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
             Context context = itemView.getContext();
             mContainer.animateCardBackgroundColor(color.getColor(context));
 
-            if(mBusArrivalViewHolderReference != null) {
+            if (mBusArrivalViewHolderReference != null) {
                 BusArrivalViewHolder busArrivalViewHolder = mBusArrivalViewHolderReference.get();
                 if (busArrivalViewHolder != null && station.getId().equals(busArrivalViewHolder.mStationId)) {
                     busArrivalViewHolder.mContainer.postDelayed(() ->
@@ -566,7 +590,7 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
             }
             mContainer.setCardBackgroundColor(ThemeUtils.dimColor(favoriteStationColor.getColor(context), 0.95f));
 
-            if(mItem != null && !mItem.equals(arrivalInfo)) {
+            if (mItem != null && !mItem.equals(arrivalInfo)) {
                 mBusArrivalLayout.setAlpha(0f);
                 mBusArrivalLayout.animate().alpha(1f).start();
             }
@@ -631,9 +655,9 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
                 if (mBusIcon != null) {
                     mBusIcon.setVisibility(View.VISIBLE);
                     Drawable drawable = mBusIcon.getDrawable();
-                    if(drawable instanceof AnimationDrawable) {
+                    if (drawable instanceof AnimationDrawable) {
                         AnimationDrawable animationDrawable = (AnimationDrawable) drawable;
-                        if(!animationDrawable.isRunning()) {
+                        if (!animationDrawable.isRunning()) {
                             animationDrawable.start();
                         }
                     }

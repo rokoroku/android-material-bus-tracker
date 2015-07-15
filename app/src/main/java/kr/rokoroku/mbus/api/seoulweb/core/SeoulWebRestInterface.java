@@ -5,6 +5,7 @@ import kr.rokoroku.mbus.api.seoulweb.model.SearchRouteResult;
 import kr.rokoroku.mbus.api.seoulweb.model.SearchStationResult;
 import kr.rokoroku.mbus.api.seoulweb.model.StationRouteResult;
 import kr.rokoroku.mbus.api.seoulweb.model.TopisMapLineResult;
+import kr.rokoroku.mbus.api.seoulweb.model.TopisRealtimeResult;
 import retrofit.Callback;
 import retrofit.http.Field;
 import retrofit.http.FormUrlEncoded;
@@ -40,11 +41,15 @@ public interface SeoulWebRestInterface {
 
     @FormUrlEncoded
     @POST("//m.bus.go.kr/mBus/bus/getStationByUid.bms")
-    void getStationInfos(@Field("arsId") String stationLocalId,
+    void getStationInfos(@Field("arsId") String arsId,
                          Callback<StationRouteResult> callback);
 
     @GET("//topis.seoul.go.kr/renewal/ajaxData/getBusData.jsp?mode=routLine")
-    void getRouteMapLine(@Query("rout_id") String routeId,
-                         Callback<TopisMapLineResult> callback);
+    void getTopisRouteMapLine(@Query("rout_id") String routeId,
+                              Callback<TopisMapLineResult> callback);
 
+    @GET("//topis.seoul.go.kr/renewal/ajaxData/getRemoteData_4.jsp" +
+            "?remoteUrl=http%3A%2F%2F210.96.13.82%3A8901%2Fapi%2Frest%2Fbuspos%2FgetBusPosByRtid")
+    void getTopisRealtimeRoute(@Query("busRouteId") String routeId,
+                               Callback<TopisRealtimeResult> callback);
 }

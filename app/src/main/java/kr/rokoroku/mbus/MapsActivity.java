@@ -35,7 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import kr.rokoroku.mbus.core.ApiFacade;
-import kr.rokoroku.mbus.core.Database;
+import kr.rokoroku.mbus.core.DatabaseFacade;
 import kr.rokoroku.mbus.core.LocationClient;
 import kr.rokoroku.mbus.data.model.Direction;
 import kr.rokoroku.mbus.data.model.MapLine;
@@ -260,7 +260,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         mStationExtra = intent.getParcelableExtra(EXTRA_KEY_STATION);
 
         if (mRouteExtra != null) {
-            Route storedRoute = Database.getInstance().getRoute(mRouteExtra.getProvider(), mRouteExtra.getId());
+            Route storedRoute = DatabaseFacade.getInstance().getRoute(mRouteExtra.getProvider(), mRouteExtra.getId());
             if (storedRoute != null) mRouteExtra = storedRoute;
             setTitle(mRouteExtra.getName());
 
@@ -270,7 +270,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
 
         } else if (mStationExtra != null) {
-            Station storedStation = Database.getInstance().getStation(mStationExtra.getProvider(), mStationExtra.getId());
+            Station storedStation = DatabaseFacade.getInstance().getStation(mStationExtra.getProvider(), mStationExtra.getId());
             if (storedStation != null) mStationExtra = storedStation;
             setTitle(mStationExtra.getName());
         }
