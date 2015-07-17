@@ -2,12 +2,15 @@ package kr.rokoroku.mbus;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.NinePatchDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.speech.RecognizerIntent;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -32,6 +35,9 @@ import com.quinny898.library.persistentsearch.SearchBox;
 import com.quinny898.library.persistentsearch.SearchResult;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import kr.rokoroku.mbus.core.DatabaseFacade;
@@ -113,7 +119,7 @@ public class MainActivity extends AbstractBaseActivity
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.WRAP_CONTENT));
         mSearchBox.enableVoiceRecognition(this);
-        mSearchBox.setHint("노선 혹은 정류소 이름을 입력하세요.");
+        mSearchBox.setHint(getString(R.string.search_hint));
         mSearchBox.setMenuListener(this);
         mSearchBox.setSearchListener(this);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -178,7 +184,6 @@ public class MainActivity extends AbstractBaseActivity
     }
 
     private void initFloatingActionButtons() {
-
         mAddNewGroupButton.setOnClickListener(v -> {
             new MaterialDialog.Builder(MainActivity.this)
                     .title("새 그룹")
@@ -252,6 +257,9 @@ public class MainActivity extends AbstractBaseActivity
 
     @Override
     public void onSearchOpened() {
+        if (mPlusButton.isOpened()) {
+            mPlusButton.close(true);
+        }
         reloadSearchQuery();
     }
 
@@ -274,16 +282,21 @@ public class MainActivity extends AbstractBaseActivity
     public void onSearch(String keyword) {
         if (keyword == null || keyword.length() < 2) {
             if (!TextUtils.isEmpty(keyword.replaceAll("\\d", ""))) {
-                Toast.makeText(this, "2글자 이상 입력하세요.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.error_search_keyword_too_short, Toast.LENGTH_SHORT).show();
                 return;
             }
         }
 
         mSearchBox.setSearchString(null);
-        mSearchBox.clearSearchable();
 
         Intent intent = new Intent(this, SearchActivity.class);
-        intent.putExtra("query", keyword);
+        if(getString(R.string.search_by_location).equals(keyword)) {
+            intent.putExtra(SearchActivity.EXTRA_SEARCH_BY_LOCATION, true);
+
+        } else {
+            intent.putExtra(SearchActivity.EXTRA_SEARCH_QUERY, keyword);
+        }
+
         startActivity(intent);
         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
     }
@@ -292,6 +305,10 @@ public class MainActivity extends AbstractBaseActivity
     public void onBackPressed() {
         if (mSearchBox.isSearchOpen()) {
             mSearchBox.toggleSearch();
+
+        } else if (mPlusButton.isOpened()) {
+            mPlusButton.close(true);
+
         } else {
             new MaterialDialog.Builder(this)
                     .title("종료")
@@ -370,13 +387,31 @@ public class MainActivity extends AbstractBaseActivity
 
     public void reloadSearchQuery() {
         if(mSearchBox != null) {
-            Set<SearchHistory> searchHistoryTable = DatabaseFacade.getInstance().getSearchHistoryTable();
+            List<SearchHistory> searchHistoryTable = new ArrayList<>(DatabaseFacade.getInstance().getSearchHistoryTable());
+            Collections.sort(searchHistoryTable);
+
             ArrayList<SearchResult> arrayList = new ArrayList<>();
+
+            Drawable locationDrawable = ContextCompat.getDrawable(this, R.drawable.ic_my_location_black_24dp);
+            arrayList.add(new SearchResult(getString(R.string.search_by_location), locationDrawable));
+
+            Drawable historyDrawable = ContextCompat.getDrawable(this, R.drawable.ic_history_grey_600_18dp);
+            int historyColor = ThemeUtils.getResourceColor(this, R.color.md_grey_600);
             for (SearchHistory searchHistory : searchHistoryTable) {
-                arrayList.add(new SearchResult(searchHistory.getTitle(), null));
+                arrayList.add(new SearchResult(searchHistory.getTitle(), historyDrawable, historyColor));
             }
             mSearchBox.setSearchables(arrayList);
         }
     }
 
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == SearchBox.VOICE_RECOGNITION_CODE && resultCode == RESULT_OK) {
+            List<String> results = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+            String spokenText = results.get(0);
+            mSearchBox.triggerSearch(spokenText);
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
 }

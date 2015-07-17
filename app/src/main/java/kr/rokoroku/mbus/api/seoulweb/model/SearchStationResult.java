@@ -11,10 +11,11 @@ public class SearchStationResult {
 
     @SerializedName("error")
     public ResponseHeader header;
-    @SerializedName("busList")
-    public List<BusListEntity> result;
 
-    public class BusListEntity {
+    @SerializedName("busList")
+    public List<StationEntity> result;
+
+    public class StationEntity {
         /**
          * posX : 200563.9
          * arsId : 08368
@@ -24,13 +25,15 @@ public class SearchStationResult {
          * stId : 32474
          * tmX : 127.00638624895606
          */
-        public String posX;
-        public String arsId;
-        public String posY;
-        public String tmY;
-        public String stNm;
         public String stId;
-        public String tmX;
+        public String stNm;
+        public String arsId;
+        public double posX;
+        public double posY;
+        @SerializedName("tmX")
+        public double gpsX;
+        @SerializedName("tmY")
+        public double gpsY;
     }
 
 }

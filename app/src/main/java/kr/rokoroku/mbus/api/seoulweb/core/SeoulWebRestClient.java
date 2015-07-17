@@ -13,14 +13,14 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import kr.rokoroku.mbus.BaseApplication;
+import kr.rokoroku.mbus.api.ApiWrapperInterface;
 import kr.rokoroku.mbus.api.seoul.core.SeoulBusException;
 import kr.rokoroku.mbus.api.seoulweb.model.RouteStationResult;
 import kr.rokoroku.mbus.api.seoulweb.model.SearchRouteResult;
 import kr.rokoroku.mbus.api.seoulweb.model.SearchStationResult;
+import kr.rokoroku.mbus.api.seoulweb.model.StationByPositionResult;
 import kr.rokoroku.mbus.api.seoulweb.model.StationRouteResult;
 import kr.rokoroku.mbus.api.seoulweb.model.TopisMapLineResult;
-import kr.rokoroku.mbus.api.ApiMethodNotSupportedException;
-import kr.rokoroku.mbus.api.ApiWrapperInterface;
 import kr.rokoroku.mbus.api.seoulweb.model.TopisRealtimeResult;
 import kr.rokoroku.mbus.core.DatabaseFacade;
 import kr.rokoroku.mbus.data.model.ArrivalInfo;
@@ -62,8 +62,8 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
                     .setEndpoint("http:")
                     .setClient(client)
                     .setLog(new AndroidLog("SeoulWebRestClient"))
-                    .setLogLevel(RestAdapter.LogLevel.FULL)
-                    .setConverter(new TopisJsonConverter())
+                    .setLogLevel(RestAdapter.LogLevel.HEADERS_AND_ARGS)
+                    .setConverter(new SeoulWebResponseConverter())
                     .build()
                     .create(SeoulWebRestInterface.class);
         }
@@ -100,13 +100,10 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
                         callback.onSuccess(result);
 
                     } else {
-                        SeoulBusException exception = new SeoulBusException(
-                                Integer.parseInt(searchRouteResult.header.errorCode),
-                                searchRouteResult.header.errorMessage);
-                        callback.onFailure(exception);
+                        callback.onFailure(new SeoulWebException(searchRouteResult.header));
                     }
                 } else {
-                    callback.onFailure(new SeoulBusException(SeoulBusException.ERROR_NO_RESULT, "NO RESPONSE"));
+                    callback.onFailure(new SeoulWebException(SeoulBusException.ERROR_NO_RESULT, "NO RESPONSE"));
                 }
             }
 
@@ -132,21 +129,13 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
                 if (searchStationResult != null && searchStationResult.header.isSuccess()) {
                     result = new ArrayList<>();
                     if (searchStationResult.result != null) {
-                        for (SearchStationResult.BusListEntity busListEntity : searchStationResult.result) {
-                            Station station = new Station(busListEntity.stId, provider);
-                            station.setName(busListEntity.stNm);
-                            if (!"0".equals(busListEntity.arsId)) {
-                                station.setLocalId(busListEntity.arsId);
-                            }
-                            Double x = Double.valueOf(busListEntity.tmX);
-                            Double y = Double.valueOf(busListEntity.tmY);
-                            LatLng latLng = GeoUtils.convertTm(x, y);
-                            station.setLatitude(latLng.latitude);
-                            station.setLongitude(latLng.longitude);
-                            station.setCity("서울시");
+                        for (SearchStationResult.StationEntity stationEntity : searchStationResult.result) {
+                            Station station = new Station(stationEntity);
                             result.add(station);
                         }
                     }
+                } else if(searchStationResult != null) {
+                    callback.onFailure(new SeoulWebException(searchStationResult.header));
                 }
                 callback.onSuccess(result);
             }
@@ -160,8 +149,28 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
     }
 
     @Override
-    public void searchStationByLocation(double latitude, double longitude, Callback<List<Station>> callback) {
-        callback.onFailure(new ApiMethodNotSupportedException());
+    public void searchStationByLocation(double latitude, double longitude, int radius, Callback<List<Station>> callback) {
+        getAdapter().searchStationByPos(latitude, longitude, 1000, new retrofit.Callback<StationByPositionResult>() {
+            @Override
+            public void success(StationByPositionResult searchStationResult, Response response) {
+                List<Station> stationList = null;
+                if (searchStationResult != null) {
+                    stationList = new ArrayList<>();
+                    if (searchStationResult.getItems() != null) {
+                        for (StationByPositionResult.ResultEntity resultEntity : searchStationResult.getItems()) {
+                            Station station = new Station(resultEntity);
+                            stationList.add(station);
+                        }
+                    }
+                }
+                callback.onSuccess(stationList);
+            }
+
+            @Override
+            public void failure(RetrofitError error) {
+                callback.onFailure(error);
+            }
+        });
     }
 
     @Override
@@ -183,7 +192,7 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
                     route.setRouteStationList(routeStationList);
 
                     if (!route.isRouteBaseInfoAvailable()) {
-                        searchRouteByKeyword(route.getName().replaceAll("[^0-9]",""), new Callback<List<Route>>() {
+                        searchRouteByKeyword(route.getName().replaceAll("[^0-9]", ""), new Callback<List<Route>>() {
                             @Override
                             public void onSuccess(List<Route> result) {
                                 if (result != null) {
@@ -216,7 +225,7 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
                 callback.onFailure(error);
             }
         };
-        getAdapter().getRouteStations(routeId, resultCallback);
+        getAdapter().getRouteInfo(routeId, resultCallback);
     }
 
     @Override
@@ -307,12 +316,12 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
             @Override
             public void success(StationRouteResult stationRouteResult, Response response) {
                 if (stationRouteResult != null && stationRouteResult.header.isSuccess()) {
-                    final Station station = new Station(stationRouteResult);
+                    putStationResultCache(arsId, stationRouteResult);
+                    Station station = new Station(stationRouteResult);
                     callback.onSuccess(station);
 
                 } else if (stationRouteResult != null) {
-                    SeoulBusException exception = new SeoulBusException(Integer.parseInt(stationRouteResult.header.errorCode), stationRouteResult.header.errorMessage);
-                    callback.onFailure(exception);
+                    callback.onFailure(new SeoulWebException(stationRouteResult.header));
 
                 } else {
                     callback.onSuccess(null);
@@ -328,7 +337,7 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
             resultCallback.success(cachedRouteStationResult, null);
 
         } else {
-            getAdapter().getStationInfos(arsId, resultCallback);
+            getAdapter().getStationInfo(arsId, resultCallback);
         }
     }
 
@@ -339,12 +348,12 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
             @Override
             public void success(StationRouteResult stationRouteResult, Response response) {
                 if (stationRouteResult != null && stationRouteResult.header.isSuccess()) {
+                    putStationResultCache(arsId, stationRouteResult);
                     Station station = new Station(stationRouteResult);
                     callback.onSuccess(station.getArrivalInfoList());
 
                 } else if (stationRouteResult != null) {
-                    SeoulBusException exception = new SeoulBusException(Integer.parseInt(stationRouteResult.header.errorCode), stationRouteResult.header.errorMessage);
-                    callback.onFailure(exception);
+                    callback.onFailure(new SeoulWebException(stationRouteResult.header));
 
                 } else {
                     callback.onSuccess(null);
@@ -359,7 +368,7 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
         if (cachedRouteStationResult != null) {
             resultCallback.success(cachedRouteStationResult, null);
         } else {
-            getAdapter().getStationInfos(arsId, resultCallback);
+            getAdapter().getStationInfo(arsId, resultCallback);
         }
     }
 
@@ -370,12 +379,12 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
             @Override
             public void success(StationRouteResult stationRouteResult, Response response) {
                 if (stationRouteResult != null && stationRouteResult.header.isSuccess()) {
+                    putStationResultCache(arsId, stationRouteResult);
                     Station station = new Station(stationRouteResult);
                     callback.onSuccess(station.getArrivalInfo(routeId));
 
                 } else if (stationRouteResult != null) {
-                    SeoulBusException exception = new SeoulBusException(Integer.parseInt(stationRouteResult.header.errorCode), stationRouteResult.header.errorMessage);
-                    callback.onFailure(exception);
+                    callback.onFailure(new SeoulWebException(stationRouteResult.header));
 
                 } else {
                     callback.onSuccess(null);
@@ -390,7 +399,7 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
         if (cachedRouteStationResult != null) {
             resultCallback.success(cachedRouteStationResult, null);
         } else {
-            getAdapter().getStationInfos(arsId, resultCallback);
+            getAdapter().getStationInfo(arsId, resultCallback);
         }
     }
 

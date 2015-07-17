@@ -18,7 +18,7 @@ public interface ApiWrapperInterface {
 
     void searchRouteByKeyword(String keyword, Callback<List<Route>> callback);
     void searchStationByKeyword(String keyword, Callback<List<Station>> callback);
-    void searchStationByLocation(double latitude, double longitude, Callback<List<Station>> callback);
+    void searchStationByLocation(double latitude, double longitude, int radius, Callback<List<Station>> callback);
 
     void getRouteBaseInfo(String routeId, Callback<Route> callback);
     void getRouteRealtimeInfo(String routeId, Callback<List<BusLocation>> callback);

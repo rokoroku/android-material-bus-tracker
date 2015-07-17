@@ -21,9 +21,12 @@ import java.util.TreeMap;
 
 import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchAllResult;
 import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchRouteResult;
+import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchStationByPosResult;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusRouteStation;
 import kr.rokoroku.mbus.api.seoul.model.SeoulStationInfo;
 import kr.rokoroku.mbus.api.seoulweb.model.RouteStationResult;
+import kr.rokoroku.mbus.api.seoulweb.model.SearchStationResult;
+import kr.rokoroku.mbus.api.seoulweb.model.StationByPositionResult;
 import kr.rokoroku.mbus.api.seoulweb.model.StationRouteResult;
 import kr.rokoroku.mbus.util.GeoUtils;
 
@@ -40,7 +43,7 @@ public class Station implements Parcelable, Serializable {
     private List<RemoteEntry> remoteEntryList;
     private List<StationRoute> stationRouteList;
     private transient Date lastUpdateTime;
-    private transient Map<String, ArrivalInfo> temporalArrivalInfos ;
+    private transient Map<String, ArrivalInfo> temporalArrivalInfos;
 
     protected Station() {
 
@@ -71,10 +74,8 @@ public class Station implements Parcelable, Serializable {
         Double latitude = stationEntity.getLat();
         Double longitude = stationEntity.getLon();
         LatLng latLng = GeoUtils.convertEPSG3857(latitude, longitude);
-        if(latLng != null) {
-            this.latitude = latLng.latitude;
-            this.longitude = latLng.longitude;
-        }
+        this.latitude = latLng.latitude;
+        this.longitude = latLng.longitude;
         this.provider = Provider.GYEONGGI;
 
         String mobileNoSi = stationEntity.getMobileNoSi();
@@ -90,10 +91,8 @@ public class Station implements Parcelable, Serializable {
         Double latitude = listEntity.getLat();
         Double longitude = listEntity.getLon();
         LatLng latLng = GeoUtils.convertEPSG3857(latitude, longitude);
-        if(latLng != null) {
-            this.latitude = latLng.latitude;
-            this.longitude = latLng.longitude;
-        }
+        this.latitude = latLng.latitude;
+        this.longitude = latLng.longitude;
         this.provider = Provider.GYEONGGI;
 
         String stationNoSi = listEntity.getStationNoSi();
@@ -110,10 +109,8 @@ public class Station implements Parcelable, Serializable {
         Double x = Double.valueOf(seoulStationInfo.getTmX());
         Double y = Double.valueOf(seoulStationInfo.getTmY());
         LatLng latLng = GeoUtils.convertTm(x, y);
-        if(latLng != null) {
-            this.latitude = latLng.latitude;
-            this.longitude = latLng.longitude;
-        }
+        this.latitude = latLng.latitude;
+        this.longitude = latLng.longitude;
         this.provider = Provider.SEOUL;
     }
 
@@ -147,7 +144,7 @@ public class Station implements Parcelable, Serializable {
                 stationRoute.setArrivalInfo(arrivalInfo);
 
                 // exclude non-seoul entry
-                if(RouteType.checkSeoulRoute(stationRoute.getRouteType())) {
+                if (RouteType.checkSeoulRoute(stationRoute.getRouteType())) {
                     stationRouteList.add(stationRoute);
                 }
             }
@@ -166,6 +163,45 @@ public class Station implements Parcelable, Serializable {
         this.latitude = stationEntity.gpsY;
         this.longitude = stationEntity.gpsX;
         this.provider = Provider.SEOUL;
+    }
+
+    /**
+     * Important! this contructor doesn't contain stationId.
+     * Rather, it uses localId as stationId.
+     *
+     * @param resultEntity result entity from SeoulWebRestClient
+     */
+    public Station(StationByPositionResult.ResultEntity resultEntity) {
+        this.id = resultEntity.arsId;
+        this.name = resultEntity.stationName;
+        this.setLocalId(resultEntity.arsId);
+        this.latitude = resultEntity.gpsY;
+        this.longitude = resultEntity.gpsX;
+        this.provider = Provider.SEOUL;
+    }
+
+    public Station(GbisSearchStationByPosResult.ResultEntity.ResultMapEntity.ListEntity listEntity) {
+        this.id = listEntity.getStationId();
+        this.name = listEntity.getStationNm();
+        this.provider = Provider.GYEONGGI;
+        this.setLocalId(listEntity.getStaNo());
+
+        double latitude = Double.parseDouble(listEntity.getLat());
+        double longitude = Double.parseDouble(listEntity.getLon());
+        LatLng latLng = GeoUtils.convertEPSG3857(latitude, longitude);
+        this.latitude = latLng.latitude;
+        this.longitude = latLng.longitude;
+    }
+
+    public Station(SearchStationResult.StationEntity stationEntity) {
+        this.id = stationEntity.stId;
+        this.name = stationEntity.stNm;
+        this.setLocalId(stationEntity.arsId);
+        this.provider = Provider.SEOUL;
+        this.latitude = stationEntity.gpsY;
+        this.longitude = stationEntity.gpsX;
+        this.city = "서울시";
+
     }
 
     public String getId() {
@@ -197,8 +233,15 @@ public class Station implements Parcelable, Serializable {
     }
 
     public void setLocalId(String localId) {
-        if("0".equals(localId) || "미정차".equals(localId)) localId = null;
-        this.localId = localId;
+        if (localId == null || "0".equals(localId) || "미정차".equals(localId)) {
+            localId = null;
+        }
+        if (localId != null) {
+            localId = localId.trim();
+            if (!TextUtils.isEmpty(localId)) {
+                this.localId = localId;
+            }
+        }
     }
 
     public String getLocalIdByProvider(Provider provider) {
@@ -269,7 +312,7 @@ public class Station implements Parcelable, Serializable {
     }
 
     public List<ArrivalInfo> getArrivalInfoList() {
-        if(getStationRouteList() != null) {
+        if (getStationRouteList() != null) {
             List<ArrivalInfo> arrivalInfoList = new ArrayList<>();
             for (StationRoute stationRoute : getStationRouteList()) {
                 ArrivalInfo arrivalInfo = getArrivalInfo(stationRoute.getRouteId());
@@ -308,7 +351,7 @@ public class Station implements Parcelable, Serializable {
     }
 
     public void setStationRouteList(Collection<StationRoute> stationRouteList) {
-        if(stationRouteList != null) {
+        if (stationRouteList != null) {
             this.stationRouteList = new ArrayList<>(stationRouteList);
         } else {
             this.stationRouteList = null;
@@ -316,11 +359,11 @@ public class Station implements Parcelable, Serializable {
     }
 
     public void putStationRouteList(Collection<StationRoute> stationRoutes) {
-        if(stationRouteList == null) {
+        if (stationRouteList == null) {
             setStationRouteList(stationRoutes);
         } else {
             for (StationRoute stationRoute : stationRoutes) {
-                if(!stationRouteList.contains(stationRoute)) {
+                if (!stationRouteList.contains(stationRoute)) {
                     stationRouteList.add(stationRoute);
                 }
             }
@@ -352,12 +395,12 @@ public class Station implements Parcelable, Serializable {
     }
 
     public boolean isEveryRouteInfoAvailable() {
-        if(!isLocalRouteInfoAvailable()) return false;
-        if(remoteEntryList != null) {
-            for(RemoteEntry remoteEntry : remoteEntryList) {
+        if (!isLocalRouteInfoAvailable()) return false;
+        if (remoteEntryList != null) {
+            for (RemoteEntry remoteEntry : remoteEntryList) {
                 Provider linkEntryProvider = remoteEntry.getProvider();
-                if(!linkEntryProvider.equals(provider)) {
-                    if(!isRemoteRouteInfoAvailable(linkEntryProvider)) return false;
+                if (!linkEntryProvider.equals(provider)) {
+                    if (!isRemoteRouteInfoAvailable(linkEntryProvider)) return false;
                 }
             }
         }
@@ -365,9 +408,9 @@ public class Station implements Parcelable, Serializable {
     }
 
     public boolean isRemoteRouteInfoAvailable(Provider provider) {
-        if(isLocalRouteInfoAvailable()) {
+        if (isLocalRouteInfoAvailable()) {
             for (StationRoute stationRoute : stationRouteList) {
-                if(stationRoute.getProvider().equals(provider)) return true;
+                if (stationRoute.getProvider().equals(provider)) return true;
             }
         }
         return false;

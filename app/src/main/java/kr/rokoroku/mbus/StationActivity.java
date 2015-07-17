@@ -155,6 +155,19 @@ public class StationActivity extends AbstractBaseActivity
         }
     }
 
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        if(mStationDataProvider != null && mStationDataProvider.getStation() != null) {
+        Station station = mStationDataProvider.getStation();
+            MenuItem item = menu.findItem(R.id.action_map);
+            if(item != null) {
+                boolean isMapAvailable = station.getLongitude() != null && station.getLatitude() != null;
+                item.setEnabled(isMapAvailable);
+            }
+        }
+        return super.onPrepareOptionsMenu(menu);
+    }
+
     private synchronized boolean refreshData(boolean force) {
 
         Station station = mStationDataProvider.getStation();
@@ -405,13 +418,13 @@ public class StationActivity extends AbstractBaseActivity
     private void addToFavorite(StationRoute stationRoute) {
         List<FavoriteGroup> favoriteGroups = FavoriteFacade.getInstance().getCurrentFavorite().getFavoriteGroups();
         if (favoriteGroups.isEmpty()) {
-            favoriteGroups.add(new FavoriteGroup(getString(R.string.default_favorite_group)));
+            favoriteGroups.add(new FavoriteGroup(getString(R.string.favorite_default_group)));
         }
         FavoriteGroup favoriteGroup = favoriteGroups.get(0);
         FavoriteGroup.FavoriteItem item = new FavoriteGroup.FavoriteItem(mStationDataProvider.getStation());
         if (stationRoute != null) item.setExtraData(stationRoute);
 
         favoriteGroup.add(item);
-        Snackbar.make(mCoordinatorLayout, R.string.added_to_favorite, Snackbar.LENGTH_LONG).show();
+        Snackbar.make(mCoordinatorLayout, R.string.alert_added_to_favorite, Snackbar.LENGTH_LONG).show();
     }
 }

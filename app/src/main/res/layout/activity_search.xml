@@ -1,27 +1,75 @@
 <android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/coordinator_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <android.support.v4.widget.ContentLoadingProgressBar
-        android:id="@+id/progress_bar"
-        android:layout_width="96dp"
-        android:layout_height="96dp"
-        android:layout_centerInParent="true" />
-
-
-    <android.support.v4.widget.SwipeRefreshLayout
-        android:id="@+id/swipe_refresh_layout"
+    <io.codetail.widget.RevealFrameLayout
+        android:id="@+id/animator"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:layout_centerHorizontal="true">
 
-        <android.support.v7.widget.RecyclerView
-            android:id="@+id/recycler_view"
+        <android.support.v4.widget.SwipeRefreshLayout
+            android:id="@+id/swipe_refresh_layout"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:paddingLeft="4dp"
-            android:paddingRight="4dp" />
+            android:layout_height="match_parent">
 
-    </android.support.v4.widget.SwipeRefreshLayout>
+            <android.support.v7.widget.RecyclerView
+                android:id="@+id/recycler_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingLeft="4dp"
+                android:paddingRight="4dp" />
 
+        </android.support.v4.widget.SwipeRefreshLayout>
+
+        <FrameLayout
+            android:id="@+id/fragment_frame"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+
+    </io.codetail.widget.RevealFrameLayout>
+
+    <kr.rokoroku.mbus.ui.widget.FloatingActionLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end">
+
+        <View
+            android:layout_width="96dp"
+            android:layout_height="96dp"
+            android:layout_gravity="bottom|end"/>
+
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/fab_map"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginRight="16dp"
+            android:layout_gravity="bottom|end"
+            android:src="@drawable/ic_map_white_24dp"
+            app:fab_colorNormal="?attr/colorAccent"
+            app:fab_colorPressed="?attr/colorAccent"
+            app:fab_shadowXOffset="0dp"
+            app:fab_shadowYOffset="1dp" />
+
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/fab_location"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginRight="16dp"
+            android:layout_gravity="bottom|end"
+            android:src="@drawable/ic_my_location_black_24dp"
+            app:fab_colorNormal="?attr/colorButtonNormal"
+            app:fab_colorPressed="?attr/colorButtonNormal"
+            app:fab_progress_color="?attr/colorAccent"
+            app:fab_progress_width="2dp"
+            app:fab_shadowXOffset="0dp"
+            app:fab_shadowYOffset="1dp" />
+
+    </kr.rokoroku.mbus.ui.widget.FloatingActionLayout>
 </android.support.design.widget.CoordinatorLayout>

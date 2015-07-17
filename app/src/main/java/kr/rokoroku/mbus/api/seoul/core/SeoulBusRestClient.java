@@ -163,7 +163,7 @@ public class SeoulBusRestClient implements ApiWrapperInterface {
     }
 
     @Override
-    public void searchStationByLocation(double latitude, double longitude, Callback<List<Station>> callback) {
+    public void searchStationByLocation(double latitude, double longitude, int radius, Callback<List<Station>> callback) {
         getAdapter().searchStationListByPos(latitude, longitude, 1000, new retrofit.Callback<SeoulStationInfoList>() {
             @Override
             public void success(SeoulStationInfoList seoulStationInfoList, Response response) {

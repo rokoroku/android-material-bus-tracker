@@ -18,7 +18,7 @@ public class RevealUtils {
         BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT
     }
 
-    public static SupportAnimator revealView(View view, Position position, SupportAnimator.AnimatorListener listener) {
+    public static SupportAnimator revealView(View view, Position position, int duration, SupportAnimator.AnimatorListener listener) {
 
         Point point = calculatePoint(view, position);
 
@@ -27,7 +27,7 @@ public class RevealUtils {
 
         SupportAnimator animator = ViewAnimationUtils.createCircularReveal(view, point.x, point.y, 0, finalRadius);
         animator.setInterpolator(new AccelerateDecelerateInterpolator());
-        animator.setDuration(500);
+        animator.setDuration(duration);
         if(listener != null) animator.addListener(listener);
         animator.addListener(new SupportAnimator.SimpleAnimatorListener() {
             @Override
@@ -51,7 +51,7 @@ public class RevealUtils {
         return animator;
     }
 
-    public static SupportAnimator unrevealView(View view, Position position, SupportAnimator.AnimatorListener listener) {
+    public static SupportAnimator unrevealView(View view, Position position, int duration, SupportAnimator.AnimatorListener listener) {
 
         Point point = calculatePoint(view, position);
 
@@ -60,23 +60,16 @@ public class RevealUtils {
 
         SupportAnimator animator = ViewAnimationUtils.createCircularReveal(view, point.x, point.y, finalRadius, 0);
         animator.setInterpolator(new AccelerateDecelerateInterpolator());
-        animator.setDuration(1000);
+        animator.setDuration(duration);
         animator.addListener(new SupportAnimator.SimpleAnimatorListener() {
             @Override
             public void onAnimationStart() {
-                view.getParent().bringChildToFront(view);
                 view.setVisibility(View.VISIBLE);
             }
 
             @Override
             public void onAnimationEnd() {
-//                RevealFrameLayout revealFrameLayout = (RevealFrameLayout) view.getParent();
-//                for (int i = 0; i < revealFrameLayout.getChildCount(); i++) {
-//                    View childView = revealFrameLayout.getChildAt(i);
-//                    if (!view.equals(childView)) {
-//                        childView.setVisibility(View.INVISIBLE);
-//                    }
-//                }
+                view.setVisibility(View.GONE);
             }
         });
         animator.start();

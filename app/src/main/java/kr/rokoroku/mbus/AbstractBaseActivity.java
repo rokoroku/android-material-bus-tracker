@@ -48,9 +48,12 @@ public abstract class AbstractBaseActivity extends AppCompatActivity implements 
     private int mUpperSurfaceHeight = 0;
     private boolean mIsActivityVisible;
 
+    private Menu mMenu;
+
     private Handler mHandler;
     private ActionMode mActionMode;
     private ActionMode.Callback mActionModeCallback;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,10 +92,6 @@ public abstract class AbstractBaseActivity extends AppCompatActivity implements 
             case R.id.nav_action_change_theme:
                 BaseApplication.getInstance().switchTheme();
                 recreate();
-                return true;
-
-            case R.id.nav_action_about:
-                Snackbar.make(mContentFrame.getChildAt(0), item.getTitle(), Snackbar.LENGTH_SHORT).setAction(android.R.string.ok, null).show();
                 return true;
 
         }

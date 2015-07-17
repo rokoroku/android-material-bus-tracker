@@ -185,28 +185,18 @@ public class GbisWebRestClient implements ApiWrapperInterface {
     }
 
     @Override
-    public void searchStationByLocation(double latitude, double longitude, Callback<List<Station>> callback) {
+    public void searchStationByLocation(double latitude, double longitude, int radius, Callback<List<Station>> callback) {
         final Double[] mercator = GeoUtils.toMercator(longitude, latitude);
         getAdapter().searchStationByPos(mercator[1], mercator[0], 1000, new retrofit.Callback<GbisSearchStationByPosResult>() {
             @Override
             public void success(GbisSearchStationByPosResult gbisSearchStationByPosResult, Response response) {
                 List<Station> stationList = null;
                 if (gbisSearchStationByPosResult != null && gbisSearchStationByPosResult.isSuccess()) {
-                    List<GbisSearchStationByPosResult.ResultEntity.ResultMapEntity.ListEntity> entityList
-                            = gbisSearchStationByPosResult.getResult().getResultMap().getList();
                     stationList = new ArrayList<>();
-                    if (entityList != null) {
-                        for (GbisSearchStationByPosResult.ResultEntity.ResultMapEntity.ListEntity listEntity : entityList) {
-                            Station station = new Station(listEntity.getStationId(), Provider.GYEONGGI);
-                            String localId = listEntity.getStaNo().trim();
-                            if (!TextUtils.isEmpty(localId)) {
-                                station.setLocalId(localId);
-                            }
-                            double latitude = Double.parseDouble(listEntity.getLat());
-                            double longitude = Double.parseDouble(listEntity.getLon());
-                            LatLng latLng = GeoUtils.convertEPSG3857(latitude, longitude);
-                            station.setLatitude(latLng.latitude);
-                            station.setLongitude(latLng.longitude);
+                    if (gbisSearchStationByPosResult.getResult() != null) {
+                        for (GbisSearchStationByPosResult.ResultEntity.ResultMapEntity.ListEntity listEntity :
+                                gbisSearchStationByPosResult.getResult() ) {
+                            Station station = new Station(listEntity);
                             stationList.add(station);
                         }
                     }

@@ -1,10 +1,12 @@
 package kr.rokoroku.mbus.api.seoulweb.core;
 
 import com.google.gson.Gson;
+import com.mobprofs.retrofit.converters.SimpleXmlConverter;
 
 import java.io.InputStream;
 import java.lang.reflect.Type;
 
+import kr.rokoroku.mbus.api.seoulweb.model.StationByPositionResult;
 import kr.rokoroku.mbus.api.seoulweb.model.TopisMapLineResult;
 import kr.rokoroku.mbus.api.seoulweb.model.TopisRealtimeResult;
 import retrofit.converter.ConversionException;
@@ -17,15 +19,18 @@ import retrofit.mime.TypedString;
 /**
  * Created by rok on 2015. 7. 10..
  */
-public class TopisJsonConverter implements Converter {
+public class SeoulWebResponseConverter implements Converter {
 
     private Converter gsonConverter;
+    private Converter xmlConverter;
 
-    public TopisJsonConverter() {
+    public SeoulWebResponseConverter() {
         gsonConverter = new GsonConverter(new Gson(), "UTF-8");
+        xmlConverter = new SimpleXmlConverter();
     }
 
     @Override
+    @SuppressWarnings("EqualsBetweenInconvertibleTypes")
     public Object fromBody(TypedInput body, Type type) throws ConversionException {
         if (type.equals(TopisMapLineResult.class) || type.equals(TopisRealtimeResult.class)) try {
 
@@ -46,6 +51,10 @@ public class TopisJsonConverter implements Converter {
 
         } catch (Exception e) {
             throw new ConversionException(e);
+
+        } else if(type.equals(StationByPositionResult.class)) {
+            return xmlConverter.fromBody(body, type);
+
         }
         return gsonConverter.fromBody(body, type);
     }

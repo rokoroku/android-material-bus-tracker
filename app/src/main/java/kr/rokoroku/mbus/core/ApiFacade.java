@@ -19,11 +19,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 
 import kr.rokoroku.mbus.BaseApplication;
 import kr.rokoroku.mbus.R;
-import kr.rokoroku.mbus.api.ApiMethodNotSupportedException;
 import kr.rokoroku.mbus.api.ApiNotAvailableException;
 import kr.rokoroku.mbus.api.ApiWrapperInterface;
 import kr.rokoroku.mbus.api.gbis.core.GbisRestClient;
@@ -50,6 +51,7 @@ import kr.rokoroku.mbus.data.model.Station;
 import kr.rokoroku.mbus.data.model.StationRoute;
 import kr.rokoroku.mbus.util.GeoUtils;
 import kr.rokoroku.mbus.util.ProgressCallback;
+import kr.rokoroku.mbus.util.ValueCallback;
 import retrofit.Callback;
 import retrofit.RetrofitError;
 import retrofit.android.AndroidApacheClient;
@@ -202,7 +204,7 @@ public class ApiFacade {
                         if (result != null) {
                             resultDataProvider.setRoute(result);
                             DatabaseFacade.getInstance().putRoute(provider, result);
-                            if(result.getRouteStationList() != null) {
+                            if (result.getRouteStationList() != null) {
                                 for (RouteStation station : result.getRouteStationList()) {
                                     DatabaseFacade.getInstance().putStation(station.getProvider(), station);
                                 }
@@ -566,6 +568,37 @@ public class ApiFacade {
         return resultDataProvider;
     }
 
+    public void searchByPosition(@NonNull double latitude,
+                                 @NonNull double longitude,
+                                 @NonNull int radius,
+                                 @Nullable ValueCallback<List<Station>> callback) {
+        final List<Station> resultList = new ArrayList<>();
+        final ProgressCallback.ProgressRunner progressRunner = new ProgressCallback.ProgressRunner(new SimpleProgressCallback() {
+            @Override
+            public void onComplete(boolean success) {
+                callback.onSuccess(resultList);
+            }
+        }, 2);
+        final ApiWrapperInterface.Callback<List<Station>> resultCallback = new ApiWrapperInterface.Callback<List<Station>>() {
+            @Override
+            public void onSuccess(List<Station> result) {
+                if (result != null) synchronized (resultList) {
+                    resultList.addAll(result);
+                }
+                progressRunner.progress();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+                progressRunner.error(t);
+            }
+        };
+        if (radius < 0) radius = 1000;
+
+        getSeoulWebRestClient().searchStationByLocation(latitude, longitude, radius, resultCallback);
+        getGbisWebRestClient().searchStationByLocation(latitude, longitude, radius, resultCallback);
+    }
+
     public void fillArrivalInfo(@NonNull Station station,
                                 @Nullable StationRoute stationRoute,
                                 @Nullable ProgressCallback progressCallback) {
@@ -585,7 +618,7 @@ public class ApiFacade {
                 final Station externalStation = DatabaseFacade.getInstance().getStationWithSecondaryKey(provider, localId);
                 final ApiWrapperInterface wrappedClient = getWrappedClient(provider);
                 if (externalStation != null) {
-                    if(wrappedClient != null) {
+                    if (wrappedClient != null) {
                         wrappedClient.getStationArrivalInfo(externalStation.getId(), new ApiWrapperInterface.Callback<List<ArrivalInfo>>() {
                             @Override
                             public void onSuccess(List<ArrivalInfo> result) {
@@ -631,7 +664,7 @@ public class ApiFacade {
             final ProgressCallback.ProgressRunner progressRunner
                     = new ProgressCallback.ProgressRunner(progressCallback, 1);
 
-            if(wrappedClient != null) {
+            if (wrappedClient != null) {
                 wrappedClient.getStationArrivalInfo(station.getId(), routeId, new ApiWrapperInterface.Callback<ArrivalInfo>() {
                     @Override
                     public void onSuccess(ArrivalInfo result) {

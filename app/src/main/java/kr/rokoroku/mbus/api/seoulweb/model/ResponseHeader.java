@@ -8,10 +8,10 @@ public class ResponseHeader {
      * errorMessage : 성공
      * errorCode : 0000
      */
+    public int errorCode = -1;
     public String errorMessage;
-    public String errorCode;
 
     public boolean isSuccess() {
-        return "0000".equals(errorCode);
+        return errorCode == 0;
     }
 }

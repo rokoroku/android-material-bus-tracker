@@ -201,7 +201,7 @@ public class SearchBox extends RelativeLayout {
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        if(touchFrameLayout == null) {
+        if (touchFrameLayout == null) {
             View contentView = getRootView().findViewById(android.R.id.content);
             touchFrameLayout = new FrameLayout(context) {
                 @Override
@@ -708,15 +708,7 @@ public class SearchBox extends RelativeLayout {
     }
 
     private void search(SearchResult result) {
-        if (!searchWithoutSuggestions && getNumberOfResults() == 0) return;
-        setSearchString(result.title);
-        if (!TextUtils.isEmpty(getSearchText())) {
-            setLogoTextInt(result.title);
-            if (listener != null)
-                listener.onSearch(result.title);
-        } else {
-            setLogoTextInt(logoText);
-        }
+        triggerSearch(result.title);
         toggleSearch();
     }
 
@@ -879,6 +871,11 @@ public class SearchBox extends RelativeLayout {
             final TextView title = (TextView) convertView
                     .findViewById(R.id.title);
             title.setText(option.title);
+            if (option.textColor != -1) {
+                title.setTextColor(option.textColor);
+            } else {
+                title.setTextColor(Color.BLACK);
+            }
             ImageView icon = (ImageView) convertView.findViewById(R.id.icon);
             icon.setImageDrawable(option.icon);
             ImageView up = (ImageView) convertView.findViewById(R.id.up);

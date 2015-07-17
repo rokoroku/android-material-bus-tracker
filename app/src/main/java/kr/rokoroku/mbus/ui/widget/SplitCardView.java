@@ -137,7 +137,7 @@ public class SplitCardView extends FrameLayout {
     public void animateCardBackgroundColor(int color) {
         ((SelectableRoundRectDrawable) mInternalViewQueue.getLast().getDrawable()).setColor(color);
         mInternalViewQueue.add(mInternalViewQueue.pop());
-        RevealUtils.revealView(mInternalViewQueue.getFirst(), RevealUtils.Position.CENTER, new SupportAnimator.SimpleAnimatorListener() {
+        RevealUtils.revealView(mInternalViewQueue.getFirst(), RevealUtils.Position.CENTER, 600, new SupportAnimator.SimpleAnimatorListener() {
             @Override
             public void onAnimationEnd() {
                 setCardBackgroundColor(color);
@@ -149,7 +149,7 @@ public class SplitCardView extends FrameLayout {
         this.color = color;
         ((SelectableRoundRectDrawable) mInternalViewQueue.getLast().getDrawable()).setColor(color);
         mInternalViewQueue.add(mInternalViewQueue.pop());
-        RevealUtils.revealView(mInternalViewQueue.getFirst(), position, new SupportAnimator.SimpleAnimatorListener() {
+        RevealUtils.revealView(mInternalViewQueue.getFirst(), position, 600, new SupportAnimator.SimpleAnimatorListener() {
             @Override
             public void onAnimationEnd() {
                 setCardBackgroundColor(color);

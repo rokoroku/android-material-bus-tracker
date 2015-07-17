@@ -22,6 +22,8 @@ import kr.rokoroku.mbus.api.seoul.model.SeoulBusRouteStationList;
 import kr.rokoroku.mbus.api.seoul.model.SeoulStationInfoList;
 import kr.rokoroku.mbus.api.seoulweb.core.SeoulWebRestInterface;
 import kr.rokoroku.mbus.api.seoulweb.model.RouteStationResult;
+import kr.rokoroku.mbus.api.seoulweb.model.SearchStationResult;
+import kr.rokoroku.mbus.api.seoulweb.model.StationByPositionResult;
 import kr.rokoroku.mbus.api.seoulweb.model.StationRouteResult;
 import kr.rokoroku.mbus.api.seoulweb.model.TopisMapLineResult;
 import kr.rokoroku.mbus.api.seoulweb.model.TopisRealtimeResult;
@@ -163,14 +165,22 @@ public class GAWrapper {
             }
 
             @Override
-            public void getRouteStations(@Field("busRouteId") String routeId,
-                                         Callback<RouteStationResult> callback) {
-                seoulWebRestInterface.getRouteStations(routeId, callback);
+            public void searchStationByPos(@Query("busY") double latitude,
+                                           @Query("busX") double longitude,
+                                           @Query("radius") int radius,
+                                           Callback<StationByPositionResult> callback) {
+                seoulWebRestInterface.searchStationByPos(latitude, longitude, radius, callback);
             }
 
             @Override
-            public void getStationInfos(@Field("arsId") String arsId, Callback<StationRouteResult> callback) {
-                seoulWebRestInterface.getStationInfos(arsId, callback);
+            public void getRouteInfo(@Field("busRouteId") String routeId,
+                                     Callback<RouteStationResult> callback) {
+                seoulWebRestInterface.getRouteInfo(routeId, callback);
+            }
+
+            @Override
+            public void getStationInfo(@Field("arsId") String arsId, Callback<StationRouteResult> callback) {
+                seoulWebRestInterface.getStationInfo(arsId, callback);
             }
 
             @Override

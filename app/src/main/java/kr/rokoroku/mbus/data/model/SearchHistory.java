@@ -67,7 +67,7 @@ public class SearchHistory implements Serializable, Comparable<SearchHistory> {
 
     @Override
     public int compareTo(SearchHistory another) {
-        return (int)(timestamp - another.timestamp);
+        return (int)(another.timestamp - timestamp);
     }
 
     @Override

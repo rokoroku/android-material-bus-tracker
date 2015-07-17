@@ -102,6 +102,14 @@ public class SearchDataProvider {
         mStationData.clear();
     }
 
+    public List<Route> getRouteList() {
+        return mRouteData;
+    }
+
+    public List<Station> getStationList() {
+        return mStationData;
+    }
+
     public boolean hasRouteData() {
         return !mRouteData.isEmpty();
     }

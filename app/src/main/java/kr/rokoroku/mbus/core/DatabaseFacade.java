@@ -127,7 +127,7 @@ public class DatabaseFacade {
         }
 
         this.searchHistoryTable = db.hashSetCreate(TABLE_SEARCH_HISTORY)
-                .expireMaxSize(5)
+                .expireMaxSize(10)
                 .makeOrGet();
 
         this.bookmarkTable = db.treeMapCreate(TABLE_FAVORITE)

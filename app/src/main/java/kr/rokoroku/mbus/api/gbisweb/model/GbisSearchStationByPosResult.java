@@ -18,8 +18,12 @@ public class GbisSearchStationByPosResult {
         this.success = success;
     }
 
-    public ResultEntity getResult() {
-        return result;
+    public List<ResultEntity.ResultMapEntity.ListEntity> getResult() {
+        if(result != null && result.resultMap != null) {
+            return result.resultMap.list;
+        } else {
+            return null;
+        }
     }
 
     public boolean isSuccess() {

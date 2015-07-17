@@ -1,45 +1,72 @@
 package kr.rokoroku.mbus;
 
+import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.Drawable;
+import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.v4.widget.ContentLoadingProgressBar;
+import android.os.Parcelable;
+import android.speech.RecognizerIntent;
+import android.support.design.widget.CoordinatorLayout;
+import android.support.design.widget.Snackbar;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.Toast;
 
 import com.balysv.materialmenu.MaterialMenuDrawable;
+import com.github.clans.fab.FloatingActionButton;
 import com.h6ah4i.android.widget.advrecyclerview.animator.RefactoredDefaultItemAnimator;
 import com.h6ah4i.android.widget.advrecyclerview.utils.BaseWrapperAdapter;
 import com.quinny898.library.persistentsearch.SearchBox;
 import com.quinny898.library.persistentsearch.SearchResult;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import kr.rokoroku.mbus.core.DatabaseFacade;
+import kr.rokoroku.mbus.data.model.Station;
 import kr.rokoroku.mbus.ui.adapter.SearchAdapter;
 import kr.rokoroku.mbus.data.SearchDataProvider;
 import kr.rokoroku.mbus.core.ApiFacade;
 import kr.rokoroku.mbus.data.model.SearchHistory;
+import kr.rokoroku.mbus.util.RevealUtils;
 import kr.rokoroku.mbus.util.ThemeUtils;
 
 
 public class SearchActivity extends AbstractBaseActivity
-        implements SearchBox.SearchListener, SearchBox.MenuListener {
+        implements SearchBox.SearchListener, SearchBox.MenuListener, MapFragment.OnEventListener {
+
+    private final String MAP_FRAGMENT_TAG = "MAP";
+    public static final String EXTRA_SEARCH_QUERY = "query";
+    public static final String EXTRA_SEARCH_BY_LOCATION = "location";
 
     private SearchBox mSearchBox;
     private RecyclerView mRecyclerView;
     private SwipeRefreshLayout mSwipeRefreshLayout;
-    private ContentLoadingProgressBar mProgressBar;
+    private CoordinatorLayout mCoordinatorLayout;
+
+    private FloatingActionButton mMapButton;
+    private FloatingActionButton mLocationButton;
+
+    private FrameLayout mFragmentFrameLayout;
+    private MapFragment mMapFragment;
 
     private SearchDataProvider mSearchDataProvider;
     private RecyclerView.LayoutManager mLayoutManager;
     private RecyclerView.Adapter<SearchAdapter.SearchViewHolder> mAdapter;
+
+    private boolean isMapVisible = false;
+    private String previousSearchQuery;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,18 +74,80 @@ public class SearchActivity extends AbstractBaseActivity
         setContentView(R.layout.activity_search);
         setDrawerEnable(true);
 
-        mProgressBar = (ContentLoadingProgressBar) findViewById(R.id.progress_bar);
         mRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_layout);
+        mFragmentFrameLayout = (FrameLayout) findViewById(R.id.fragment_frame);
+        mCoordinatorLayout = (CoordinatorLayout) findViewById(R.id.coordinator_layout);
 
         initSearchBox();
         initRecyclerView();
+        initFloatingActionButton();
 
         int actionbarHeight = ThemeUtils.getDimension(this, R.attr.actionBarSize);
         mSwipeRefreshLayout.setProgressViewOffset(true, 0, actionbarHeight * 2);
 
-        final String query = getIntent().getStringExtra("query");
-        if(query != null) mSearchBox.postDelayed(() -> mSearchBox.triggerSearch(query), 100);
+        final String query = getIntent().getStringExtra(EXTRA_SEARCH_QUERY);
+        final boolean byLocation = getIntent().getBooleanExtra(EXTRA_SEARCH_BY_LOCATION, false);
+
+        if (query != null) {
+            mSearchBox.postDelayed(() -> mSearchBox.triggerSearch(query), 100);
+
+        } else if (byLocation) {
+            mMapButton.postDelayed(() -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1) {
+                    mMapButton.callOnClick();
+                } else {
+                    mMapButton.performClick();
+                }
+            }, 100);
+        }
+    }
+
+    private void initFloatingActionButton() {
+        mMapButton = (FloatingActionButton) findViewById(R.id.fab_map);
+        mMapButton.show(false);
+        mMapButton.setOnClickListener(v -> {
+            if (mMapFragment == null) {
+                initMapFragment();
+            }
+
+            if (mMapFragment != null) {
+                if (!isMapVisible) {
+                    showMap();
+                } else {
+                    hideMap();
+                }
+            }
+        });
+        mLocationButton = (FloatingActionButton) findViewById(R.id.fab_location);
+        mLocationButton.hide(false);
+        mLocationButton.setShowProgressBackground(false);
+        mLocationButton.setOnClickListener(v -> {
+            if (mMapFragment != null) {
+                mLocationButton.setIndeterminate(true);
+                mLocationButton.setDrawableTint(ThemeUtils.getThemeColor(this, R.attr.colorAccent));
+                mMapFragment.updateLocation(true);
+            }
+        });
+    }
+
+    private void showMap() {
+        isMapVisible = true;
+        RevealUtils.revealView(mFragmentFrameLayout, RevealUtils.Position.CENTER, 1000, null);
+        previousSearchQuery = mSearchBox.getSearchText();
+        if(TextUtils.isEmpty(previousSearchQuery)) previousSearchQuery = null;
+        mSearchBox.setLogoText(getString(R.string.nearby_location));
+        mMapButton.hide(true);
+        mLocationButton.show(true);
+    }
+
+    private void hideMap() {
+        isMapVisible = false;
+        mMapButton.show(true);
+        mLocationButton.hide(true);
+        mSearchBox.setLogoText(previousSearchQuery != null ? previousSearchQuery : getString(R.string.search_hint));
+        RevealUtils.unrevealView(mFragmentFrameLayout, RevealUtils.Position.CENTER, 1000, null);
+        RevealUtils.revealView(mSwipeRefreshLayout, RevealUtils.Position.CENTER, 600, null);
     }
 
     private void initSearchBox() {
@@ -71,7 +160,7 @@ public class SearchActivity extends AbstractBaseActivity
         mSearchBox.enableVoiceRecognition(this);
         mSearchBox.disableMaterialIconAnimation(true);
         mSearchBox.setMaterialIconState(MaterialMenuDrawable.IconState.ARROW);
-        mSearchBox.setHint("노선 혹은 정류소 이름을 입력하세요.");
+        mSearchBox.setHint(getString(R.string.search_hint));
         mSearchBox.setMenuListener(this);
         mSearchBox.setSearchListener(this);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -96,13 +185,36 @@ public class SearchActivity extends AbstractBaseActivity
 
     public void reloadSearchQuery() {
         if(mSearchBox != null) {
-            Set<SearchHistory> searchHistoryTable = DatabaseFacade.getInstance().getSearchHistoryTable();
+            List<SearchHistory> searchHistoryTable = new ArrayList<>(DatabaseFacade.getInstance().getSearchHistoryTable());
+            Collections.sort(searchHistoryTable);
+
             ArrayList<SearchResult> arrayList = new ArrayList<>();
+
+            if(!isMapVisible) {
+                Drawable locationDrawable = ContextCompat.getDrawable(this, R.drawable.ic_my_location_black_24dp);
+                arrayList.add(new SearchResult(getString(R.string.search_by_location), locationDrawable));
+            }
+
+            Drawable historyDrawable = ContextCompat.getDrawable(this, R.drawable.ic_history_grey_600_18dp);
+            int historyColor = ThemeUtils.getResourceColor(this, R.color.md_grey_600);
             for (SearchHistory searchHistory : searchHistoryTable) {
-                arrayList.add(new SearchResult(searchHistory.getTitle(), null));
+                arrayList.add(new SearchResult(searchHistory.getTitle(), historyDrawable, historyColor));
             }
             mSearchBox.setSearchables(arrayList);
         }
+    }
+    private void initMapFragment() {
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        mMapFragment = (MapFragment) fragmentManager.findFragmentByTag(MAP_FRAGMENT_TAG);
+        if (mMapFragment == null) {
+            Bundle args = new Bundle();
+            args.putBoolean(MapFragment.EXTRA_ENABLE_SEARCH, true);
+            mMapFragment = MapFragment.newInstance(args);
+            fragmentManager.beginTransaction()
+                    .add(R.id.fragment_frame, mMapFragment, MAP_FRAGMENT_TAG)
+                    .commit();
+        }
+        mMapFragment.setOnEventListener(this);
     }
 
     @Override
@@ -129,16 +241,31 @@ public class SearchActivity extends AbstractBaseActivity
     public void onSearch(String keyword) {
         if (keyword.length() < 2) {
             if (!TextUtils.isEmpty(keyword.replaceAll("\\d", ""))) {
-                Toast.makeText(this, "2글자 이상 입력하세요.", Toast.LENGTH_SHORT).show();
+                Snackbar.make(mCoordinatorLayout, getString(R.string.error_search_keyword_too_short), Snackbar.LENGTH_LONG).show();
                 return;
             }
         }
+
+        if (getString(R.string.search_by_location).equals(keyword)) {
+            if(!isMapVisible) {
+                showMap();
+                if(mMapFragment != null) {
+                    mMapFragment.updateLocation(true);
+                }
+            }
+            return;
+
+        } else if (isMapVisible) {
+            previousSearchQuery = keyword;
+            hideMap();
+        }
+
 
         Set<SearchHistory> searchHistoryTable = DatabaseFacade.getInstance().getSearchHistoryTable();
         SearchHistory searchHistory = new SearchHistory(keyword);
 
         //noinspection StatementWithEmptyBody
-        while(searchHistoryTable.remove(searchHistory));
+        while (searchHistoryTable.remove(searchHistory)) ;
         searchHistoryTable.add(searchHistory);
 
         mSwipeRefreshLayout.setEnabled(true);
@@ -158,11 +285,9 @@ public class SearchActivity extends AbstractBaseActivity
                 }, 500);
             }
 
-
             @Override
             public void onError(int progress, Throwable t) {
-                t.printStackTrace();
-                Toast.makeText(SearchActivity.this, "Failed retrieving data", Toast.LENGTH_LONG).show();
+                Snackbar.make(mCoordinatorLayout, getString(R.string.error_with_reason, t.getMessage()), Snackbar.LENGTH_LONG).show();
             }
         });
     }
@@ -171,6 +296,10 @@ public class SearchActivity extends AbstractBaseActivity
     public void onBackPressed() {
         if (mSearchBox.isSearchOpen()) {
             mSearchBox.toggleSearch();
+
+        } else if (isMapVisible && previousSearchQuery != null) {
+            hideMap();
+
         } else {
             super.onBackPressed();
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
@@ -181,4 +310,38 @@ public class SearchActivity extends AbstractBaseActivity
     public void onMenuClick() {
         onBackPressed();
     }
+
+
+    @Override
+    public void onLocationUpdate(Location location) {
+        mLocationButton.postDelayed(() -> {
+            mLocationButton.setClickable(true);
+            mLocationButton.setDrawableTint(Color.BLACK);
+            mLocationButton.setIndeterminate(false);
+            mLocationButton.setProgress(0, false);
+        }, 1000);
+    }
+
+    @Override
+    public void onStationClick(Station station) {
+        Intent intent = new Intent(this, StationActivity.class);
+        intent.putExtra(StationActivity.EXTRA_KEY_STATION, (Parcelable) station);
+        startActivity(intent);
+    }
+
+    @Override
+    public void onErrorMessage(String error) {
+        Snackbar.make(mCoordinatorLayout, error, Snackbar.LENGTH_LONG).show();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == SearchBox.VOICE_RECOGNITION_CODE && resultCode == RESULT_OK) {
+            List<String> results = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+            String spokenText = results.get(0);
+            mSearchBox.triggerSearch(spokenText);
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
 }

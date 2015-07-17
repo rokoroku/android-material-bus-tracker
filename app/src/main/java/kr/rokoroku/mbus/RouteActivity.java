@@ -424,7 +424,7 @@ public class RouteActivity extends AbstractBaseActivity
                         @Override
                         public void onError(String failReason, ConnectionResult connectionResult) {
                             if (failReason != null) {
-                                Snackbar.make(mCoordinatorLayout, "오류가 발생했습니다: " + failReason, Snackbar.LENGTH_LONG).show();
+                                Snackbar.make(mCoordinatorLayout, getString(R.string.error_with_reason, failReason), Snackbar.LENGTH_LONG).show();
                             }
                             mLocationButton.postDelayed(() -> {
                                 mLocationButton.setDrawableTint(Color.BLACK);
@@ -495,14 +495,14 @@ public class RouteActivity extends AbstractBaseActivity
 
         List<FavoriteGroup> favoriteGroups = FavoriteFacade.getInstance().getCurrentFavorite().getFavoriteGroups();
         if (favoriteGroups.isEmpty()) {
-            favoriteGroups.add(new FavoriteGroup(getString(R.string.default_favorite_group)));
+            favoriteGroups.add(new FavoriteGroup(getString(R.string.favorite_default_group)));
         }
         FavoriteGroup favoriteGroup = favoriteGroups.get(0);
         FavoriteGroup.FavoriteItem item = new FavoriteGroup.FavoriteItem(mRouteDataProvider.getRoute());
         if (routeStation != null) item.setExtraData(routeStation);
 
         favoriteGroup.add(item);
-        Snackbar.make(mCoordinatorLayout, R.string.added_to_favorite, Snackbar.LENGTH_LONG).show();
+        Snackbar.make(mCoordinatorLayout, R.string.alert_added_to_favorite, Snackbar.LENGTH_LONG).show();
     }
 
 }

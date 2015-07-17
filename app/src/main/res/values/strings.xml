@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">MBus</string>
+    <string name="app_name">Material Bus Tracker</string>
 
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
@@ -31,13 +31,23 @@
 
     <string name="title_activity_maps">Map</string>
     <string name="menu_item_add_to_favorite">즐겨찾기에 추가</string>
-    <string name="added_to_favorite">즐겨찾기에 추가되었습니다.</string>
-    <string name="default_favorite_group">기본 그룹</string>
-    <string name="heading_to">%1$s 방면</string>
+    <string name="favorite_default_group">기본 그룹</string>
+    <string name="route_heading_to">%1$s 방면</string>
     <string name="action_new_favorite_group">새 그룹</string>
     <string name="action_new_favorite_entry">새 즐겨찾기 (랜덤)</string>
     <string name="add_to_favorite_hint_select_one">하나 골라요.</string>
-    <string name="error_failed_to_retrieve_near_station">근처의 정류장을 찾을 수 없습니다. (1km 내외)</string>
 
+    <string name="search_hint">노선, 정류장 이름 또는 ID</string>
+    <string name="search_by_location">주변 정류장 검색</string>
+    <string name="nearby_location">주변 정류장</string>
     <string name="powered_by">Powered by %1$s</string>
+
+    <string name="alert_added_to_favorite">즐겨찾기에 추가되었습니다.</string>
+    <string name="warning_zoom_too_low">정류장을 확인하려면 지도를 더 확대하세요.</string>
+
+    <string name="error_with_reason">오류가 발생했습니다. (%1%s)</string>
+    <string name="error_search_keyword_too_short">2글자 이상 입력하세요.</string>
+    <string name="error_failed_to_retrieve_near_station">근처의 정류장을 찾을 수 없습니다. (1km 내외)</string>
+    <string name="error_failed_to_retrieve_map_line">지도 정보를 가져오는데 실패하였습니다.</string>
+
 </resources>

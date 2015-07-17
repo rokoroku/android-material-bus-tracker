@@ -1,35 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <group android:checkableBehavior="single">
+    <group android:checkableBehavior="all">
         <item
             android:id="@+id/nav_action_1"
             android:icon="@drawable/ic_label_outline_white_24dp"
-            android:title="Bookmark 1" />
+            android:title="서울" />
         <item
             android:id="@+id/nav_action_2"
             android:icon="@drawable/ic_label_outline_white_24dp"
-            android:title="Bookmark 2" />
-        <item
-            android:id="@+id/nav_action_3"
-            android:icon="@drawable/ic_label_outline_white_24dp"
-            android:title="Bookmark 3" />
-        <item
-            android:id="@+id/nav_action_4"
-            android:icon="@drawable/ic_label_outline_white_24dp"
-            android:title="Bookmark 4" />
+            android:title="경기" />
     </group>
 
-    <item android:title="Settings">
-        <menu>
-            <item
-                android:id="@+id/nav_action_change_theme"
-                android:icon="@drawable/ic_invert_colors_white_24dp"
-                android:title="Change Theme" />
-            <item
-                android:id="@+id/nav_action_about"
-                android:icon="@drawable/ic_info_outline_white_48dp"
-                android:title="About" />
-        </menu>
-    </item>
+    <group android:checkableBehavior="single">
+        <item android:title="설정">
+            <menu>
+                <item
+                    android:id="@+id/nav_action_change_theme"
+                    android:icon="@drawable/ic_invert_colors_white_24dp"
+                    android:title="테마 변경" />
+            </menu>
+        </item>
+    </group>
 
+    <group android:checkableBehavior="single">
+        <item android:title="기타">
+            <menu>
+                <item
+                    android:id="@+id/nav_action_providers"
+                    android:icon="@drawable/ic_public_white_48dp"
+                    android:title="정보제공처" />
+                <item
+                    android:id="@+id/nav_action_license"
+                    android:icon="@drawable/ic_info_outline_white_48dp"
+                    android:title="오픈 소스 라이센스" />
+            </menu>
+        </item>
+    </group>
 </menu>

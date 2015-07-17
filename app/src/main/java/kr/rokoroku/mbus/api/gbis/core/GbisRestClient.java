@@ -74,8 +74,8 @@ public class GbisRestClient implements ApiWrapperInterface {
     }
 
     @Override
-    public void searchStationByLocation(double latitude, double longitude, Callback<List<Station>> callback) {
-        ApiFacade.getInstance().getGbisWebRestClient().searchStationByLocation(latitude, longitude, callback);
+    public void searchStationByLocation(double latitude, double longitude, int radius, Callback<List<Station>> callback) {
+        ApiFacade.getInstance().getGbisWebRestClient().searchStationByLocation(latitude, longitude, 1000, callback);
     }
 
     @Override
