@@ -1,3 +1,4 @@
 build/
 src/main/res/values/api_keys.xml
 src/main/java/kr/rokoroku/mbus/api/GAWrapper.java
+fabric.properties

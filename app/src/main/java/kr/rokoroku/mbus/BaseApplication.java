@@ -2,9 +2,11 @@ package kr.rokoroku.mbus;
 
 import android.app.Application;
 
+import com.crashlytics.android.Crashlytics;
 import com.google.android.gms.analytics.GoogleAnalytics;
 import com.google.android.gms.analytics.Tracker;
 
+import io.fabric.sdk.android.Fabric;
 import kr.rokoroku.mbus.core.ApiFacade;
 import kr.rokoroku.mbus.core.DatabaseFacade;
 import kr.rokoroku.mbus.core.LocationClient;
@@ -41,6 +43,8 @@ public class BaseApplication extends Application {
         tracker.enableExceptionReporting(true);
         tracker.enableAdvertisingIdCollection(true);
         tracker.enableAutoActivityTracking(true);
+
+        Fabric.with(this, new Crashlytics());
 
     }
 

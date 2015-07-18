@@ -8,11 +8,11 @@
         <item name="colorButtonNormal">@color/md_white_1000</item>
         <item name="colorControlHighlight">@color/ripple_material_light</item>
 
-        <item name="busColorRedLine">@color/md_red_500</item>
-        <item name="busColorGreenLine">@color/md_green_500</item>
-        <item name="busColorBlueLine">@color/md_blue_500</item>
-        <item name="busColorYellowLine">@color/md_yellow_600</item>
-        <item name="busColorPurpleLine">@color/md_deep_purple_400</item>
+        <item name="busColorRedLine">@color/md_red_700</item>
+        <item name="busColorGreenLine">@color/md_green_700</item>
+        <item name="busColorBlueLine">@color/md_blue_700</item>
+        <item name="busColorYellowLine">@color/md_yellow_700</item>
+        <item name="busColorPurpleLine">@color/md_deep_purple_500</item>
 
         <item name="cardColorAccent1">@color/md_pink_200</item>
         <item name="cardColorAccent2">@color/md_blue_200</item>

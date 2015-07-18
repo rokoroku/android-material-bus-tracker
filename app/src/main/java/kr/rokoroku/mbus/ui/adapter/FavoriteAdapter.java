@@ -7,6 +7,7 @@ package kr.rokoroku.mbus.ui.adapter;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.Typeface;
 import android.os.Handler;
 import android.os.Looper;
@@ -764,6 +765,9 @@ public class FavoriteAdapter
             mOverflowButton = (ImageButton) v.findViewById(R.id.overflow_button);
             mOverflowButton.setOnClickListener(this);
             mOverflowButton.setOnTouchListener(this);
+
+            int color = ThemeUtils.getThemeColor(v.getContext(), android.R.attr.textColorSecondary);
+            mOverflowButton.setColorFilter(color);
         }
 
         public void setItem(FavoriteGroup group) {

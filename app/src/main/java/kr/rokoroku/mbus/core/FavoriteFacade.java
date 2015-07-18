@@ -124,6 +124,7 @@ public class FavoriteFacade {
         }
         if (defaultGroup == null) {
             defaultGroup = new FavoriteGroup(defaultGroupName);
+            favoriteGroups.add(defaultGroup);
         }
         return defaultGroup;
     }

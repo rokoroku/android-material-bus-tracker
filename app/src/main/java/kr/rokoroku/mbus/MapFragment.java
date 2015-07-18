@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.annotation.StringRes;
 import android.support.design.widget.CoordinatorLayout;
 import android.text.TextUtils;
 import android.util.Log;
@@ -194,7 +195,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
 
                                 @Override
                                 public void failure(RetrofitError error) {
-                                    if (mListener != null) {
+                                    if (mListener != null && getActivity() != null) {
                                         mListener.onErrorMessage(getString(R.string.error_failed_to_retrieve_map_line));
                                     }
                                 }
@@ -208,7 +209,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
 
                     @Override
                     public void onError(int progress, Throwable t) {
-                        if (mListener != null) {
+                        if (mListener != null && getActivity() != null) {
                             mListener.onErrorMessage(getString(R.string.error_failed_to_retrieve_map_line));
                         }
                     }
@@ -261,7 +262,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
             @Override
             public void onError(int progress, Throwable t) {
                 t.printStackTrace();
-                if (mListener != null) {
+                if (mListener != null && getActivity() != null) {
                     mListener.onErrorMessage(t.getMessage());
                 }
             }
@@ -329,7 +330,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
             int radius = (int) (GeoUtils.getRadius(latLng, bounds));
 
             if (radius > 3000) {
-                if (mListener != null) {
+                if (mListener != null && getActivity() != null) {
                     mListener.onErrorMessage(getString(R.string.warning_zoom_too_low));
                 }
             } else {
@@ -344,7 +345,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
                     @Override
                     public void onError(int progress, Throwable t) {
                         t.printStackTrace();
-                        if (mListener != null) {
+                        if (mListener != null && getActivity() != null) {
                             mListener.onErrorMessage(getString(R.string.error_with_reason, t.getMessage()));
                         }
                     }
@@ -362,14 +363,14 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
             CameraPosition cameraPosition = new CameraPosition(latLng, DEFAULT_ZOOM_LEVEL, 0, 0);
             map.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
         }
-        if (mListener != null) {
+        if (mListener != null && getActivity() != null) {
             mListener.onLocationUpdate(location);
         }
     }
 
     @Override
     public void onError(String failReason, ConnectionResult connectionResult) {
-        if (mListener != null) {
+        if (mListener != null && getActivity() != null) {
             mListener.onLocationUpdate(null);
             mListener.onErrorMessage(failReason);
         }
@@ -380,7 +381,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         String arsId = marker.getSnippet();
         if (arsId != null && !TextUtils.isEmpty(arsId) && mStationTable != null) {
             Station markerStation = mStationTable.get(arsId);
-            if (markerStation != null && mListener != null) {
+            if (markerStation != null && mListener != null && getActivity() != null) {
                 mListener.onStationClick(markerStation);
             }
         }

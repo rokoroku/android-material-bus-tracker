@@ -74,7 +74,6 @@ public class MainActivity extends AbstractBaseActivity
 
     private FloatingActionMenu mPlusButton;
     private FloatingActionButton mAddNewGroupButton;
-    private FloatingActionButton mAddNewEntryButton;
 
     private FavoriteDataProvider mFavoriteDataProvider;
 
@@ -90,7 +89,6 @@ public class MainActivity extends AbstractBaseActivity
 
         mPlusButton = (FloatingActionMenu) findViewById(R.id.fab_plus);
         mAddNewGroupButton = (FloatingActionButton) findViewById(R.id.fab_new_group);
-        mAddNewEntryButton = (FloatingActionButton) findViewById(R.id.fab_new_entry);
 
         Favorite favorite = FavoriteFacade.getInstance().getCurrentFavorite();
         mFavoriteDataProvider = new FavoriteDataProvider(favorite);
@@ -236,30 +234,6 @@ public class MainActivity extends AbstractBaseActivity
                         }
                     })
                     .show();
-            mPlusButton.close(true);
-        });
-
-        mAddNewEntryButton.setOnClickListener(v -> {
-
-            Route randomRoute = DatabaseFacade.getInstance().getRandomRoute();
-            if (randomRoute != null && randomRoute.getId() != null) {
-                int groupPosition = 0;
-
-                FavoriteGroup.FavoriteItem favoriteItem = new FavoriteGroup.FavoriteItem(randomRoute);
-                FavoriteGroup groupItem = mFavoriteDataProvider.getGroupItem(groupPosition);
-                if (groupItem == null) {
-                    groupItem = new FavoriteGroup("기본 그룹");
-                    mFavoriteDataProvider.addGroupItem(groupPosition, groupItem);
-                }
-                groupItem.add(favoriteItem);
-                mAdapter.notifyDataSetChanged();
-                getHandler().postDelayed(() -> {
-                    mRecyclerView.smoothScrollToPosition(groupPosition);
-                    mRecyclerViewExpandableItemManager.expandGroup(groupPosition);
-                    Snackbar.make(mCoordinatorLayout, "즐겨찾기가 추가되었습니다.", Snackbar.LENGTH_LONG).show();
-                    showToolbarLayer();
-                }, 100);
-            }
             mPlusButton.close(true);
         });
     }

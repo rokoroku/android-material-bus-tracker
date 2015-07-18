@@ -16,7 +16,7 @@
         android:id="@+id/container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:minHeight="36dp"
+        android:minHeight="32dp"
         android:layout_gravity="bottom"
         android:gravity="center_vertical"
         android:orientation="horizontal">
@@ -29,7 +29,7 @@
             android:enabled="false"
             android:padding="0dp"
             app:vc_backgroundTint="@android:color/transparent"
-            app:vc_foregroundTint="#666666"
+            app:vc_foregroundTint="?android:attr/textColorPrimary"
             app:vc_startDrawable="@drawable/ic_expand_less"
             app:vc_endDrawable="@drawable/ic_expand_more" />
 
@@ -46,12 +46,12 @@
 
         <ImageButton
             android:id="@+id/overflow_button"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
             android:background="@android:color/transparent"
-            android:paddingBottom="6dp"
-            android:paddingTop="6dp"
-            android:paddingLeft="20dp"
+            android:paddingBottom="2dp"
+            android:paddingTop="2dp"
+            android:paddingLeft="18dp"
             android:scaleType="centerInside"
             android:src="@drawable/ic_more"
             android:visibility="visible" />
