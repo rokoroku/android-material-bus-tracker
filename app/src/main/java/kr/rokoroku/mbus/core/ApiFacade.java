@@ -19,8 +19,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 
 import kr.rokoroku.mbus.BaseApplication;
@@ -51,6 +49,7 @@ import kr.rokoroku.mbus.data.model.Station;
 import kr.rokoroku.mbus.data.model.StationRoute;
 import kr.rokoroku.mbus.util.GeoUtils;
 import kr.rokoroku.mbus.util.ProgressCallback;
+import kr.rokoroku.mbus.util.SimpleProgressCallback;
 import kr.rokoroku.mbus.util.ValueCallback;
 import retrofit.Callback;
 import retrofit.RetrofitError;
@@ -157,7 +156,7 @@ public class ApiFacade {
 
     public RouteDataProvider getRouteData(@NonNull Route route,
                                           @Nullable RouteDataProvider routeDataProvider,
-                                          @Nullable ProgressCallback progressCallback) {
+                                          @Nullable ProgressCallback<Route> progressCallback) {
         return getRouteData(route.getProvider(), route.getId(), routeDataProvider, progressCallback);
     }
 
@@ -171,7 +170,7 @@ public class ApiFacade {
     public RouteDataProvider getRouteData(@NonNull Provider provider,
                                           @NonNull String routeId,
                                           @Nullable RouteDataProvider routeDataProvider,
-                                          @Nullable ProgressCallback progressCallback) {
+                                          @Nullable ProgressCallback<Route> progressCallback) {
         // prepare data provider
         RouteDataProvider tempRouteDataProvider = routeDataProvider;
         if (tempRouteDataProvider == null) {
@@ -188,12 +187,12 @@ public class ApiFacade {
         final RouteDataProvider resultDataProvider = tempRouteDataProvider;
         final Route route = resultDataProvider.getRoute();
         final ApiWrapperInterface wrappedClient = getWrappedClient(provider);
-        final ProgressCallback.ProgressRunner progressRunner
-                = new ProgressCallback.ProgressRunner(progressCallback, 1);
+        final ProgressCallback.ProgressRunner<Route> progressRunner
+                = new ProgressCallback.ProgressRunner<>(progressCallback, 1);
 
         // check whether the data already has the information
         if (route.isRouteBaseInfoAvailable() && route.isRouteStationInfoAvailable()) {
-            progressRunner.end(true);
+            progressRunner.end(true, route);
 
         } else {
             // get wrapped interface for api call
@@ -210,7 +209,7 @@ public class ApiFacade {
                                 }
                             }
                         }
-                        progressRunner.end(true);
+                        progressRunner.end(true, result);
                     }
 
                     @Override
@@ -228,14 +227,14 @@ public class ApiFacade {
 
     public StationDataProvider getStationData(@NonNull Station station,
                                               @Nullable StationDataProvider stationDataProvider,
-                                              @Nullable ProgressCallback progressCallback) {
+                                              @Nullable ProgressCallback<Station> progressCallback) {
         return getStationData(station.getProvider(), station.getId(), stationDataProvider, progressCallback);
     }
 
     public StationDataProvider getStationData(@NonNull Provider provider,
                                               @NonNull String stationId,
                                               @Nullable StationDataProvider stationDataProvider,
-                                              @Nullable ProgressCallback progressCallback) {
+                                              @Nullable ProgressCallback<Station> progressCallback) {
         // prepare data provider
         StationDataProvider tempStationDataProvider = stationDataProvider;
         if (tempStationDataProvider == null) {
@@ -251,12 +250,12 @@ public class ApiFacade {
 
         final StationDataProvider resultDataProvider = tempStationDataProvider;
         final Station station = resultDataProvider.getStation();
-        final ProgressCallback.ProgressRunner outerProgressRunner
-                = new ProgressCallback.ProgressRunner(progressCallback, 1);
+        final ProgressCallback.ProgressRunner<Station> outerProgressRunner
+                = new ProgressCallback.ProgressRunner<>(progressCallback, 1);
 
         // check whether the data already has the information
         if (station.isEveryRouteInfoAvailable()) {
-            outerProgressRunner.end(true);
+            outerProgressRunner.end(true, station);
 
         } else {
             // prepare station entry list to retrieve
@@ -277,9 +276,9 @@ public class ApiFacade {
 
             // prepare callback interfaces
             final List<Station> retrievedStationEntries = new ArrayList<>();
-            final ProgressCallback finalWrappedCallback = new ProgressCallback() {
+            final ProgressCallback<Station> finalWrappedCallback = new ProgressCallback<Station>() {
                 @Override
-                public void onComplete(boolean success) {
+                public void onComplete(boolean success, Station value) {
                     // get external entries from all
                     final Set<Station.RemoteEntry> remoteEntryList = new HashSet<>();
                     final Set<StationRoute> finalStationRoutes = new HashSet<>();
@@ -306,7 +305,7 @@ public class ApiFacade {
                     resultDataProvider.setStation(station);
 
                     if (progressCallback != null) {
-                        runOnUiThread(() -> progressCallback.onComplete(success));
+                        runOnUiThread(() -> progressCallback.onComplete(success, station));
                     }
                 }
 
@@ -325,7 +324,7 @@ public class ApiFacade {
                 }
             };
             final ProgressCallback.ProgressRunner innerProgressRunner =
-                    new ProgressCallback.ProgressRunner(finalWrappedCallback, localStationIdEntries.size(), false);
+                    new ProgressCallback.ProgressRunner<>(finalWrappedCallback, localStationIdEntries.size(), false);
             final ApiWrapperInterface.Callback<Station> stationEntryCallback = new ApiWrapperInterface.Callback<Station>() {
                 @Override
                 public void onSuccess(Station result) {
@@ -400,14 +399,14 @@ public class ApiFacade {
 
     public RouteDataProvider getRouteRealtimeData(@NonNull Route route,
                                                   @Nullable RouteDataProvider routeDataProvider,
-                                                  @Nullable ProgressCallback progressCallback) {
+                                                  @Nullable ProgressCallback<List<BusLocation>> progressCallback) {
         return getRouteRealtimeData(route.getProvider(), route.getId(), routeDataProvider, progressCallback);
     }
 
     public RouteDataProvider getRouteRealtimeData(@NonNull Provider provider,
                                                   @NonNull String routeId,
                                                   @Nullable RouteDataProvider routeDataProvider,
-                                                  @Nullable ProgressCallback progressCallback) {
+                                                  @Nullable ProgressCallback<List<BusLocation>> progressCallback) {
 
         // prepare data provider
         RouteDataProvider tempRouteDataProvider = routeDataProvider;
@@ -423,13 +422,13 @@ public class ApiFacade {
         }
 
         final RouteDataProvider resultDataProvider = tempRouteDataProvider;
-        final ProgressCallback.ProgressRunner progressRunner
-                = new ProgressCallback.ProgressRunner(progressCallback, 2);
+        final ProgressCallback.ProgressRunner<List<BusLocation>> progressRunner
+                = new ProgressCallback.ProgressRunner<>(progressCallback, 2);
 
         // 1. call getRouteData to ensure route base data is available
-        getRouteData(provider, routeId, resultDataProvider, new SimpleProgressCallback() {
+        getRouteData(provider, routeId, resultDataProvider, new SimpleProgressCallback<Route>() {
             @Override
-            public void onComplete(boolean success) {
+            public void onComplete(boolean success, Route value) {
                 progressRunner.progress();
 
                 // 2. retrieve realtime info only when having station infomations
@@ -441,6 +440,7 @@ public class ApiFacade {
                         public void onSuccess(List<BusLocation> result) {
                             if (result != null) {
                                 resultDataProvider.setBusPositionList(result);
+                                progressRunner.setResult(result);
                             }
                             progressRunner.progress();
                         }
@@ -451,7 +451,7 @@ public class ApiFacade {
                         }
                     });
                 } else {
-                    progressRunner.end(false);
+                    progressRunner.end(false, null);
                 }
             }
 
@@ -468,12 +468,14 @@ public class ApiFacade {
                                               @Nullable SearchDataProvider searchDataProvider,
                                               @Nullable ProgressCallback callback) {
 
+        final String finalKeyword = keyword.replaceAll("-", "").toUpperCase();
         if (searchDataProvider == null) searchDataProvider = new SearchDataProvider();
+
         final SearchDataProvider resultDataProvider = searchDataProvider;
         final ProgressCallback.ProgressRunner progressRunner = new ProgressCallback.ProgressRunner(callback, 4);
 
         // search route
-        getGbisRestClient().searchRouteByKeyword(keyword, new ApiWrapperInterface.Callback<List<Route>>() {
+        getGbisRestClient().searchRouteByKeyword(finalKeyword, new ApiWrapperInterface.Callback<List<Route>>() {
             @Override
             public void onSuccess(List<Route> result) {
                 if (result != null) {
@@ -491,7 +493,7 @@ public class ApiFacade {
             }
 
             public void searchNextProvider() {
-                getSeoulBusRestClient().searchRouteByKeyword(keyword, new ApiWrapperInterface.Callback<List<Route>>() {
+                getSeoulBusRestClient().searchRouteByKeyword(finalKeyword, new ApiWrapperInterface.Callback<List<Route>>() {
                     @Override
                     public void onSuccess(List<Route> result) {
                         if (result != null) {
@@ -510,7 +512,7 @@ public class ApiFacade {
         });
 
         // search station
-        getSeoulBusRestClient().searchStationByKeyword(keyword, new ApiWrapperInterface.Callback<List<Station>>() {
+        getSeoulBusRestClient().searchStationByKeyword(finalKeyword, new ApiWrapperInterface.Callback<List<Station>>() {
             final Map<String, Station> seoulStationMap = new HashMap<>();
             final Set<Station> resultSet = new HashSet<>();
 
@@ -536,7 +538,7 @@ public class ApiFacade {
             }
 
             public void searchNextProvider() {
-                getGbisRestClient().searchStationByKeyword(keyword, new ApiWrapperInterface.Callback<List<Station>>() {
+                getGbisRestClient().searchStationByKeyword(finalKeyword, new ApiWrapperInterface.Callback<List<Station>>() {
                     @Override
                     public void onSuccess(List<Station> result) {
                         if (result != null) {
@@ -568,22 +570,16 @@ public class ApiFacade {
         return resultDataProvider;
     }
 
-    public void searchByPosition(@NonNull double latitude,
-                                 @NonNull double longitude,
-                                 @NonNull int radius,
-                                 @Nullable ValueCallback<List<Station>> callback) {
+    public void searchByPosition(double latitude, double longitude, int radius,
+                                 @Nullable ProgressCallback<List<Station>> callback) {
         final List<Station> resultList = new ArrayList<>();
-        final ProgressCallback.ProgressRunner progressRunner = new ProgressCallback.ProgressRunner(new SimpleProgressCallback() {
-            @Override
-            public void onComplete(boolean success) {
-                callback.onSuccess(resultList);
-            }
-        }, 2);
+        final ProgressCallback.ProgressRunner<List<Station>> progressRunner = new ProgressCallback.ProgressRunner<>(callback, 2);
         final ApiWrapperInterface.Callback<List<Station>> resultCallback = new ApiWrapperInterface.Callback<List<Station>>() {
             @Override
             public void onSuccess(List<Station> result) {
                 if (result != null) synchronized (resultList) {
                     resultList.addAll(result);
+                    progressRunner.setResult(resultList);
                 }
                 progressRunner.progress();
             }
@@ -601,7 +597,9 @@ public class ApiFacade {
 
     public void fillArrivalInfo(@NonNull Station station,
                                 @Nullable StationRoute stationRoute,
-                                @Nullable ProgressCallback progressCallback) {
+                                @Nullable ProgressCallback<List<ArrivalInfo>> progressCallback) {
+
+        final List<ArrivalInfo> resultArrivalInfos = new ArrayList<>();
         if (stationRoute == null) {
             // retrieve all route's arrival info
             final List<Station.RemoteEntry> stationEntries = new ArrayList<>();
@@ -609,8 +607,8 @@ public class ApiFacade {
             if (station.getRemoteEntries() != null)
                 stationEntries.addAll(station.getRemoteEntries());
 
-            final ProgressCallback.ProgressRunner progressRunner
-                    = new ProgressCallback.ProgressRunner(progressCallback, stationEntries.size());
+            final ProgressCallback.ProgressRunner<List<ArrivalInfo>> progressRunner
+                    = new ProgressCallback.ProgressRunner<>(progressCallback, stationEntries.size());
 
             for (Station.RemoteEntry remoteEntry : stationEntries) {
                 final Provider provider = remoteEntry.getProvider();
@@ -624,7 +622,9 @@ public class ApiFacade {
                             public void onSuccess(List<ArrivalInfo> result) {
                                 if (result != null) {
                                     externalStation.setArrivalInfos(result);
+                                    resultArrivalInfos.addAll(result);
                                 }
+                                progressRunner.setResult(resultArrivalInfos);
                                 progressRunner.progress();
                             }
 
@@ -637,14 +637,14 @@ public class ApiFacade {
                         progressRunner.error(new ApiNotAvailableException(provider));
                     }
                 } else {
-                    ApiFacade.this.getStationData(station, null, new SimpleProgressCallback() {
+                    getStationData(station, null, new SimpleProgressCallback<Station>() {
                         @Override
-                        public void onComplete(boolean success) {
+                        public void onComplete(boolean success, Station value) {
                             if (success && DatabaseFacade.getInstance().getStationWithSecondaryKey(provider, localId) != null) {
                                 fillArrivalInfo(station, stationRoute, progressCallback);
                                 progressRunner.progress();
                             } else {
-                                progressRunner.end(success);
+                                progressRunner.end(success, null);
                             }
                         }
 
@@ -661,8 +661,8 @@ public class ApiFacade {
             final Provider provider = stationRoute.getProvider();
             final String routeId = stationRoute.getRouteId();
             final ApiWrapperInterface wrappedClient = getWrappedClient(provider);
-            final ProgressCallback.ProgressRunner progressRunner
-                    = new ProgressCallback.ProgressRunner(progressCallback, 1);
+            final ProgressCallback.ProgressRunner<List<ArrivalInfo>> progressRunner
+                    = new ProgressCallback.ProgressRunner<>(progressCallback, 1);
 
             if (wrappedClient != null) {
                 wrappedClient.getStationArrivalInfo(station.getId(), routeId, new ApiWrapperInterface.Callback<ArrivalInfo>() {
@@ -670,7 +670,9 @@ public class ApiFacade {
                     public void onSuccess(ArrivalInfo result) {
                         if (result != null) {
                             stationRoute.setArrivalInfo(result);
+                            resultArrivalInfos.add(result);
                         }
+                        progressRunner.setResult(resultArrivalInfos);
                         progressRunner.progress();
                     }
 
@@ -810,54 +812,6 @@ public class ApiFacade {
                 });
                 break;
         }
-    }
-
-    public static abstract class SimpleProgressCallback implements ProgressCallback {
-        @Override
-        public void onComplete(boolean success) {
-
-        }
-
-        @Override
-        public void onProgressUpdate(int current, int target) {
-
-        }
-
-        @Override
-        public void onError(int progress, Throwable t) {
-
-        }
-    }
-
-    private abstract class ProgressWrappedCallback<T> implements Callback<T> {
-
-        private int[] progress;
-        private ProgressCallback callback;
-
-        public ProgressWrappedCallback(ProgressCallback callback, int[] progress) {
-            this.callback = callback;
-            this.progress = progress;
-        }
-
-        abstract void success(T t);
-
-        @Override
-        public void success(T t, Response response) {
-            this.success(t);
-            runOnUiThread(() -> {
-                callback.onProgressUpdate(++progress[0], progress[1]);
-                if (progress[0] >= progress[1]) callback.onComplete(true);
-            });
-        }
-
-        @Override
-        public void failure(RetrofitError error) {
-            runOnUiThread(() -> {
-                callback.onError(++progress[0], error);
-                if (progress[0] >= progress[1]) callback.onComplete(false);
-            });
-        }
-
     }
 
 }

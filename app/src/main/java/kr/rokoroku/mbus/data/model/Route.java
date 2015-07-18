@@ -122,13 +122,13 @@ public class Route implements Parcelable, Serializable {
         this.id = routeEntity.getRouteId();
         this.name = routeEntity.getRouteNm();
         this.type = RouteType.valueOfGbis(ggEntity.getRouteTypeCd());
-        this.allocNormal = routeEntity.getNpeekAlloc();
-        if (!"0".equals(routeEntity.getNpeekAlloc2()) && !routeEntity.getNpeekAlloc().equals(routeEntity.getNpeekAlloc2())) {
-            this.allocNormal += "~" + routeEntity.getNpeekAlloc2();
-        }
-        this.allocWeekend = routeEntity.getPeekAlloc();
+        this.allocNormal = routeEntity.getPeekAlloc();
         if (!"0".equals(routeEntity.getPeekAlloc2()) && !routeEntity.getPeekAlloc().equals(routeEntity.getPeekAlloc2())) {
-            this.allocWeekend += "~" + routeEntity.getPeekAlloc2();
+            this.allocNormal += "~" + routeEntity.getPeekAlloc2();
+        }
+        this.allocWeekend = routeEntity.getNpeekAlloc();
+        if (!"0".equals(routeEntity.getNpeekAlloc2()) && !routeEntity.getNpeekAlloc().equals(routeEntity.getNpeekAlloc2())) {
+            this.allocWeekend += "~" + routeEntity.getNpeekAlloc2();
         }
         this.firstUpTime = routeEntity.getUpFirstTime();
         this.lastUpTime = routeEntity.getUpLastTime();

@@ -31,6 +31,7 @@ import kr.rokoroku.mbus.data.model.RouteType;
 import kr.rokoroku.mbus.data.model.Station;
 import kr.rokoroku.mbus.data.model.StationRoute;
 import kr.rokoroku.mbus.util.ProgressCallback;
+import kr.rokoroku.mbus.util.SimpleProgressCallback;
 import retrofit.RestAdapter;
 import retrofit.RetrofitError;
 import retrofit.client.Client;
@@ -412,12 +413,12 @@ public class SeoulBusRestClient implements ApiWrapperInterface {
                 final List<ArrivalInfo> arrivalInfoList = new ArrayList<>();
                 final List<StationRoute> stationRouteList = station.getStationRouteList();
                 final ProgressCallback.ProgressRunner progressRunner
-                        = new ProgressCallback.ProgressRunner(new ApiFacade.SimpleProgressCallback() {
+                        = new ProgressCallback.ProgressRunner(new SimpleProgressCallback() {
 
                     private Throwable throwable;
 
                     @Override
-                    public void onComplete(boolean success) {
+                    public void onComplete(boolean success, Object value) {
                         if (success) {
                             callback.onSuccess(arrivalInfoList);
                         } else {

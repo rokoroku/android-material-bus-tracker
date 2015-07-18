@@ -41,6 +41,7 @@ import kr.rokoroku.mbus.data.model.RouteStation;
 import kr.rokoroku.mbus.data.model.RouteType;
 import kr.rokoroku.mbus.data.model.Station;
 import kr.rokoroku.mbus.data.model.StationRoute;
+import kr.rokoroku.mbus.util.SimpleProgressCallback;
 import kr.rokoroku.mbus.util.ThemeUtils;
 import kr.rokoroku.mbus.util.TimeUtils;
 import kr.rokoroku.mbus.core.FavoriteFacade;
@@ -256,9 +257,9 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
             if (stationRoute == null) stationRoute = new StationRoute(mDataProvider.getRoute(), routeStation.getLocalId());
 
             final StationRoute finalStationRoute = stationRoute;
-            ApiFacade.getInstance().fillArrivalInfo(routeStation, stationRoute, new ApiFacade.SimpleProgressCallback() {
+            ApiFacade.getInstance().fillArrivalInfo(routeStation, stationRoute, new SimpleProgressCallback() {
                 @Override
-                public void onComplete(boolean success) {
+                public void onComplete(boolean success, Object value) {
                     holder.setItem(finalStationRoute.getArrivalInfo());
                 }
 
@@ -378,6 +379,7 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
             }
         }
     }
+
     public class BusViewHolder extends BaseViewHolder {
 
         public ImageView mBusIcon;

@@ -9,10 +9,10 @@ import java.util.List;
 /**
  * Created by rok on 2015. 7. 16..
  */
-@Root
+@Root(name = "Msg")
 public class StationByPositionResult {
 
-    @ElementList(name = "Msg")
+    @ElementList(entry = "BusStationList", inline = true, required = false)
     private List<ResultEntity> items;
 
     public List<ResultEntity> getItems() {
@@ -23,8 +23,7 @@ public class StationByPositionResult {
         this.items = items;
     }
 
-    @Root(name = "BusStationList")
-    public class ResultEntity {
+    public static class ResultEntity {
 
         @Element(name = "arsId")
         public String arsId;

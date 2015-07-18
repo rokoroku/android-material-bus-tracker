@@ -33,6 +33,7 @@
         <item name="android:windowTranslucentStatus">true</item>
         <item name="actionModeBackground">?attr/colorPrimary</item>
         <item name="windowActionModeOverlay">true</item>
+        <item name="morphButtonStyle">@style/Widget.MorphButton</item>
     </style>
 
     <!-- Base application theme. -->
@@ -69,6 +70,7 @@
         <item name="android:windowTranslucentStatus">true</item>
         <item name="actionModeBackground">?attr/colorPrimary</item>
         <item name="windowActionModeOverlay">true</item>
+        <item name="morphButtonStyle">@style/Widget.MorphButton</item>
     </style>
 
 </resources>

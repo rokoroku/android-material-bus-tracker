@@ -3,31 +3,40 @@ package kr.rokoroku.mbus.util;
 /**
  * Created by rok on 2015. 7. 14..
  */
-public interface ProgressCallback {
-    void onComplete(boolean success);
+public interface ProgressCallback<T> {
+    void onComplete(boolean success, T value);
 
     void onProgressUpdate(int current, int target);
 
     void onError(int progress, Throwable t);
 
-    class ProgressRunner {
+    class ProgressRunner<T> {
 
         private int current = 0;
         private int target;
         private boolean error = false;
         private boolean complete = false;
         private boolean runOnUiThread = true;
-        private ProgressCallback progressCallback;
+        private ProgressCallback<T> progressCallback;
+        private T result;
 
-        public ProgressRunner(ProgressCallback progressCallback, int target) {
+        public ProgressRunner(ProgressCallback<T> progressCallback, int target) {
             this.progressCallback = progressCallback;
             setTarget(target);
         }
 
-        public ProgressRunner(ProgressCallback progressCallback, int target, boolean runOnUiThread) {
+        public ProgressRunner(ProgressCallback<T> progressCallback, int target, boolean runOnUiThread) {
             this.progressCallback = progressCallback;
             this.runOnUiThread = runOnUiThread;
             setTarget(target);
+        }
+
+        public T getResult() {
+            return result;
+        }
+
+        public void setResult(T result) {
+            this.result = result;
         }
 
         public int getCurrent() {
@@ -68,9 +77,10 @@ public interface ProgressCallback {
             checkComplete();
         }
 
-        public synchronized void end(boolean success) {
+        public synchronized void end(boolean success, T value) {
             current = target;
             error = !success;
+            result = value;
             if (progressCallback != null) {
                 run(() -> progressCallback.onProgressUpdate(current, target));
             }
@@ -80,7 +90,7 @@ public interface ProgressCallback {
         private void checkComplete() {
             if (current >= target && !complete) {
                 if (progressCallback != null) {
-                    run(() -> progressCallback.onComplete(!error));
+                    run(() -> progressCallback.onComplete(!error, result));
                 }
                 complete = true;
             }

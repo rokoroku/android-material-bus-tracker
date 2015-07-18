@@ -36,12 +36,12 @@ import kr.rokoroku.mbus.data.RouteDataProvider;
 import kr.rokoroku.mbus.core.ApiFacade;
 import kr.rokoroku.mbus.core.FavoriteFacade;
 import kr.rokoroku.mbus.core.LocationClient;
-import kr.rokoroku.mbus.data.model.FavoriteGroup;
 import kr.rokoroku.mbus.data.model.Route;
 import kr.rokoroku.mbus.data.model.RouteStation;
 import kr.rokoroku.mbus.data.model.RouteType;
 import kr.rokoroku.mbus.data.model.Station;
 import kr.rokoroku.mbus.util.GeoUtils;
+import kr.rokoroku.mbus.util.SimpleProgressCallback;
 import kr.rokoroku.mbus.util.ThemeUtils;
 import kr.rokoroku.mbus.util.TimeUtils;
 import kr.rokoroku.mbus.util.ViewUtils;
@@ -181,17 +181,17 @@ public class RouteActivity extends AbstractBaseActivity
             else isRefreshing = true;
 
             final boolean needUpdateRouteInfo = !mRouteDataProvider.isRouteInfoAvailable() || route.getType() == null || route.getType().equals(RouteType.UNKNOWN);
-            ApiFacade.getInstance().getRouteData(route, mRouteDataProvider, new ApiFacade.SimpleProgressCallback() {
+            ApiFacade.getInstance().getRouteData(route, mRouteDataProvider, new SimpleProgressCallback() {
                 @Override
-                public void onComplete(boolean success) {
+                public void onComplete(boolean success, Object value) {
                     mBusRouteAdapter.notifyDataSetChanged();
                     if (success) {
                         if (needUpdateRouteInfo) {
                             setToolbarTitle(mRouteDataProvider.getRoute());
                         }
-                        ApiFacade.getInstance().getRouteRealtimeData(route, mRouteDataProvider, new ApiFacade.SimpleProgressCallback() {
+                        ApiFacade.getInstance().getRouteRealtimeData(route, mRouteDataProvider, new SimpleProgressCallback() {
                             @Override
-                            public void onComplete(boolean success) {
+                            public void onComplete(boolean success, Object value) {
                                 if (success) {
                                     scheduleTimer(BaseApplication.REFRESH_INTERVAL);
                                 }
@@ -492,16 +492,7 @@ public class RouteActivity extends AbstractBaseActivity
     }
 
     private void addToFavorite(RouteStation routeStation) {
-
-        List<FavoriteGroup> favoriteGroups = FavoriteFacade.getInstance().getCurrentFavorite().getFavoriteGroups();
-        if (favoriteGroups.isEmpty()) {
-            favoriteGroups.add(new FavoriteGroup(getString(R.string.favorite_default_group)));
-        }
-        FavoriteGroup favoriteGroup = favoriteGroups.get(0);
-        FavoriteGroup.FavoriteItem item = new FavoriteGroup.FavoriteItem(mRouteDataProvider.getRoute());
-        if (routeStation != null) item.setExtraData(routeStation);
-
-        favoriteGroup.add(item);
+        FavoriteFacade.getInstance().addToFavorite(mRouteDataProvider.getRoute(), routeStation);
         Snackbar.make(mCoordinatorLayout, R.string.alert_added_to_favorite, Snackbar.LENGTH_LONG).show();
     }
 

@@ -30,9 +30,9 @@ public class TopisRealtimeResult {
          * trnstnid : 10971
          * vehId : 170029128
          * busType : 0
-         * gpsX : 127.03664900495765
+         * busX : 127.03664900495765
          * isrunyn : 1
-         * gpsY : 37.46214167671144
+         * busY : 37.46214167671144
          */
         public String trnstnid;
         public String vehId;

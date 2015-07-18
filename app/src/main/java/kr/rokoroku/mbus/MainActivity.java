@@ -7,6 +7,7 @@ import android.graphics.drawable.NinePatchDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.provider.Settings;
 import android.speech.RecognizerIntent;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
@@ -41,6 +42,7 @@ import java.util.List;
 import java.util.Set;
 
 import kr.rokoroku.mbus.core.DatabaseFacade;
+import kr.rokoroku.mbus.core.LocationClient;
 import kr.rokoroku.mbus.ui.adapter.FavoriteAdapter;
 import kr.rokoroku.mbus.data.FavoriteDataProvider;
 import kr.rokoroku.mbus.core.FavoriteFacade;
@@ -55,6 +57,7 @@ public class MainActivity extends AbstractBaseActivity
         implements SearchBox.SearchListener, SearchBox.MenuListener, FavoriteAdapter.EventListener {
 
     private static final String SAVED_STATE_EXPANDABLE_ITEM_MANAGER = "expandable_state";
+    private static final int RESULT_GPS_SETTINGS = 55;
 
     private SearchBox mSearchBox;
     private RecyclerView mRecyclerView;
@@ -99,13 +102,31 @@ public class MainActivity extends AbstractBaseActivity
         int actionbarHeight = ThemeUtils.getDimension(this, R.attr.actionBarSize);
         mSwipeRefreshLayout.setProgressViewOffset(true, 0, actionbarHeight * 2);
         mSwipeRefreshLayout.setEnabled(false);
+
+        alertGpsEnable();
     }
 
+    private void alertGpsEnable() {
+        if (!LocationClient.isLocationEnabled(this)) {
+            MaterialDialog dialog = new MaterialDialog.Builder(this)
+                    .title("GPS 사용 설정")
+                    .content("위치 정보를 허용하시면 더 다양한 기능을 이용할 수 있어요.")
+                    .positiveText("좋아")
+                    .negativeText("싫어")
+                    .callback(new MaterialDialog.ButtonCallback() {
+                        @Override
+                        public void onPositive(MaterialDialog dialog) {
+                            Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                            startActivityForResult(intent, RESULT_GPS_SETTINGS);
+                        }
+                    }).build();
+            dialog.show();
+        }
+    }
 
     @Override
     protected void onRestart() {
         super.onRestart();
-
         if (mFavoriteDataProvider != null) {
             mAdapter.notifyDataSetChanged();
         }
@@ -290,7 +311,7 @@ public class MainActivity extends AbstractBaseActivity
         mSearchBox.setSearchString(null);
 
         Intent intent = new Intent(this, SearchActivity.class);
-        if(getString(R.string.search_by_location).equals(keyword)) {
+        if (getString(R.string.search_by_location).equals(keyword)) {
             intent.putExtra(SearchActivity.EXTRA_SEARCH_BY_LOCATION, true);
 
         } else {
@@ -305,6 +326,9 @@ public class MainActivity extends AbstractBaseActivity
     public void onBackPressed() {
         if (mSearchBox.isSearchOpen()) {
             mSearchBox.toggleSearch();
+
+        } else if (isDrawerOpen()) {
+            closeDrawer();
 
         } else if (mPlusButton.isOpened()) {
             mPlusButton.close(true);
@@ -386,14 +410,16 @@ public class MainActivity extends AbstractBaseActivity
     }
 
     public void reloadSearchQuery() {
-        if(mSearchBox != null) {
+        if (mSearchBox != null) {
             List<SearchHistory> searchHistoryTable = new ArrayList<>(DatabaseFacade.getInstance().getSearchHistoryTable());
             Collections.sort(searchHistoryTable);
 
             ArrayList<SearchResult> arrayList = new ArrayList<>();
 
-            Drawable locationDrawable = ContextCompat.getDrawable(this, R.drawable.ic_my_location_black_24dp);
-            arrayList.add(new SearchResult(getString(R.string.search_by_location), locationDrawable));
+            if(LocationClient.isLocationEnabled(this)) {
+                Drawable locationDrawable = ContextCompat.getDrawable(this, R.drawable.ic_my_location_black_24dp);
+                arrayList.add(new SearchResult(getString(R.string.search_by_location), locationDrawable));
+            }
 
             Drawable historyDrawable = ContextCompat.getDrawable(this, R.drawable.ic_history_grey_600_18dp);
             int historyColor = ThemeUtils.getResourceColor(this, R.color.md_grey_600);
@@ -404,13 +430,22 @@ public class MainActivity extends AbstractBaseActivity
         }
     }
 
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == SearchBox.VOICE_RECOGNITION_CODE && resultCode == RESULT_OK) {
             List<String> results = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
             String spokenText = results.get(0);
             mSearchBox.triggerSearch(spokenText);
+            return;
+
+        } else if(requestCode == RESULT_GPS_SETTINGS  && resultCode == RESULT_OK) {
+            if(LocationClient.isLocationEnabled(this)){
+                Snackbar.make(mCoordinatorLayout, "GPS 기능이 활성화되었습니다.", Snackbar.LENGTH_LONG).show();
+
+            } else {
+                Snackbar.make(mCoordinatorLayout, "GPS 기능이 비활성화되었습니다.", Snackbar.LENGTH_LONG).show();
+            }
+            return;
         }
         super.onActivityResult(requestCode, resultCode, data);
     }

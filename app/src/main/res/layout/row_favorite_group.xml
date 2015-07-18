@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingBottom="4dp"
+    android:paddingLeft="8dp"
+    android:paddingRight="8dp">
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="48dp"/>
+
+    <!-- Card Header -->
+    <LinearLayout
+        android:id="@+id/container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="36dp"
+        android:layout_gravity="bottom"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <com.wnafee.vector.MorphButton
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/indicator"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:enabled="false"
+            android:padding="0dp"
+            app:vc_backgroundTint="@android:color/transparent"
+            app:vc_foregroundTint="#666666"
+            app:vc_startDrawable="@drawable/ic_expand_less"
+            app:vc_endDrawable="@drawable/ic_expand_more" />
+
+        <TextView
+            android:id="@+id/section_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="4dp"
+            android:layout_marginStart="4dp"
+            android:layout_weight="1"
+            android:text="노선"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textSize="18sp" />
+
+        <ImageButton
+            android:id="@+id/overflow_button"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@android:color/transparent"
+            android:paddingBottom="6dp"
+            android:paddingTop="6dp"
+            android:paddingLeft="20dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_more"
+            android:visibility="visible" />
+
+    </LinearLayout>
+</FrameLayout>

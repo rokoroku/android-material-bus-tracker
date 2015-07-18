@@ -65,6 +65,7 @@ public class FavoriteDataProvider {
     public void moveGroupItem(int from, int to) {
         FavoriteGroup group = favoriteGroups.remove(from);
         if (group != null) {
+            if(to > favoriteGroups.size()) to = favoriteGroups.size();
             favoriteGroups.add(to, group);
         }
     }
@@ -82,6 +83,7 @@ public class FavoriteDataProvider {
             FavoriteGroup targetGroup = favoriteGroups.get(toGroup);
             FavoriteGroup.FavoriteItem sourceChild = sourceGroup.remove(fromChild);
             if (sourceChild != null && targetGroup != null) {
+                if(toChild > targetGroup.size()) toChild = targetGroup.size();
                 targetGroup.add(toChild, sourceChild);
             }
         }
@@ -102,6 +104,7 @@ public class FavoriteDataProvider {
         if (groupItem != null) {
             this.mLastRemovedChild = null;
             this.mLastRemovedGroup = groupItem;
+            this.mLastRemovedGroupPosition = groupIndex;
             this.mLastRemovedChildPosition = -1;
             this.mLastRemovedChildParentGroupId = -1;
         }

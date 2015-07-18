@@ -169,6 +169,10 @@ public class RecyclerViewExpandableItemManager {
         mTouchSlop = ViewConfiguration.get(mRecyclerView.getContext()).getScaledTouchSlop();
     }
 
+    public RecyclerView getRecyclerView() {
+        return mRecyclerView;
+    }
+
     /**
      * Detach the {@link android.support.v7.widget.RecyclerView} instance and release internal field references.
      *

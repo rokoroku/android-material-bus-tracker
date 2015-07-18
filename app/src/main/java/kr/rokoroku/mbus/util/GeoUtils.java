@@ -1,6 +1,7 @@
 package kr.rokoroku.mbus.util;
 
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 
 /**
  * Created by rok on 2015. 6. 13..
@@ -100,4 +101,22 @@ public class GeoUtils {
         }
     }
 
+    public static double getRadius(LatLng center, LatLngBounds bounds) {
+
+        LatLng northEast = bounds.northeast;
+
+        // r = radius of the earth in meter
+//        double r = 3963.0 * 1609.344;
+        double r = 6377830.272;
+
+        // Convert lat or lng from decimal degrees into radians (divide by 57.2958)
+        double lat1 = center.latitude / 57.2958;
+        double lon1 = center.longitude / 57.2958;
+        double lat2 = northEast.latitude / 57.2958;
+        double lon2 = northEast.longitude / 57.2958;
+
+        // distance = circle radius from center to Northeast corner of bounds
+        return r * Math.acos(Math.sin(lat1) * Math.sin(lat2) +
+                Math.cos(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1));
+    }
 }

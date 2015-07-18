@@ -23,14 +23,17 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import kr.rokoroku.mbus.api.ApiWrapperInterface;
 import kr.rokoroku.mbus.core.DatabaseFacade;
+import kr.rokoroku.mbus.data.model.ArrivalInfo;
+import kr.rokoroku.mbus.data.model.Provider;
 import kr.rokoroku.mbus.ui.adapter.StationAdapter;
 import kr.rokoroku.mbus.data.StationDataProvider;
 import kr.rokoroku.mbus.core.ApiFacade;
 import kr.rokoroku.mbus.core.FavoriteFacade;
-import kr.rokoroku.mbus.data.model.FavoriteGroup;
 import kr.rokoroku.mbus.data.model.Station;
 import kr.rokoroku.mbus.data.model.StationRoute;
+import kr.rokoroku.mbus.util.SimpleProgressCallback;
 import kr.rokoroku.mbus.util.ThemeUtils;
 import kr.rokoroku.mbus.util.TimeUtils;
 import kr.rokoroku.mbus.util.ViewUtils;
@@ -128,8 +131,10 @@ public class StationActivity extends AbstractBaseActivity
             finish();
 
         } else {
-            Station storedStation = DatabaseFacade.getInstance().getStation(station.getProvider(), station.getId());
-            if (storedStation != null) station = storedStation;
+            if (station.getId() != null) {
+                Station storedStation = DatabaseFacade.getInstance().getStation(station.getProvider(), station.getId());
+                if (storedStation != null) station = storedStation;
+            }
 
             if (mStationDataProvider == null)
                 mStationDataProvider = new StationDataProvider(station);
@@ -147,9 +152,9 @@ public class StationActivity extends AbstractBaseActivity
     @Override
     protected void onStop() {
         super.onStop();
-        if(mStationDataProvider != null) {
+        if (mStationDataProvider != null) {
             final Station station = mStationDataProvider.getStation();
-            if(station.isEveryRouteInfoAvailable()) {
+            if (station.isEveryRouteInfoAvailable()) {
                 DatabaseFacade.getInstance().putStationForEachProvider(station);
             }
         }
@@ -157,10 +162,10 @@ public class StationActivity extends AbstractBaseActivity
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        if(mStationDataProvider != null && mStationDataProvider.getStation() != null) {
-        Station station = mStationDataProvider.getStation();
+        if (mStationDataProvider != null && mStationDataProvider.getStation() != null) {
+            Station station = mStationDataProvider.getStation();
             MenuItem item = menu.findItem(R.id.action_map);
-            if(item != null) {
+            if (item != null) {
                 boolean isMapAvailable = station.getLongitude() != null && station.getLatitude() != null;
                 item.setEnabled(isMapAvailable);
             }
@@ -178,19 +183,30 @@ public class StationActivity extends AbstractBaseActivity
             if (isRefreshing) return false;
             else isRefreshing = true;
 
-            ApiFacade.getInstance().getStationData(station, mStationDataProvider, new ApiFacade.SimpleProgressCallback() {
-                boolean retried = false;
+            if (station.getId() == null && station.getLocalId() != null && station.getProvider().equals(Provider.SEOUL)) {
+                ApiFacade.getInstance().getSeoulWebRestClient().getStationBaseInfo(station.getLocalId(), new ApiWrapperInterface.Callback<Station>() {
+                    @Override
+                    public void onSuccess(Station result) {
+                        if (result != null) {
+                            mStationDataProvider.setStation(result);
+                            DatabaseFacade.getInstance().putStation(Provider.SEOUL, result);
+                            refreshData(true);
+                        }
+                    }
 
-                @Override
-                public void onComplete(boolean success) {
-                    mBusStationAdapter.notifyDataSetChanged();
-                    Log.d("StationActivity", "upperOnComplete " + success);
-                    if (success && mStationDataProvider.getRawStationRouteList() != null) {
-                        if (!mStationDataProvider.getStation().isEveryRouteInfoAvailable() && !retried) {
-                            ApiFacade.getInstance().fillArrivalInfo(station, null, this);
-                            retried = true;
-
-                        } else {
+                    @Override
+                    public void onFailure(Throwable t) {
+                        t.printStackTrace();
+                        Snackbar.make(mCoordinatorLayout, getString(R.string.error_with_reason, t), Snackbar.LENGTH_LONG).show();
+                    }
+                });
+            } else {
+                ApiFacade.getInstance().getStationData(station, mStationDataProvider, new SimpleProgressCallback<Station>() {
+                    @Override
+                    public void onComplete(boolean success, Station value) {
+                        mBusStationAdapter.notifyDataSetChanged();
+                        Log.d("StationActivity", "upperOnComplete " + success);
+                        if (success && mStationDataProvider.getRawStationRouteList() != null) {
                             if (mRedirectRouteId != null) {
                                 final String redirectId = mRedirectRouteId;
                                 mRedirectRouteId = null;
@@ -207,11 +223,11 @@ public class StationActivity extends AbstractBaseActivity
                                     }
                                 }, 500);
                             }
-                            ApiFacade.getInstance().fillArrivalInfo(mStationDataProvider.getStation(), null, new ApiFacade.SimpleProgressCallback() {
+                            ApiFacade.getInstance().fillArrivalInfo(mStationDataProvider.getStation(), null, new SimpleProgressCallback<List<ArrivalInfo>>() {
                                 @Override
-                                public void onComplete(boolean success) {
-                                    if (success) {
-                                        mStationDataProvider.organize();
+                                public void onComplete(boolean success, List<ArrivalInfo> value) {
+                                    if (success && value != null) {
+                                        mStationDataProvider.setArrivalInfos(value);
                                         mBusStationAdapter.notifyDataSetChanged();
                                         scheduleTimer(BaseApplication.REFRESH_INTERVAL);
                                     }
@@ -236,45 +252,45 @@ public class StationActivity extends AbstractBaseActivity
                                     t.printStackTrace();
                                 }
                             });
-                        }
-                    } else {
-                        Toast.makeText(StationActivity.this, "Complete but no stationRoutes", Toast.LENGTH_LONG).show();
-                        if (mRefreshActionItem != null) {
-                            mRefreshActionItem.setActionView(null);
-                        }
-                        mSwipeRefreshLayout.postDelayed(() -> {
-                            mSwipeRefreshLayout.setRefreshing(false);
-                            isRefreshing = false;
-                            if (mRedirectRouteId != null) {
-                                final String redirectId = mRedirectRouteId;
-                                int count = mStationDataProvider.getCount();
-                                for (int i = 0; i < count; i++) {
-                                    StationRoute stationRoute = mStationDataProvider.getItem(i).getStationRoute();
-                                    if (stationRoute != null && redirectId.equals(stationRoute.getRouteId())) {
-                                        int fifthHeight = ViewUtils.getScreenSize(StationActivity.this).y / 5;
-                                        ((LinearLayoutManager) mLayoutManager).scrollToPositionWithOffset(i, fifthHeight);
-                                        mRecyclerViewExpandableItemManager.expandGroup(i);
-                                        mRedirectRouteId = null;
-                                        break;
+                        } else {
+                            Toast.makeText(StationActivity.this, "Complete but no stationRoutes", Toast.LENGTH_LONG).show();
+                            if (mRefreshActionItem != null) {
+                                mRefreshActionItem.setActionView(null);
+                            }
+                            mSwipeRefreshLayout.postDelayed(() -> {
+                                mSwipeRefreshLayout.setRefreshing(false);
+                                isRefreshing = false;
+                                if (mRedirectRouteId != null) {
+                                    final String redirectId = mRedirectRouteId;
+                                    int count = mStationDataProvider.getCount();
+                                    for (int i = 0; i < count; i++) {
+                                        StationRoute stationRoute = mStationDataProvider.getItem(i).getStationRoute();
+                                        if (stationRoute != null && redirectId.equals(stationRoute.getRouteId())) {
+                                            int fifthHeight = ViewUtils.getScreenSize(StationActivity.this).y / 5;
+                                            ((LinearLayoutManager) mLayoutManager).scrollToPositionWithOffset(i, fifthHeight);
+                                            mRecyclerViewExpandableItemManager.expandGroup(i);
+                                            mRedirectRouteId = null;
+                                            break;
+                                        }
                                     }
                                 }
-                            }
-                        }, 500);
+                            }, 500);
 //                    scheduleTimer(5000);
+                        }
                     }
-                }
 
-                @Override
-                public void onProgressUpdate(int current, int target) {
-                    Log.d("StationActivity", String.format("upperOnProgressUpdate (%d/%d)", current, target));
-                }
+                    @Override
+                    public void onProgressUpdate(int current, int target) {
+                        Log.d("StationActivity", String.format("upperOnProgressUpdate (%d/%d)", current, target));
+                    }
 
-                @Override
-                public void onError(int progress, Throwable t) {
-                    Toast.makeText(StationActivity.this, t.getMessage(), Toast.LENGTH_LONG).show();
-                    t.printStackTrace();
-                }
-            });
+                    @Override
+                    public void onError(int progress, Throwable t) {
+                        Snackbar.make(mCoordinatorLayout, getString(R.string.error_with_reason, t.getMessage()), Snackbar.LENGTH_LONG).show();
+                        t.printStackTrace();
+                    }
+                });
+            }
             return true;
 
         } else if (!isRefreshing) {
@@ -416,15 +432,7 @@ public class StationActivity extends AbstractBaseActivity
     }
 
     private void addToFavorite(StationRoute stationRoute) {
-        List<FavoriteGroup> favoriteGroups = FavoriteFacade.getInstance().getCurrentFavorite().getFavoriteGroups();
-        if (favoriteGroups.isEmpty()) {
-            favoriteGroups.add(new FavoriteGroup(getString(R.string.favorite_default_group)));
-        }
-        FavoriteGroup favoriteGroup = favoriteGroups.get(0);
-        FavoriteGroup.FavoriteItem item = new FavoriteGroup.FavoriteItem(mStationDataProvider.getStation());
-        if (stationRoute != null) item.setExtraData(stationRoute);
-
-        favoriteGroup.add(item);
+        FavoriteFacade.getInstance().addToFavorite(mStationDataProvider.getStation(), stationRoute);
         Snackbar.make(mCoordinatorLayout, R.string.alert_added_to_favorite, Snackbar.LENGTH_LONG).show();
     }
 }

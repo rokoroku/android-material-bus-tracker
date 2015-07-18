@@ -24,7 +24,6 @@ import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchStationByPosResult;
 import kr.rokoroku.mbus.api.gbisweb.model.GbisStationRouteResult;
 import kr.rokoroku.mbus.api.ApiMethodNotSupportedException;
 import kr.rokoroku.mbus.api.ApiWrapperInterface;
-import kr.rokoroku.mbus.core.ApiFacade;
 import kr.rokoroku.mbus.core.DatabaseFacade;
 import kr.rokoroku.mbus.data.model.ArrivalInfo;
 import kr.rokoroku.mbus.data.model.BusLocation;
@@ -39,6 +38,7 @@ import kr.rokoroku.mbus.data.model.Station;
 import kr.rokoroku.mbus.data.model.StationRoute;
 import kr.rokoroku.mbus.util.GeoUtils;
 import kr.rokoroku.mbus.util.ProgressCallback;
+import kr.rokoroku.mbus.util.SimpleProgressCallback;
 import kr.rokoroku.mbus.util.ViewUtils;
 import retrofit.RestAdapter;
 import retrofit.RetrofitError;
@@ -187,7 +187,7 @@ public class GbisWebRestClient implements ApiWrapperInterface {
     @Override
     public void searchStationByLocation(double latitude, double longitude, int radius, Callback<List<Station>> callback) {
         final Double[] mercator = GeoUtils.toMercator(longitude, latitude);
-        getAdapter().searchStationByPos(mercator[1], mercator[0], 1000, new retrofit.Callback<GbisSearchStationByPosResult>() {
+        getAdapter().searchStationByPos(mercator[1], mercator[0], radius, new retrofit.Callback<GbisSearchStationByPosResult>() {
             @Override
             public void success(GbisSearchStationByPosResult gbisSearchStationByPosResult, Response response) {
                 List<Station> stationList = null;
@@ -409,9 +409,9 @@ public class GbisWebRestClient implements ApiWrapperInterface {
 
                 // 4. retrieve unknown typed route's meta data
                 final Station finalStation = station;
-                final ProgressCallback.ProgressRunner progressRunner = new ProgressCallback.ProgressRunner(new ApiFacade.SimpleProgressCallback() {
+                final ProgressCallback.ProgressRunner progressRunner = new ProgressCallback.ProgressRunner(new SimpleProgressCallback() {
                     @Override
-                    public void onComplete(boolean success) {
+                    public void onComplete(boolean success, Object value) {
                         if (success) {
                             for (StationRoute stationRoute : unknownRoutes) {
                                 RouteType routeType = stationRoute.getRouteType();

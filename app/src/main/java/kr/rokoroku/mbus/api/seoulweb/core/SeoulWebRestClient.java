@@ -2,6 +2,8 @@ package kr.rokoroku.mbus.api.seoulweb.core;
 
 import com.google.android.gms.maps.model.LatLng;
 
+import org.xmlpull.v1.XmlPullParserException;
+
 import java.io.UnsupportedEncodingException;
 import java.lang.ref.WeakReference;
 import java.net.URLEncoder;
@@ -134,7 +136,7 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
                             result.add(station);
                         }
                     }
-                } else if(searchStationResult != null) {
+                } else if (searchStationResult != null) {
                     callback.onFailure(new SeoulWebException(searchStationResult.header));
                 }
                 callback.onSuccess(result);
@@ -150,7 +152,7 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
 
     @Override
     public void searchStationByLocation(double latitude, double longitude, int radius, Callback<List<Station>> callback) {
-        getAdapter().searchStationByPos(latitude, longitude, 1000, new retrofit.Callback<StationByPositionResult>() {
+        getAdapter().searchStationByPos(latitude, longitude, radius, new retrofit.Callback<StationByPositionResult>() {
             @Override
             public void success(StationByPositionResult searchStationResult, Response response) {
                 List<Station> stationList = null;
@@ -168,7 +170,13 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
 
             @Override
             public void failure(RetrofitError error) {
-                callback.onFailure(error);
+                Throwable cause = error.getCause();
+                if (cause instanceof XmlPullParserException) {
+                    callback.onSuccess(null);
+
+                } else {
+                    callback.onFailure(cause != null ? cause : error);
+                }
             }
         });
     }

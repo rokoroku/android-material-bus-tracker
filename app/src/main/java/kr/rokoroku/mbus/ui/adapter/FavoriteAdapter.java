@@ -12,11 +12,15 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Parcelable;
 import android.support.v4.view.ViewCompat;
+import android.support.v7.internal.view.menu.MenuBuilder;
 import android.support.v7.widget.CardView;
+import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
@@ -34,6 +38,7 @@ import com.h6ah4i.android.widget.advrecyclerview.expandable.RecyclerViewExpandab
 import com.h6ah4i.android.widget.advrecyclerview.swipeable.RecyclerViewSwipeManager;
 import com.h6ah4i.android.widget.advrecyclerview.utils.AbstractDraggableSwipeableItemViewHolder;
 import com.h6ah4i.android.widget.advrecyclerview.utils.AbstractExpandableItemAdapter;
+import com.wnafee.vector.MorphButton;
 
 import java.util.HashSet;
 import java.util.Random;
@@ -153,7 +158,9 @@ public class FavoriteAdapter
             holder.setItem(mProvider.getGroupItem(groupPosition));
         } else {
             holder.setItem(null);
+            return;
         }
+
         holder.itemView.setEnabled(true);
         holder.itemView.setClickable(true);
 
@@ -174,20 +181,19 @@ public class FavoriteAdapter
                 mHandler.post(() -> ViewCompat.animate(holder.mContainer).scaleX(1f).scaleY(1f).setDuration(200));
             }
 
+            MorphButton.MorphState state;
             if ((expandState & RecyclerViewExpandableItemManager.STATE_FLAG_IS_EXPANDED) != 0) {
-//                indicatorState = MorphButton.MorphState.END;
+                holder.mOverflowButton.setVisibility(View.VISIBLE);
+                state = MorphButton.MorphState.END;
             } else {
-//                indicatorState = MorphButton.MorphState.START;
+                holder.mOverflowButton.setVisibility(View.GONE);
+                state = MorphButton.MorphState.START;
+            }
+            if (holder.mIndicator.getState() != state) {
+                holder.mIndicator.setState(state, true);
             }
         }
-        if (mInPlaceDroppedGroupPosition == groupPosition && mInPlaceDroppedChildPosition == -1) {
-            holder.mOverflowButton.setVisibility(View.VISIBLE);
-        } else {
-            holder.mOverflowButton.setVisibility(View.GONE);
-        }
-
     }
-
 
     @Override
     public void onBindChildViewHolder(ItemViewHolder holder, int groupPosition, int childPosition, int viewType) {
@@ -235,10 +241,10 @@ public class FavoriteAdapter
     @Override
     public SectionViewHolder onCreateGroupViewHolder(ViewGroup parent, int viewType) {
         final LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-        if(viewType == ITEM_FOOTER) {
-            return new FooterViewHolder(inflater.inflate(R.layout.row_favorite_section, parent, false));
+        if (viewType == ITEM_FOOTER) {
+            return new FooterViewHolder(inflater.inflate(R.layout.row_favorite_group, parent, false));
         } else {
-            return new SectionViewHolder(inflater.inflate(R.layout.row_favorite_section, parent, false));
+            return new SectionViewHolder(inflater.inflate(R.layout.row_favorite_group, parent, false));
         }
     }
 
@@ -354,12 +360,12 @@ public class FavoriteAdapter
         } else {
             mDraggedGroupPosition = -1;
         }
-        return new GroupPositionItemDraggableRange(0, mProvider.getGroupCount());
+        return new GroupPositionItemDraggableRange(0, mProvider.getGroupCount() - 1);
     }
 
     @Override
     public ItemDraggableRange onGetChildItemDraggableRange(ItemViewHolder holder, int groupPosition, int childPosition) {
-        return new GroupPositionItemDraggableRange(0, mProvider.getGroupCount());
+        return new GroupPositionItemDraggableRange(0, mProvider.getGroupCount() - 1);
     }
 
 
@@ -718,7 +724,7 @@ public class FavoriteAdapter
             }
 
             String description = FormatUtils.formatHeadingTo(context, stationRoute);
-            if(description != null) {
+            if (description != null) {
                 mLinkItemDescription.setText(description);
                 mLinkItemDescription.setVisibility(View.VISIBLE);
             } else {
@@ -742,10 +748,11 @@ public class FavoriteAdapter
         }
     }
 
-    public class SectionViewHolder extends BaseViewHolder implements View.OnClickListener {
+    public class SectionViewHolder extends BaseViewHolder implements View.OnClickListener, View.OnTouchListener {
 
         public View mContainer;
         public TextView mTitle;
+        public MorphButton mIndicator;
         public ImageButton mOverflowButton;
         public FavoriteGroup mItem;
 
@@ -753,8 +760,10 @@ public class FavoriteAdapter
             super(v);
             mContainer = v.findViewById(R.id.container);
             mTitle = (TextView) v.findViewById(R.id.section_title);
+            mIndicator = (MorphButton) v.findViewById(R.id.indicator);
             mOverflowButton = (ImageButton) v.findViewById(R.id.overflow_button);
             mOverflowButton.setOnClickListener(this);
+            mOverflowButton.setOnTouchListener(this);
         }
 
         public void setItem(FavoriteGroup group) {
@@ -768,21 +777,75 @@ public class FavoriteAdapter
         }
 
         @Override
-        public void onClick(View v) {
-            new MaterialDialog.Builder(v.getContext())
-                    .title("그룹 이름 변경")
-                    .inputMaxLength(20)
-                    .input("그룹 이름을 입력하세요", mTitle.getText(), (dialog, input) -> {
-                        if (!TextUtils.isEmpty(input)) {
-                            String name = input.toString().trim();
-                            mItem.setName(name);
-                            mTitle.setText(name);
-                            if (mInPlaceDroppedGroupPosition != -1) {
-                                mExpandableItemManager.expandGroup(mInPlaceDroppedGroupPosition);
+        public void onClick(View view) {
+            ViewUtils.attachPopupMenu(view,
+                    R.menu.menu_popup_favorite_group,
+                    new MenuBuilder.Callback() {
+                        @Override
+                        public boolean onMenuItemSelected(MenuBuilder menu, MenuItem item) {
+                            if (item.getItemId() == R.id.action_modify) {
+                                Context context = view.getContext();
+                                new MaterialDialog.Builder(context)
+                                        .title(R.string.action_rename_favorite_group)
+                                        .inputMaxLength(20)
+                                        .input(context.getString(R.string.hint_input_group_name),
+                                                mTitle.getText(), false, (dialog, input) -> {
+                                                    if (!TextUtils.isEmpty(input)) {
+                                                        String name = input.toString().trim();
+                                                        mItem.setName(name);
+                                                        mTitle.setText(name);
+                                                        if (mInPlaceDroppedGroupPosition != -1) {
+                                                            mExpandableItemManager.expandGroup(mInPlaceDroppedGroupPosition);
+                                                        }
+                                                    }
+                                                }).show();
+
+                            } else if (item.getItemId() == R.id.action_remove) {
+                                int groupPosition = -1;
+                                for (int i = 0; i < mProvider.getGroupCount(); i++) {
+                                    FavoriteGroup groupItem = mProvider.getGroupItem(i);
+                                    if (groupItem != null && groupItem.equals(mItem)) {
+                                        groupPosition = i;
+                                        break;
+                                    }
+                                }
+
+                                if (groupPosition != -1) {
+                                    mProvider.removeGroupItem(groupPosition);
+                                    notifyDataSetChanged();
+
+                                    if (mEventListener != null) {
+                                        mEventListener.onGroupItemRemoved(groupPosition);
+                                    }
+                                }
                             }
+                            return false;
                         }
-                    }).show();
+
+                        @Override
+                        public void onMenuModeChange(MenuBuilder menu) {
+
+                        }
+                    });
         }
+
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    itemView.setClickable(false);
+                    break;
+
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                case MotionEvent.ACTION_HOVER_EXIT:
+                    itemView.setClickable(true);
+                    break;
+
+            }
+            return v.onTouchEvent(event);
+        }
+
     }
 
     public class FooterViewHolder extends SectionViewHolder {
@@ -790,6 +853,7 @@ public class FavoriteAdapter
         public FooterViewHolder(View v) {
             super(v);
             mTitle.setVisibility(View.GONE);
+            mIndicator.setVisibility(View.GONE);
             mOverflowButton.setVisibility(View.GONE);
         }
     }

@@ -3,12 +3,19 @@ package kr.rokoroku.mbus.core;
 import android.content.Context;
 import android.support.annotation.AttrRes;
 import android.support.annotation.Nullable;
+import android.support.design.widget.Snackbar;
 
+import java.util.List;
+
+import kr.rokoroku.mbus.BaseApplication;
 import kr.rokoroku.mbus.R;
 import kr.rokoroku.mbus.data.model.Favorite;
+import kr.rokoroku.mbus.data.model.FavoriteGroup;
 import kr.rokoroku.mbus.data.model.Provider;
 import kr.rokoroku.mbus.data.model.Route;
+import kr.rokoroku.mbus.data.model.RouteStation;
 import kr.rokoroku.mbus.data.model.Station;
+import kr.rokoroku.mbus.data.model.StationRoute;
 import kr.rokoroku.mbus.util.ThemeUtils;
 
 /**
@@ -103,5 +110,38 @@ public class FavoriteFacade {
             currentFavorite = new Favorite(storedFavorite);
         }
         return currentFavorite;
+    }
+
+    public FavoriteGroup getDefaultFavoriteGroup() {
+        FavoriteGroup defaultGroup = null;
+        List<FavoriteGroup> favoriteGroups = getCurrentFavorite().getFavoriteGroups();
+        String defaultGroupName = BaseApplication.getInstance().getString(R.string.favorite_default_group);
+        for (FavoriteGroup favoriteGroup : favoriteGroups) {
+            if(defaultGroupName.equals(favoriteGroup.getName())) {
+                defaultGroup = favoriteGroup;
+                break;
+            }
+        }
+        if (defaultGroup == null) {
+            defaultGroup = new FavoriteGroup(defaultGroupName);
+        }
+        return defaultGroup;
+    }
+
+    public void addToFavorite(Route route, RouteStation routeStation) {
+        FavoriteGroup favoriteGroup = getDefaultFavoriteGroup();
+        FavoriteGroup.FavoriteItem item = new FavoriteGroup.FavoriteItem(route);
+        if (routeStation != null) item.setExtraData(routeStation);
+
+        favoriteGroup.add(item);
+    }
+
+
+    public void addToFavorite(Station station, StationRoute stationRoute) {
+        FavoriteGroup favoriteGroup = getDefaultFavoriteGroup();
+        FavoriteGroup.FavoriteItem item = new FavoriteGroup.FavoriteItem(station);
+        if (stationRoute != null) item.setExtraData(stationRoute);
+
+        favoriteGroup.add(item);
     }
 }

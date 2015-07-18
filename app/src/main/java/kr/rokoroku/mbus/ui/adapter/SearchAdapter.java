@@ -8,14 +8,25 @@ package kr.rokoroku.mbus.ui.adapter;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Typeface;
+import android.os.Build;
 import android.os.Parcelable;
+import android.support.v7.internal.view.menu.MenuBuilder;
+import android.support.v7.internal.view.menu.MenuPopupHelper;
+import android.support.v7.widget.ListPopupWindow;
 import android.support.v7.widget.RecyclerView;
 import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.PopupMenu;
+import android.widget.PopupWindow;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import kr.rokoroku.mbus.RouteActivity;
@@ -25,8 +36,10 @@ import kr.rokoroku.mbus.data.SearchDataProvider;
 import kr.rokoroku.mbus.data.model.Provider;
 import kr.rokoroku.mbus.data.model.Route;
 import kr.rokoroku.mbus.data.model.Station;
+import kr.rokoroku.mbus.ui.widget.QuickAction;
 import kr.rokoroku.mbus.util.FormatUtils;
 import kr.rokoroku.mbus.util.ThemeUtils;
+import kr.rokoroku.mbus.util.ViewUtils;
 
 public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchViewHolder> implements OnClickListener {
 
@@ -36,9 +49,15 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchView
     private static final int ITEM_VIEW_TYPE_SECTION_ITEM = 1;
 
     private SearchDataProvider mProvider;
+    private OnChildMenuItemClickListener mOnChildMenuItemClickListener;
 
     public SearchAdapter(SearchDataProvider dataProvider) {
         mProvider = dataProvider;
+        setHasStableIds(true);
+    }
+
+    public void setOnChildMenuItemClickListener(OnChildMenuItemClickListener onChildMenuItemClickListener) {
+        this.mOnChildMenuItemClickListener = onChildMenuItemClickListener;
     }
 
     @Override
@@ -113,7 +132,6 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchView
     private void onBindSectionItemViewHolder(SearchViewHolder holder, int position) {
         Object item = getItem(position);
         Context context = holder.itemView.getContext();
-
 
         if (item instanceof Route) {
             Route route = (Route) item;
@@ -195,7 +213,7 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchView
         }
     }
 
-    public static class SearchViewHolder extends RecyclerView.ViewHolder {
+    public class SearchViewHolder extends RecyclerView.ViewHolder implements OnClickListener {
 
         //section item
         protected View mContainer;
@@ -224,9 +242,32 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchView
                     mItemLabel = (TextView) v.findViewById(R.id.item_label);
                     mItemDescription = (TextView) v.findViewById(R.id.item_description);
                     mOverflowButton = (ImageView) v.findViewById(R.id.overflow_button);
+                    mOverflowButton.setOnClickListener(this);
                     break;
             }
         }
+
+        @Override
+        public void onClick(View view) {
+            ViewUtils.attachPopupMenu(view, R.menu.menu_popup_search_item, new MenuBuilder.Callback() {
+                @Override
+                public boolean onMenuItemSelected(MenuBuilder menu, MenuItem item) {
+                    if (mOnChildMenuItemClickListener != null) {
+                        ViewUtils.runOnUiThread(() -> mOnChildMenuItemClickListener.onMenuItemClick(item, mContainer.getTag()));
+                    }
+                    return true;
+                }
+
+                @Override
+                public void onMenuModeChange(MenuBuilder menu) {
+
+                }
+            });
+        }
+
     }
 
+    public interface OnChildMenuItemClickListener {
+        void onMenuItemClick(MenuItem menuItem, Object object);
+    }
 }

@@ -17,6 +17,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.util.TypedValue;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -33,13 +34,18 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import io.codetail.animation.SupportAnimator;
 import kr.rokoroku.mbus.core.DatabaseFacade;
+import kr.rokoroku.mbus.core.FavoriteFacade;
+import kr.rokoroku.mbus.core.LocationClient;
+import kr.rokoroku.mbus.data.model.Route;
 import kr.rokoroku.mbus.data.model.Station;
 import kr.rokoroku.mbus.ui.adapter.SearchAdapter;
 import kr.rokoroku.mbus.data.SearchDataProvider;
 import kr.rokoroku.mbus.core.ApiFacade;
 import kr.rokoroku.mbus.data.model.SearchHistory;
 import kr.rokoroku.mbus.util.RevealUtils;
+import kr.rokoroku.mbus.util.SimpleProgressCallback;
 import kr.rokoroku.mbus.util.ThemeUtils;
 
 
@@ -62,8 +68,8 @@ public class SearchActivity extends AbstractBaseActivity
     private MapFragment mMapFragment;
 
     private SearchDataProvider mSearchDataProvider;
+    private SearchAdapter mAdapter;
     private RecyclerView.LayoutManager mLayoutManager;
-    private RecyclerView.Adapter<SearchAdapter.SearchViewHolder> mAdapter;
 
     private boolean isMapVisible = false;
     private String previousSearchQuery;
@@ -93,13 +99,7 @@ public class SearchActivity extends AbstractBaseActivity
             mSearchBox.postDelayed(() -> mSearchBox.triggerSearch(query), 100);
 
         } else if (byLocation) {
-            mMapButton.postDelayed(() -> {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1) {
-                    mMapButton.callOnClick();
-                } else {
-                    mMapButton.performClick();
-                }
-            }, 100);
+            mMapButton.postDelayed(() -> showMap(), 100);
         }
     }
 
@@ -107,16 +107,12 @@ public class SearchActivity extends AbstractBaseActivity
         mMapButton = (FloatingActionButton) findViewById(R.id.fab_map);
         mMapButton.show(false);
         mMapButton.setOnClickListener(v -> {
-            if (mMapFragment == null) {
-                initMapFragment();
-            }
+            if (!isMapVisible) {
+                showMap();
+                mMapFragment.clearExtras();
 
-            if (mMapFragment != null) {
-                if (!isMapVisible) {
-                    showMap();
-                } else {
-                    hideMap();
-                }
+            } else {
+                hideMap();
             }
         });
         mLocationButton = (FloatingActionButton) findViewById(R.id.fab_location);
@@ -132,13 +128,17 @@ public class SearchActivity extends AbstractBaseActivity
     }
 
     private void showMap() {
+        if (mMapFragment == null) {
+            initMapFragment();
+        }
         isMapVisible = true;
         RevealUtils.revealView(mFragmentFrameLayout, RevealUtils.Position.CENTER, 1000, null);
         previousSearchQuery = mSearchBox.getSearchText();
-        if(TextUtils.isEmpty(previousSearchQuery)) previousSearchQuery = null;
+        if (TextUtils.isEmpty(previousSearchQuery)) previousSearchQuery = null;
         mSearchBox.setLogoText(getString(R.string.nearby_location));
         mMapButton.hide(true);
         mLocationButton.show(true);
+        showToolbarLayer();
     }
 
     private void hideMap() {
@@ -146,8 +146,12 @@ public class SearchActivity extends AbstractBaseActivity
         mMapButton.show(true);
         mLocationButton.hide(true);
         mSearchBox.setLogoText(previousSearchQuery != null ? previousSearchQuery : getString(R.string.search_hint));
-        RevealUtils.unrevealView(mFragmentFrameLayout, RevealUtils.Position.CENTER, 1000, null);
-        RevealUtils.revealView(mSwipeRefreshLayout, RevealUtils.Position.CENTER, 600, null);
+        RevealUtils.revealView(mSwipeRefreshLayout, RevealUtils.Position.CENTER, 1000, new SupportAnimator.SimpleAnimatorListener() {
+            @Override
+            public void onAnimationEnd() {
+                mFragmentFrameLayout.setVisibility(View.GONE);
+            }
+        });
     }
 
     private void initSearchBox() {
@@ -173,7 +177,41 @@ public class SearchActivity extends AbstractBaseActivity
 
         mSearchDataProvider = new SearchDataProvider();
         mAdapter = new SearchAdapter(mSearchDataProvider);
-        mAdapter.setHasStableIds(true);
+        mAdapter.setOnChildMenuItemClickListener((menuItem, object) -> {
+            if (object != null) {
+                switch (menuItem.getItemId()) {
+                    case R.id.action_add_to_favorite:
+                        if (object instanceof Route) {
+                            FavoriteFacade.getInstance().addToFavorite((Route) object, null);
+                            Snackbar.make(mCoordinatorLayout, R.string.alert_added_to_favorite, Snackbar.LENGTH_LONG).show();
+
+                        } else if (object instanceof Station) {
+                            FavoriteFacade.getInstance().addToFavorite((Station) object, null);
+                            Snackbar.make(mCoordinatorLayout, R.string.alert_added_to_favorite, Snackbar.LENGTH_LONG).show();
+
+                        }
+                        break;
+
+                    case R.id.action_map:
+                        showMap();
+                        if (object instanceof Route) {
+                            Route route = (Route) object;
+                            previousSearchQuery = mSearchBox.getSearchText();
+                            if (TextUtils.isEmpty(previousSearchQuery)) previousSearchQuery = null;
+                            mSearchBox.setLogoText(route.getName());
+                            mMapFragment.setRoute(route);
+
+                        } else if (object instanceof Station) {
+                            Station station = (Station) object;
+                            previousSearchQuery = mSearchBox.getSearchText();
+                            if (TextUtils.isEmpty(previousSearchQuery)) previousSearchQuery = null;
+                            mSearchBox.setLogoText(station.getName());
+                            mMapFragment.setStation(station);
+                        }
+                        break;
+                }
+            }
+        });
         mLayoutManager = new LinearLayoutManager(this);
         mRecyclerView.setLayoutManager(mLayoutManager);
         mRecyclerView.setAdapter(new BaseWrapperAdapter<>(mAdapter));
@@ -184,13 +222,13 @@ public class SearchActivity extends AbstractBaseActivity
     }
 
     public void reloadSearchQuery() {
-        if(mSearchBox != null) {
+        if (mSearchBox != null) {
             List<SearchHistory> searchHistoryTable = new ArrayList<>(DatabaseFacade.getInstance().getSearchHistoryTable());
             Collections.sort(searchHistoryTable);
 
             ArrayList<SearchResult> arrayList = new ArrayList<>();
 
-            if(!isMapVisible) {
+            if (!isMapVisible && LocationClient.isLocationEnabled(this)) {
                 Drawable locationDrawable = ContextCompat.getDrawable(this, R.drawable.ic_my_location_black_24dp);
                 arrayList.add(new SearchResult(getString(R.string.search_by_location), locationDrawable));
             }
@@ -203,6 +241,7 @@ public class SearchActivity extends AbstractBaseActivity
             mSearchBox.setSearchables(arrayList);
         }
     }
+
     private void initMapFragment() {
         FragmentManager fragmentManager = getSupportFragmentManager();
         mMapFragment = (MapFragment) fragmentManager.findFragmentByTag(MAP_FRAGMENT_TAG);
@@ -215,6 +254,16 @@ public class SearchActivity extends AbstractBaseActivity
                     .commit();
         }
         mMapFragment.setOnEventListener(this);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (!LocationClient.isLocationEnabled(this)) {
+            mMapButton.setEnabled(false);
+        } else {
+            mMapButton.setEnabled(true);
+        }
     }
 
     @Override
@@ -239,30 +288,32 @@ public class SearchActivity extends AbstractBaseActivity
 
     @Override
     public void onSearch(String keyword) {
+
         if (keyword.length() < 2) {
             if (!TextUtils.isEmpty(keyword.replaceAll("\\d", ""))) {
                 Snackbar.make(mCoordinatorLayout, getString(R.string.error_search_keyword_too_short), Snackbar.LENGTH_LONG).show();
                 return;
             }
         }
-
         if (getString(R.string.search_by_location).equals(keyword)) {
-            if(!isMapVisible) {
+            if (!isMapVisible) {
                 showMap();
-                if(mMapFragment != null) {
+                if (mMapFragment != null) {
                     mMapFragment.updateLocation(true);
                 }
             }
             return;
 
-        } else if (isMapVisible) {
-            previousSearchQuery = keyword;
+        }
+
+        final String finalKeyword = keyword.toUpperCase();
+        if (isMapVisible) {
+            previousSearchQuery = finalKeyword ;
             hideMap();
         }
 
-
         Set<SearchHistory> searchHistoryTable = DatabaseFacade.getInstance().getSearchHistoryTable();
-        SearchHistory searchHistory = new SearchHistory(keyword);
+        SearchHistory searchHistory = new SearchHistory(finalKeyword);
 
         //noinspection StatementWithEmptyBody
         while (searchHistoryTable.remove(searchHistory)) ;
@@ -274,11 +325,11 @@ public class SearchActivity extends AbstractBaseActivity
         mSearchDataProvider.clear();
         mRecyclerView.getAdapter().notifyDataSetChanged();
         ApiFacade apiFacade = ApiFacade.getInstance();
-        apiFacade.searchByKeyword(keyword, mSearchDataProvider, new ApiFacade.SimpleProgressCallback() {
+        apiFacade.searchByKeyword(finalKeyword, mSearchDataProvider, new SimpleProgressCallback() {
             @Override
-            public void onComplete(boolean success) {
-                mSearchDataProvider.sortByKeyword(keyword);
+            public void onComplete(boolean success, Object value) {
                 mAdapter.notifyDataSetChanged();
+                mSearchDataProvider.sortByKeyword(finalKeyword);
                 mSwipeRefreshLayout.postDelayed(() -> {
                     mSwipeRefreshLayout.setRefreshing(false);
                     mSwipeRefreshLayout.setEnabled(false);
@@ -310,7 +361,6 @@ public class SearchActivity extends AbstractBaseActivity
     public void onMenuClick() {
         onBackPressed();
     }
-
 
     @Override
     public void onLocationUpdate(Location location) {

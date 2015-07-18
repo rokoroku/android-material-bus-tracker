@@ -10,14 +10,23 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.AttrRes;
 import android.support.annotation.ColorRes;
+import android.support.annotation.MenuRes;
 import android.support.v4.view.ViewCompat;
+import android.support.v7.internal.view.menu.MenuBuilder;
+import android.support.v7.internal.view.menu.MenuPopupHelper;
+import android.support.v7.widget.ListPopupWindow;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.NoSuchPropertyException;
 import android.util.TypedValue;
 import android.view.Display;
+import android.view.Gravity;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
+
+import kr.rokoroku.mbus.R;
 
 /**
  * Created by rok on 2015. 5. 29..
@@ -88,5 +97,21 @@ public class ViewUtils {
             result = resources.getDimensionPixelSize(resourceId);
         }
         return result;
+    }
+
+    public static void attachPopupMenu(View view, @MenuRes int menuRes, MenuBuilder.Callback callback) {
+        Context context = view.getContext();
+        MenuBuilder menu = new MenuBuilder(context);
+        MenuInflater menuInflater = new MenuInflater(context);
+        menuInflater.inflate(menuRes, menu);
+        menu.setCallback(callback);
+
+        MenuPopupHelper menuPopupHelper = new MenuPopupHelper(context, menu, view);
+        menuPopupHelper.setGravity(Gravity.TOP|Gravity.END);
+        menuPopupHelper.tryShow();
+
+        ListPopupWindow popup = menuPopupHelper.getPopup();
+        popup.setVerticalOffset(-view.getHeight());
+        popup.show();
     }
 }

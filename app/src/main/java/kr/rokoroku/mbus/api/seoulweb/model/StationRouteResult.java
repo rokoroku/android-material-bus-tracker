@@ -48,8 +48,8 @@ public class StationRouteResult {
          * routeType : 6
          * isArrive1 : 0
          * isArrive2 : 0
-         * gpsX : 127.03904686738552
-         * gpsY : 37.47120154665851
+         * busX : 127.03904686738552
+         * busY : 37.47120154665851
          * rerdieDiv1 : 1
          * rerdieDiv2 : 1
          * stationTp : 3

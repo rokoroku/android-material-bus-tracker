@@ -34,9 +34,9 @@ public class RouteStationResult {
          * busType : N
          * routeType : 2
          * seq : 1
-         * gpsX : 127.04288117001663
+         * busX : 127.04288117001663
          * busRouteId : 3909200
-         * gpsY : 37.454268392806995
+         * busY : 37.454268392806995
          * direction : 양재역
          */
         public String arsId;

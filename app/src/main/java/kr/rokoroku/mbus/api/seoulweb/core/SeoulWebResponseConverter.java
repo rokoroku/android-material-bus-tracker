@@ -52,9 +52,18 @@ public class SeoulWebResponseConverter implements Converter {
         } catch (Exception e) {
             throw new ConversionException(e);
 
-        } else if(type.equals(StationByPositionResult.class)) {
-            return xmlConverter.fromBody(body, type);
+        } else if(type.equals(StationByPositionResult.class)) try {
+            StringBuffer stringBuffer = new StringBuffer();
+            InputStream inputStream = body.in();
+            byte[] b = new byte[4096];
+            for (int n; (n = inputStream.read(b)) != -1; ) {
+                String string = new String(b, 0, n).replace("&", "&amp;");
+                stringBuffer.append(string);
+            }
+            return xmlConverter.fromBody(new TypedString(stringBuffer.toString()), type);
 
+        } catch (Exception e) {
+            throw new ConversionException(e);
         }
         return gsonConverter.fromBody(body, type);
     }

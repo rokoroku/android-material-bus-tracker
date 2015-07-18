@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.design.widget.CoordinatorLayout;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 
@@ -40,6 +41,7 @@ import kr.rokoroku.mbus.data.model.Route;
 import kr.rokoroku.mbus.data.model.RouteStation;
 import kr.rokoroku.mbus.data.model.Station;
 import kr.rokoroku.mbus.util.GeoUtils;
+import kr.rokoroku.mbus.util.SimpleProgressCallback;
 import kr.rokoroku.mbus.util.ThemeUtils;
 import kr.rokoroku.mbus.util.ValueCallback;
 import kr.rokoroku.mbus.util.ViewUtils;
@@ -73,6 +75,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
     private Route mRouteExtra;
     private Station mStationExtra;
     private boolean isSearchEnable;
+    private boolean isExtraInitiated = false;
 
     public MapFragment() {
 
@@ -88,7 +91,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
     public void setArguments(Bundle args) {
         super.setArguments(args);
 
-        if(args != null) {
+        if (args != null) {
             mRouteExtra = args.getParcelable(EXTRA_KEY_ROUTE);
             mStationExtra = args.getParcelable(EXTRA_KEY_STATION);
             isSearchEnable = args.getBoolean(EXTRA_ENABLE_SEARCH, false);
@@ -109,27 +112,43 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
     }
 
     public void setRoute(Route route) {
-        Route cachedRoute = DatabaseFacade.getInstance().getRoute(mRouteExtra.getProvider(), mRouteExtra.getId());
+        Route cachedRoute = DatabaseFacade.getInstance().getRoute(route.getProvider(), route.getId());
         if (cachedRoute != null) route = cachedRoute;
+        isExtraInitiated = false;
         isSearchEnable = false;
         mStationExtra = null;
         mRouteExtra = route;
-
-        if(getMap() != null) {
+        if (getMap() != null) {
             initRoute(route);
         }
     }
 
     public void setStation(Station station) {
-        Station cachedStation = DatabaseFacade.getInstance().getStation(mStationExtra.getProvider(), mStationExtra.getId());
+        Station cachedStation = DatabaseFacade.getInstance().getStation(station.getProvider(), station.getId());
         if (cachedStation != null) station = cachedStation;
+        isExtraInitiated = false;
         isSearchEnable = true;
         mStationExtra = station;
         mRouteExtra = null;
 
-        if(getMap() != null) {
+        if (getMap() != null) {
             initStation(station);
+            initSearch();
         }
+    }
+
+    public void clearExtras() {
+        isExtraInitiated = true;
+        mStationExtra = null;
+        mRouteExtra = null;
+        isSearchEnable = true;
+        GoogleMap map = getMap();
+        if (map != null) {
+            map.clear();
+            markers = null;
+            mStationTable = null;
+        }
+        updateLocation(true);
     }
 
     public void updateLocation(boolean force) {
@@ -151,77 +170,102 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
     }
 
     private synchronized void initRoute(Route route) {
-        GoogleMap map = getMap();
-        if (map != null && route != null) {
-            map.clear();
-            markers = null;
-            mStationTable = null;
+        if (!isExtraInitiated) {
+            isExtraInitiated = true;
 
-            List<MapLine> mapLineList = route.getMapLineList();
-            if (mapLineList == null) {
-                ApiFacade.getInstance().getRouteMapLine(route, new Callback<List<MapLine>>() {
+            GoogleMap map = getMap();
+            if (map != null && route != null) {
+                map.clear();
+                markers = null;
+                mStationTable = null;
+
+                ApiFacade.getInstance().getRouteData(route, null, new SimpleProgressCallback<Route>() {
                     @Override
-                    public void success(List<MapLine> mapLines, Response response) {
-                        drawRoute(route);
+                    public void onComplete(boolean success, Route value) {
+                        mRouteExtra = value;
+                        List<MapLine> mapLineList = value.getMapLineList();
+                        if (mapLineList == null) {
+                            ApiFacade.getInstance().getRouteMapLine(value, new Callback<List<MapLine>>() {
+                                @Override
+                                public void success(List<MapLine> mapLines, Response response) {
+                                    value.setMapLineList(mapLines);
+                                    drawRoute(value);
+                                }
+
+                                @Override
+                                public void failure(RetrofitError error) {
+                                    if (mListener != null) {
+                                        mListener.onErrorMessage(getString(R.string.error_failed_to_retrieve_map_line));
+                                    }
+                                }
+
+                            });
+                        } else {
+                            new Handler().postDelayed(() -> drawRoute(route), 1000);
+                        }
+
                     }
 
                     @Override
-                    public void failure(RetrofitError error) {
+                    public void onError(int progress, Throwable t) {
                         if (mListener != null) {
                             mListener.onErrorMessage(getString(R.string.error_failed_to_retrieve_map_line));
                         }
                     }
                 });
-            } else {
-                new Handler().postDelayed(() -> drawRoute(route), 1000);
             }
         }
     }
 
     private synchronized void initStation(Station station) {
-        GoogleMap map = getMap();
-        if (map != null && station != null) {
-            map.clear();
-            markers = null;
-            mStationTable = null;
+        if (!isExtraInitiated) {
+            isExtraInitiated = true;
 
-            Marker marker = addStationMarker(station);
-            LatLng latLng = new LatLng(station.getLatitude(), station.getLongitude());
-            map.animateCamera(CameraUpdateFactory.newCameraPosition(new CameraPosition(latLng, DEFAULT_ZOOM_LEVEL, 0, 0)), new GoogleMap.CancelableCallback() {
-                @Override
-                public void onFinish() {
-                    if(marker != null) {
-                        marker.showInfoWindow();
+            GoogleMap map = getMap();
+            if (map != null && station != null) {
+                map.clear();
+                markers = null;
+
+                Marker marker = addStationMarker(station);
+                LatLng latLng = new LatLng(station.getLatitude(), station.getLongitude());
+                map.animateCamera(CameraUpdateFactory.newCameraPosition(new CameraPosition(latLng, DEFAULT_ZOOM_LEVEL, 0, 0)), new GoogleMap.CancelableCallback() {
+                    @Override
+                    public void onFinish() {
+                        if (marker != null) {
+                            updateMarkers(map.getCameraPosition());
+                            marker.setVisible(true);
+                            marker.showInfoWindow();
+                        }
+                        initSearch();
                     }
-                }
 
-                @Override
-                public void onCancel() {
+                    @Override
+                    public void onCancel() {
 
-                }
-            });
+                    }
+                });
+            }
         }
     }
 
     private synchronized void initSearch() {
-        if (!isSearchEnable) {
-            isSearchEnable = true;
-            GoogleMap map = getMap();
-            LatLng latLng = map.getCameraPosition().target;
-            ApiFacade.getInstance().searchByPosition(latLng.latitude, latLng.longitude, 1000, new ValueCallback<List<Station>>() {
-                @Override
-                public void onSuccess(List<Station> value) {
-                    drawStations(value);
-                }
+        isSearchEnable = true;
+        GoogleMap map = getMap();
+        LatLng latLng = map.getCameraPosition().target;
+        ApiFacade.getInstance().searchByPosition(latLng.latitude, latLng.longitude, 1000, new SimpleProgressCallback<List<Station>>() {
+            @Override
+            public void onComplete(boolean success, List<Station> value) {
+                drawStations(value);
+            }
 
-                @Override
-                public void onFailure(Throwable t) {
-                    if (mListener != null) {
-                        mListener.onErrorMessage(t.getMessage());
-                    }
+            @Override
+            public void onError(int progress, Throwable t) {
+                t.printStackTrace();
+                if (mListener != null) {
+                    mListener.onErrorMessage(t.getMessage());
                 }
-            });
-        }
+            }
+        });
     }
 
     private synchronized void initLocationClient(Context context) {
@@ -260,7 +304,6 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
 
         } else if (mStationExtra != null) {
             initStation(mStationExtra);
-            initSearch();
 
         } else {
             initSearch();
@@ -270,40 +313,43 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
     @Override
     public void onCameraChange(CameraPosition cameraPosition) {
 
-        boolean updateNearbyStation = isSearchEnable && (
-                (mPreviousPosition == null || GeoUtils.calculateDistanceInMeter(cameraPosition.target, mPreviousPosition.target) > 500));
-
         boolean updateMarker = mPreviousPosition == null
-                || (int) mPreviousPosition.zoom != (int) cameraPosition.zoom;
+                || (int) mPreviousPosition.zoom != (int) cameraPosition.zoom
+                || GeoUtils.calculateDistanceInMeter(cameraPosition.target, mPreviousPosition.target) > 500;
+        boolean updateNearbyStation = isSearchEnable && updateMarker;
 
+        if (updateMarker) {
+            updateMarkers(cameraPosition);
+        }
         if (updateNearbyStation) {
             LatLng latLng = cameraPosition.target;
-            int radius = (int) (cameraPosition.zoom * 1000);
-            if (radius > 2000) radius = 2000;
 
-            if (cameraPosition.zoom < 14) {
+            LatLngBounds bounds = getMap().getProjection().getVisibleRegion().latLngBounds;
+            Log.d("onCameraChange", String.format("zoom: %f, radius: %.6f", cameraPosition.zoom, GeoUtils.getRadius(latLng, bounds)));
+            int radius = (int) (GeoUtils.getRadius(latLng, bounds));
+
+            if (radius > 3000) {
                 if (mListener != null) {
                     mListener.onErrorMessage(getString(R.string.warning_zoom_too_low));
                 }
             } else {
-                ApiFacade.getInstance().searchByPosition(latLng.latitude, latLng.longitude, radius, new ValueCallback<List<Station>>() {
+                if(radius > 1000) radius = 1000;
+                ApiFacade.getInstance().searchByPosition(latLng.latitude, latLng.longitude, radius, new SimpleProgressCallback<List<Station>>() {
                     @Override
-                    public void onSuccess(List<Station> value) {
+                    public void onComplete(boolean success, List<Station> value) {
                         drawStations(value);
                         updateMarkers(cameraPosition);
                     }
 
                     @Override
-                    public void onFailure(Throwable t) {
+                    public void onError(int progress, Throwable t) {
+                        t.printStackTrace();
                         if (mListener != null) {
                             mListener.onErrorMessage(getString(R.string.error_with_reason, t.getMessage()));
                         }
                     }
                 });
             }
-        }
-        if (updateMarker) {
-            updateMarkers(cameraPosition);
         }
         mPreviousPosition = cameraPosition;
     }
@@ -343,6 +389,8 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
     private void drawRoute(Route route) {
         GoogleMap map = getMap();
         if (map != null) {
+            map.clear();
+
             List<RouteStation> routeStationList = route.getRouteStationList();
             List<MapLine> mapLineList = route.getMapLineList();
             if (routeStationList != null) {
@@ -393,6 +441,18 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
 
                 map.animateCamera(CameraUpdateFactory.newLatLngBounds(latLngBounds, padding));
 
+            } else {
+                ApiFacade.getInstance().getRouteData(route, null, new SimpleProgressCallback() {
+                    @Override
+                    public void onComplete(boolean success, Object value) {
+                        drawRoute(route);
+                    }
+
+                    @Override
+                    public void onError(int progress, Throwable t) {
+                        super.onError(progress, t);
+                    }
+                });
             }
 
             if (mapLineList != null) {
@@ -441,8 +501,9 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
                         .snippet(station.getLocalId())
                         .icon(BitmapDescriptorFactory.fromResource(R.drawable.bus_stop_marker))
                         .visible(false);
+
                 GoogleMap map = getMap();
-                if(map != null) {
+                if (map != null) {
                     Marker marker = map.addMarker(markerOptions);
                     markers.add(marker);
                     mStationTable.put(key, station);
@@ -452,27 +513,45 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         }
         return null;
     }
+
     private void updateMarkers(CameraPosition cameraPosition) {
         if (markers != null) {
             boolean visible = true;
             Bitmap bitmap = null;
 
-            if (isSearchEnable && cameraPosition.zoom < 14) {
-                visible = false;
+            if (isSearchEnable) {
+                LatLngBounds bounds = getMap().getProjection().getVisibleRegion().latLngBounds;
+                int radius = (int) (GeoUtils.getRadius(cameraPosition.target, bounds));
+                if(radius > 3000) {
+                    visible = false;
+                }
             } else if (cameraPosition.zoom < 11) {
                 visible = false;
-            } else {
-                int size = 10 + (int) (cameraPosition.zoom - 11) * 2;
-                bitmap = getScaledStationIcon(size);
             }
-            for (Marker marker : markers) {
-                boolean isInfoWindowShown = marker.isInfoWindowShown();
-                marker.setVisible(visible);
-                if (bitmap != null) {
-                    marker.setIcon(BitmapDescriptorFactory.fromBitmap(bitmap));
-                }
-                if (isInfoWindowShown) {
-                    marker.showInfoWindow();
+
+            int size = (int) cameraPosition.zoom;
+            bitmap = getScaledStationIcon(size);
+
+            LatLngBounds bounds = getMap().getProjection().getVisibleRegion().latLngBounds;
+            List<Marker> inBoundMarkers = new ArrayList<>(markers);
+            for (Marker marker : inBoundMarkers) {
+                if (bounds.contains(marker.getPosition())) {
+                    boolean isInfoWindowShown = marker.isInfoWindowShown();
+                    marker.setVisible(visible);
+                    if (bitmap != null) {
+                        marker.setIcon(BitmapDescriptorFactory.fromBitmap(bitmap));
+                    }
+                    if (isInfoWindowShown) {
+                        marker.showInfoWindow();
+                    }
+                } else if(isSearchEnable) {
+                    String localId = marker.getSnippet();
+                    if(!TextUtils.isEmpty(localId) && mStationTable.remove(localId) != null) {
+                        markers.remove(marker);
+                        marker.remove();
+                    } else {
+                        marker.setVisible(false);
+                    }
                 }
             }
         }

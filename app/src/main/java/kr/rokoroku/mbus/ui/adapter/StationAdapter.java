@@ -45,6 +45,7 @@ import kr.rokoroku.mbus.data.model.RouteType;
 import kr.rokoroku.mbus.data.model.Station;
 import kr.rokoroku.mbus.data.model.StationRoute;
 import kr.rokoroku.mbus.util.FormatUtils;
+import kr.rokoroku.mbus.util.SimpleProgressCallback;
 import kr.rokoroku.mbus.util.ThemeUtils;
 import kr.rokoroku.mbus.util.TimeUtils;
 import kr.rokoroku.mbus.util.RevealUtils;
@@ -148,7 +149,7 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
             case ITEM_BUS:
                 return new RouteViewHolder(inflater.inflate(R.layout.row_station_route, parent, false));
             case ITEM_FOOTER:
-                return new BaseViewHolder(inflater.inflate(R.layout.row_footer_layout, parent, false));
+                return new FooterViewHolder(inflater.inflate(R.layout.row_footer_layout, parent, false));
             default:
                 return null;
         }
@@ -198,8 +199,8 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
                     stationRoute.getProvider(), stationRoute.getRouteId());
             routeViewHolder.mCardView.setCardBackgroundColor(cardColor.getColor(context));
 
-        } else {
-            //footer?
+        } else if (holder instanceof FooterViewHolder) {
+            ((FooterViewHolder) holder).setItem(mDataProvider.getProvider());
         }
     }
 
@@ -221,9 +222,9 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
         holder.mRouteId = stationRoute.getRouteId();
 
         if (stationRoute.getArrivalInfo() == null || TimeUtils.checkShouldUpdate(stationRoute.getArrivalInfo().getTimestamp())) {
-            ApiFacade.getInstance().fillArrivalInfo(station, stationRoute, new ApiFacade.SimpleProgressCallback() {
+            ApiFacade.getInstance().fillArrivalInfo(station, stationRoute, new SimpleProgressCallback() {
                 @Override
-                public void onComplete(boolean success) {
+                public void onComplete(boolean success, Object value) {
                     holder.setItem(stationRoute.getArrivalInfo());
                 }
 
@@ -321,7 +322,7 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
             itemView.setClickable(true);
             mRouteName.setText(stationRoute.getRouteName());
             String description = FormatUtils.formatHeadingTo(context, stationRoute);
-            if(description != null) {
+            if (description != null) {
                 mRouteDestination.setVisibility(View.VISIBLE);
                 mRouteDestination.setText(description);
             } else {
@@ -476,6 +477,22 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
 
     }
 
+    public class FooterViewHolder extends BaseViewHolder {
+        public TextView mFooterText;
+
+        public FooterViewHolder(View v) {
+            super(v);
+            mFooterText = (TextView) v.findViewById(R.id.footer_text);
+        }
+
+        public void setItem(Provider provider) {
+            if (provider != null) {
+                Context context = itemView.getContext();
+                mFooterText.setText(context.getString(R.string.powered_by, provider.getProviderText()));
+            }
+        }
+    }
+
     public class BusArrivalViewHolder extends BaseViewHolder {
 
         public SplitCardView mCardView;
@@ -581,9 +598,9 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
                 if (mBusIcon != null) {
                     mBusIcon.setVisibility(View.VISIBLE);
                     Drawable drawable = mBusIcon.getDrawable();
-                    if(drawable instanceof AnimationDrawable) {
+                    if (drawable instanceof AnimationDrawable) {
                         AnimationDrawable animationDrawable = (AnimationDrawable) drawable;
-                        if(!animationDrawable.isRunning()) {
+                        if (!animationDrawable.isRunning()) {
                             animationDrawable.start();
                         }
                     }
