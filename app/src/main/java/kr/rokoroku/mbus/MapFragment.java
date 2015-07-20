@@ -7,7 +7,6 @@ import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.annotation.StringRes;
 import android.support.design.widget.CoordinatorLayout;
 import android.text.TextUtils;
 import android.util.Log;
@@ -44,7 +43,6 @@ import kr.rokoroku.mbus.data.model.Station;
 import kr.rokoroku.mbus.util.GeoUtils;
 import kr.rokoroku.mbus.util.SimpleProgressCallback;
 import kr.rokoroku.mbus.util.ThemeUtils;
-import kr.rokoroku.mbus.util.ValueCallback;
 import kr.rokoroku.mbus.util.ViewUtils;
 import retrofit.Callback;
 import retrofit.RetrofitError;
@@ -63,8 +61,6 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
 
     private final int DEFAULT_ZOOM_LEVEL = 16;
     private final int INITIAL_ZOOM_LEVEL = 12;
-
-    private CoordinatorLayout mCoordinatorLayout;
 
     private LocationClient mLocationClient;
     private CameraPosition mPreviousPosition;
@@ -148,6 +144,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
             map.clear();
             markers = null;
             mStationTable = null;
+            mPreviousPosition = null;
         }
         updateLocation(true);
     }
@@ -256,7 +253,13 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         ApiFacade.getInstance().searchByPosition(latLng.latitude, latLng.longitude, 1000, new SimpleProgressCallback<List<Station>>() {
             @Override
             public void onComplete(boolean success, List<Station> value) {
-                drawStations(value);
+                List<Station> validStations = new ArrayList<>();
+                for (Station station : value) {
+                    if(!TextUtils.isEmpty(station.getLocalId())) {
+                        validStations.add(station);
+                    }
+                }
+                drawStations(validStations);
             }
 
             @Override
@@ -278,6 +281,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
     public synchronized void onMapReady(GoogleMap map) {
 
         Context context = getActivity();
+        if(mListener != null) mListener.onMapLoaded(map);
 
         int paddingTop = ViewUtils.getStatusBarHeight(context) + ThemeUtils.getDimension(context, android.R.attr.actionBarSize);
         map.setPadding(0, paddingTop, 0, 0);
@@ -331,7 +335,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
 
             if (radius > 3000) {
                 if (mListener != null && getActivity() != null) {
-                    mListener.onErrorMessage(getString(R.string.warning_zoom_too_low));
+                    mListener.onErrorMessage(getString(R.string.alert_zoom_to_search_nearby_station));
                 }
             } else {
                 if(radius > 1000) radius = 1000;
@@ -565,6 +569,8 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
     }
 
     public interface OnEventListener {
+        void onMapLoaded(GoogleMap map);
+
         void onLocationUpdate(Location location);
 
         void onStationClick(Station station);

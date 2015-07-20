@@ -375,7 +375,7 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
         public void setItem(Provider provider) {
             if(provider != null) {
                 Context context = itemView.getContext();
-                mFooterText.setText(context.getString(R.string.powered_by, provider.getProviderText()));
+                mFooterText.setText(context.getString(R.string.hint_powered_by, provider.getProviderText()));
             }
         }
     }
@@ -677,7 +677,7 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
                 if (mRemainStation != null) mRemainStation.setVisibility(View.GONE);
                 if (mBusDescription != null) {
                     mBusDescription.setVisibility(View.VISIBLE);
-                    mBusDescription.setText(mItemView.getContext().getString(R.string.information_unavailable));
+                    mBusDescription.setText(mItemView.getContext().getString(R.string.hint_information_unavailable));
                 }
             }
         }

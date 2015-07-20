@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.Point;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Handler;
@@ -113,5 +115,13 @@ public class ViewUtils {
         ListPopupWindow popup = menuPopupHelper.getPopup();
         popup.setVerticalOffset(-view.getHeight());
         popup.show();
+    }
+
+    public static void setTint(Drawable drawable, int color) {
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            drawable.setTint(color);
+        } else {
+            drawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+        }
     }
 }

@@ -19,7 +19,6 @@ import android.text.InputFilter;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Display;
 import android.view.KeyEvent;
@@ -78,7 +77,7 @@ public class SearchBox extends RelativeLayout {
     private ProgressBar pb;
     private ArrayList<SearchResult> initialResults;
     private boolean searchWithoutSuggestions = true;
-    private boolean materialMenuIconAnimationDisabled = false;
+    private boolean morphAnimationEnabled = false;
 
     private boolean isVoiceRecognitionIntentSupported;
     private VoiceRecognitionListener voiceRecognitionListener;
@@ -417,7 +416,7 @@ public class SearchBox extends RelativeLayout {
      */
     public void micClick() {
         if (!isMic) {
-            setSearchString("");
+            setSearchString("", true);
         } else {
             startVoiceRecognition();
         }
@@ -436,7 +435,7 @@ public class SearchBox extends RelativeLayout {
             text = text + matches.get(x) + " ";
         }
         text = text.trim();
-        setSearchString(text);
+        setSearchString(text, true);
         search(text);
     }
 
@@ -555,10 +554,13 @@ public class SearchBox extends RelativeLayout {
      * Set the searchbox's current text manually
      *
      * @param text Text
+     * @param focus
      */
-    public void setSearchString(String text) {
+    public void setSearchString(String text, boolean focus) {
         this.search.setText(text);
-        this.search.requestFocus();
+        if(focus) {
+            this.search.requestFocus();
+        }
     }
 
     /**
@@ -637,16 +639,16 @@ public class SearchBox extends RelativeLayout {
         return searchables;
     }
 
-    public boolean isMaterialMenuIconDisabled() {
-        return materialMenuIconAnimationDisabled;
-    }
-
-    public void disableMaterialIconAnimation(boolean materialMenuIconDisabled) {
-        this.materialMenuIconAnimationDisabled = materialMenuIconDisabled;
+    public void setMaterialIconMorphAnimationEnable(boolean enable) {
+        this.morphAnimationEnabled = enable;
     }
 
     public void setMaterialIconState(IconState iconState) {
         this.materialMenu.setState(iconState);
+    }
+
+    public IconState getMaterialIconState() {
+        return this.materialMenu.getState();
     }
 
     public void setInputType(int type) {
@@ -695,25 +697,26 @@ public class SearchBox extends RelativeLayout {
         animator.start();
     }
 
-    public void triggerSearch(String string) {
+    public void triggerSearch(SearchResult searchResult) {
         if (!searchWithoutSuggestions && getNumberOfResults() == 0) return;
-        setSearchString(string);
+        String query = searchResult.title;
+        setSearchString(query, true);
         if (!TextUtils.isEmpty(getSearchText())) {
-            setLogoTextInt(string);
+            setLogoTextInt(query);
             if (listener != null)
-                listener.onSearch(string);
+                listener.onSearch(searchResult);
         } else {
             setLogoTextInt(logoText);
         }
     }
 
     private void search(SearchResult result) {
-        triggerSearch(result.title);
+        triggerSearch(result);
         toggleSearch();
     }
 
     private void openSearch(Boolean openKeyboard) {
-        if (!materialMenuIconAnimationDisabled) {
+        if (morphAnimationEnabled) {
             this.materialMenu.animateState(IconState.ARROW);
         }
         this.logo.setVisibility(View.GONE);
@@ -807,8 +810,8 @@ public class SearchBox extends RelativeLayout {
         }
     }
 
-    private void closeSearch() {
-        if (!materialMenuIconAnimationDisabled) {
+    public void closeSearch() {
+        if (morphAnimationEnabled) {
             this.materialMenu.animateState(IconState.BURGER);
         }
         this.logo.setVisibility(View.VISIBLE);
@@ -883,7 +886,7 @@ public class SearchBox extends RelativeLayout {
 
                 @Override
                 public void onClick(View v) {
-                    setSearchString(title.getText().toString());
+                    setSearchString(title.getText().toString(), true);
                     search.setSelection(search.getText().length());
                 }
 
@@ -919,7 +922,7 @@ public class SearchBox extends RelativeLayout {
          *
          * @param result
          */
-        public void onSearch(String result);
+        public void onSearch(SearchResult result);
     }
 
     public interface MenuListener {

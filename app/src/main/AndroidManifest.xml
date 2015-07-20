@@ -33,10 +33,6 @@
             android:configChanges="orientation|screenSize"
             android:windowSoftInputMode="adjustResize|stateHidden" />
         <activity
-            android:name=".SearchActivity"
-            android:configChanges="orientation|screenSize"
-            android:windowSoftInputMode="adjustResize|stateHidden" />
-        <activity
             android:name=".RouteActivity"
             android:configChanges="orientation|screenSize" />
         <activity

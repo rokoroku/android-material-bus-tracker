@@ -61,6 +61,7 @@ public class RevealUtils {
         SupportAnimator animator = ViewAnimationUtils.createCircularReveal(view, point.x, point.y, finalRadius, 0);
         animator.setInterpolator(new AccelerateDecelerateInterpolator());
         animator.setDuration(duration);
+        if(listener != null) animator.addListener(listener);
         animator.addListener(new SupportAnimator.SimpleAnimatorListener() {
             @Override
             public void onAnimationStart() {

@@ -23,7 +23,7 @@ public class FormatUtils {
     public static String formatHeadingTo(Context context, StationRoute stationRoute) {
 
         if (stationRoute.getDestination() != null) {
-            return context.getString(R.string.route_heading_to, stationRoute.getDestination());
+            return context.getString(R.string.hint_route_heading_to, stationRoute.getDestination());
 
         } else {
             Route route = stationRoute.getRoute();
@@ -74,7 +74,7 @@ public class FormatUtils {
 
                     }
                     //Log.d("formatHeadingTo", String.format("%s: seq=%d, ->%s (%s <-> %s)", route.getName(), sequence, headingStation, route.getStartStationName(), route.getEndStationName()));
-                    return context.getString(R.string.route_heading_to, headingStation);
+                    return context.getString(R.string.hint_route_heading_to, headingStation);
                 }
             }
         }

@@ -352,7 +352,7 @@ public class StationActivity extends AbstractBaseActivity
                 startActionMode(new ActionMode.Callback() {
                     @Override
                     public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-                        mode.setTitle(R.string.add_to_favorite_hint_select_one);
+                        mode.setTitle(R.string.hint_select_one);
                         return true;
                     }
 

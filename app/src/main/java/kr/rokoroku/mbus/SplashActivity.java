@@ -2,6 +2,7 @@ package kr.rokoroku.mbus;
 
 import android.content.Intent;
 import android.graphics.drawable.AnimationDrawable;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
@@ -9,13 +10,21 @@ import android.view.View;
 import android.widget.ImageView;
 
 import io.codetail.animation.SupportAnimator;
+import kr.rokoroku.mbus.core.FavoriteFacade;
+import kr.rokoroku.mbus.data.model.Favorite;
+import kr.rokoroku.mbus.data.model.FavoriteGroup;
+import kr.rokoroku.mbus.data.model.Route;
+import kr.rokoroku.mbus.data.model.RouteStation;
+import kr.rokoroku.mbus.data.model.Station;
+import kr.rokoroku.mbus.data.model.StationRoute;
 import kr.rokoroku.mbus.util.RevealUtils;
+import kr.rokoroku.mbus.util.ViewUtils;
 
 public class SplashActivity extends AppCompatActivity {
 
-    Handler mHandler;
-    View mLogoLayout;
-    View mDummyView;
+    private View mLogoLayout;
+    private View mDummyView;
+    private AsyncTask loadFavoriteTask;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,8 +35,7 @@ public class SplashActivity extends AppCompatActivity {
 
         mLogoLayout = findViewById(R.id.logo_layout);
         mDummyView = findViewById(R.id.dummy_view);
-        mHandler = new Handler();
-        mHandler.postDelayed(() -> RevealUtils.revealView(mDummyView, RevealUtils.Position.CENTER, 400, new SupportAnimator.SimpleAnimatorListener() {
+        ViewUtils.runOnUiThread(() -> RevealUtils.revealView(mDummyView, RevealUtils.Position.CENTER, 400, new SupportAnimator.SimpleAnimatorListener() {
             @Override
             public void onAnimationEnd() {
                 if (!isFinishing()) {
@@ -36,10 +44,38 @@ public class SplashActivity extends AppCompatActivity {
             }
         }), 1500);
         mLogoLayout.setOnClickListener(v -> {
-            if (!isFinishing()) {
+            if (!isFinishing() && loadFavoriteTask.getStatus() == AsyncTask.Status.FINISHED) {
                 startMainActivity();
             }
         });
+
+        executeLoadFavoriteTask();
+    }
+
+    private void executeLoadFavoriteTask() {
+        loadFavoriteTask = new AsyncTask<Void, Void, Void>() {
+            @Override
+            protected Void doInBackground(Void[] params) {
+                Favorite currentFavorite = FavoriteFacade.getInstance().getCurrentFavorite();
+                for (FavoriteGroup favoriteGroup : currentFavorite.getFavoriteGroups()) {
+                    for (int i = 0; i < favoriteGroup.size(); i++) {
+                        FavoriteGroup.FavoriteItem favoriteItem = favoriteGroup.get(i);
+                        FavoriteGroup.FavoriteItem.Type type = favoriteItem.getType();
+                        switch (type) {
+                            case ROUTE:
+                                favoriteItem.getData(Route.class);
+                                favoriteItem.getData(RouteStation.class);
+                                break;
+                            case STATION:
+                                favoriteItem.getData(Station.class);
+                                favoriteItem.getData(StationRoute.class);
+                                break;
+                        }
+                    }
+                }
+                return null;
+            }
+        }.execute();
     }
 
     @Override

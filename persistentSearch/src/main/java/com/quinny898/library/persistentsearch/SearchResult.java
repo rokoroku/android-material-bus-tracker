@@ -11,6 +11,7 @@ public class SearchResult {
     public String title;
     public Drawable icon;
     public int textColor = -1;
+    public Object extra;
 
     /**
      * Create a search result with text and an icon
@@ -27,6 +28,14 @@ public class SearchResult {
         this.textColor = textColor;
     }
 
+    public void setExtra(Object extra) {
+        this.extra = extra;
+    }
+
+    public Object getExtra() {
+        return extra;
+    }
+
     /**
      * Return the title of the result
      */
@@ -34,5 +43,20 @@ public class SearchResult {
     public String toString() {
         return title;
     }
-    
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        SearchResult that = (SearchResult) o;
+
+        return title.equals(that.title);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return title.hashCode();
+    }
 }

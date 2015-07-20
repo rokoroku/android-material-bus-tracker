@@ -89,10 +89,10 @@ public abstract class AbstractBaseActivity extends AppCompatActivity implements 
                 mDrawerLayout.openDrawer(Gravity.LEFT);
                 return true;
 
-            case R.id.nav_action_change_theme:
-                BaseApplication.getInstance().switchTheme();
-                recreate();
-                return true;
+//            case R.id.nav_action_change_theme:
+//                BaseApplication.getInstance().switchTheme();
+//                recreate();
+//                return true;
 
         }
         return super.onOptionsItemSelected(item);

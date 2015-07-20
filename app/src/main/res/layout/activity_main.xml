@@ -4,26 +4,32 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <android.support.v4.widget.ContentLoadingProgressBar
-        android:id="@+id/progress_bar"
-        android:layout_width="96dp"
-        android:layout_height="96dp"
-        android:layout_centerInParent="true" />
-
-
-    <android.support.v4.widget.SwipeRefreshLayout
-        android:id="@+id/swipe_refresh_layout"
+    <io.codetail.widget.RevealFrameLayout
+        android:id="@+id/animator"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:layout_centerHorizontal="true">
 
-        <android.support.v7.widget.RecyclerView
-            android:id="@+id/recycler_view"
+        <FrameLayout
+            android:id="@+id/favorite_frame"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:paddingLeft="4dp"
-            android:paddingRight="4dp" />
+            android:visibility="gone" />
 
-    </android.support.v4.widget.SwipeRefreshLayout>
+        <FrameLayout
+            android:id="@+id/search_frame"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+
+        <FrameLayout
+            android:id="@+id/map_frame"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="?android:attr/colorBackground"
+            android:visibility="gone" />
+
+    </io.codetail.widget.RevealFrameLayout>
 
     <kr.rokoroku.mbus.ui.widget.FloatingActionLayout
         android:id="@+id/fab_layout"
@@ -39,11 +45,11 @@
             android:layout_marginBottom="16dp"
             android:layout_marginEnd="16dp"
             android:layout_marginRight="16dp"
-            app:menu_shadowXOffset="0dp"
-            app:menu_shadowYOffset="1dp"
             app:menu_buttonSpacing="4dp"
             app:menu_colorNormal="?attr/colorAccent"
-            app:menu_colorPressed="?attr/colorAccent">
+            app:menu_colorPressed="?attr/colorAccent"
+            app:menu_shadowXOffset="0dp"
+            app:menu_shadowYOffset="1dp">
 
             <com.github.clans.fab.FloatingActionButton
                 android:id="@+id/fab_new_group"
@@ -55,8 +61,33 @@
                 app:fab_label="@string/action_new_favorite_group"
                 app:fab_size="mini" />
 
+            <com.github.clans.fab.FloatingActionButton
+                android:id="@+id/fab_new_favorite"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_favorite_add_black_24dp"
+                app:fab_colorNormal="?attr/colorButtonNormal"
+                app:fab_colorPressed="?attr/colorButtonNormal"
+                app:fab_label="@string/action_new_favorite_entry"
+                app:fab_size="mini" />
+
         </com.github.clans.fab.FloatingActionMenu>
 
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/fab_location"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end|bottom"
+            android:layout_marginBottom="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginRight="16dp"
+            android:src="@drawable/ic_my_location_black_24dp"
+            app:fab_colorNormal="?attr/colorButtonNormal"
+            app:fab_colorPressed="?attr/colorButtonNormal"
+            app:fab_progress_color="?attr/colorAccent"
+            app:fab_progress_width="2dp"
+            app:fab_shadowXOffset="0dp"
+            app:fab_shadowYOffset="1dp" />
 
     </kr.rokoroku.mbus.ui.widget.FloatingActionLayout>
 

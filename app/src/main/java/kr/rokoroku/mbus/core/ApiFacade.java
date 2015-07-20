@@ -350,7 +350,7 @@ public class ApiFacade {
                 Station storedExternalStation = DatabaseFacade.getInstance().getStationWithSecondaryKey(externalProvider, externalKey);
 
                 if (innerClient == null) {
-                    innerProgressRunner.error(new ApiNotAvailableException(provider));
+                    innerProgressRunner.error(new ApiNotAvailableException(externalProvider));
 
                 } else if (storedExternalStation != null) {
                     if (storedExternalStation.isLocalRouteInfoAvailable()) {

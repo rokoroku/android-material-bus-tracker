@@ -181,6 +181,11 @@ public class MapsActivity extends AppCompatActivity implements MapFragment.OnEve
     }
 
     @Override
+    public void onMapLoaded(GoogleMap map) {
+
+    }
+
+    @Override
     public void onLocationUpdate(Location location) {
         mMyLocationButton.postDelayed(() -> {
             mMyLocationButton.setClickable(true);

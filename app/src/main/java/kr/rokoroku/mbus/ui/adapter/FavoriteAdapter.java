@@ -96,6 +96,10 @@ public class FavoriteAdapter
         setHasStableIds(true);
     }
 
+    public RecyclerViewExpandableItemManager getExpandableItemManager() {
+        return mExpandableItemManager;
+    }
+
     @Override
     public int getGroupCount() {
         int groupCount = mProvider.getGroupCount();

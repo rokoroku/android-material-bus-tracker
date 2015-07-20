@@ -7,5 +7,5 @@
     <item
         android:id="@+id/action_remove"
         android:orderInCategory="10"
-        android:title="@string/remove_from_favorite"/>
+        android:title="@string/action_remove_from_favorite"/>
 </menu>

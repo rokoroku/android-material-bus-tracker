@@ -82,7 +82,7 @@
             android:layout_marginLeft="8dp"
             android:layout_marginStart="8dp"
             android:autoLink="phone"
-            android:text="@string/information_unavailable"
+            android:text="@string/hint_information_unavailable"
             android:textSize="14sp" />
     </TableRow>
 </TableLayout>

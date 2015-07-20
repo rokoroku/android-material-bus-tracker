@@ -1,39 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <group android:checkableBehavior="all">
+    <group android:checkableBehavior="single">
         <item
-            android:id="@+id/nav_action_1"
-            android:icon="@drawable/ic_label_outline_white_24dp"
-            android:title="서울" />
+            android:id="@+id/nav_action_search"
+            android:icon="@drawable/abc_ic_search_api_mtrl_alpha"
+            android:title="검색" />
         <item
-            android:id="@+id/nav_action_2"
+            android:id="@+id/nav_action_favorite"
             android:icon="@drawable/ic_label_outline_white_24dp"
-            android:title="경기" />
+            android:title="즐겨찾기" />
+        <item
+            android:id="@+id/nav_action_map"
+            android:icon="@drawable/ic_my_location_black_24dp"
+            android:title="주변 정류장" />
+        <item
+            android:enabled="false"
+            android:title="" />
     </group>
 
     <group android:checkableBehavior="single">
-        <item android:title="설정">
+        <item
+            android:title="기타">
             <menu>
-                <item
-                    android:id="@+id/nav_action_change_theme"
-                    android:icon="@drawable/ic_invert_colors_white_24dp"
-                    android:title="테마 변경" />
+                <item android:title="환경 설정" />
+                <item android:title="어플리케이션 정보" />
             </menu>
         </item>
     </group>
+    <!--<group android:checkableBehavior="single">-->
+    <!--<item android:title="설정">-->
+    <!--<menu>-->
+    <!--<item-->
+    <!--android:id="@+id/nav_action_change_theme"-->
+    <!--android:icon="@drawable/ic_invert_colors_white_24dp"-->
+    <!--android:title="테마 변경" />-->
+    <!--</menu>-->
+    <!--</item>-->
+    <!--</group>-->
 
-    <group android:checkableBehavior="single">
-        <item android:title="기타">
-            <menu>
-                <item
-                    android:id="@+id/nav_action_providers"
-                    android:icon="@drawable/ic_public_white_48dp"
-                    android:title="정보제공처" />
-                <item
-                    android:id="@+id/nav_action_license"
-                    android:icon="@drawable/ic_info_outline_white_48dp"
-                    android:title="오픈 소스 라이센스" />
-            </menu>
-        </item>
-    </group>
+    <!--<group android:checkableBehavior="single">-->
+    <!--<item android:title="기타">-->
+    <!--<menu>-->
+    <!--<item-->
+    <!--android:id="@+id/nav_action_providers"-->
+    <!--android:icon="@drawable/ic_public_white_48dp"-->
+    <!--android:title="정보제공처" />-->
+    <!--<item-->
+    <!--android:id="@+id/nav_action_license"-->
+    <!--android:icon="@drawable/ic_info_outline_white_48dp"-->
+    <!--android:title="오픈 소스 라이센스" />-->
+    <!--</menu>-->
+    <!--</item>-->
+    <!--</group>-->
 </menu>
