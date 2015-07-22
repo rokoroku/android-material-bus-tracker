@@ -8,6 +8,7 @@ import kr.rokoroku.mbus.api.gbis.model.GbisBusArrival;
 import kr.rokoroku.mbus.api.gbisweb.model.GbisStationRouteResult;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusArrival;
 import kr.rokoroku.mbus.api.seoulweb.model.StationRouteResult;
+import kr.rokoroku.mbus.api.tago.model.ArrivalInfoResult;
 
 import java.util.Date;
 
@@ -146,6 +147,16 @@ public class ArrivalInfo implements Parcelable {
             this.isDriveEnd |= this.busArrivalItem2.isLastBus;
         }
         this.isDriveEnd = "-2".equals(routeEntity.isLast1) || "-2".equals(routeEntity.isLast2);
+    }
+
+    public ArrivalInfo(ArrivalInfoResult.ResultEntity resultEntity) {
+        this.routeId = resultEntity.routeId.substring(3);
+        this.stationId = resultEntity.stationName;
+        if(resultEntity.arrivalTime > 0) {
+            this.busArrivalItem1 = new BusArrivalItem();
+            busArrivalItem1.behind = resultEntity.prevStationCount;
+            busArrivalItem1.predictTime = new Date(System.currentTimeMillis() + resultEntity.arrivalTime * 1000);
+        }
     }
 
 

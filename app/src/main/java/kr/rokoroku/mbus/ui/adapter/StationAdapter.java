@@ -222,7 +222,7 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
         holder.mRouteId = stationRoute.getRouteId();
 
         if (stationRoute.getArrivalInfo() == null || TimeUtils.checkShouldUpdate(stationRoute.getArrivalInfo().getTimestamp())) {
-            ApiFacade.getInstance().fillArrivalInfo(station, stationRoute, new SimpleProgressCallback() {
+            ApiFacade.getInstance().getArrivalInfo(station, stationRoute, new SimpleProgressCallback() {
                 @Override
                 public void onComplete(boolean success, Object value) {
                     holder.setItem(stationRoute.getArrivalInfo());
@@ -334,9 +334,14 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
                 mRouteName.setTextColor(color);
                 mRouteType.setTextColor(color);
 
-                if (mDataProvider.hasLinkedStation() && !Provider.SEOUL.equals(stationRoute.getProvider())) {
+                Provider provider = stationRoute.getProvider();
+                if (mDataProvider.hasLinkedStation() && !Provider.SEOUL.equals(provider)) {
+                    if (RouteType.checkIncheonRoute(type)) {
+                        mRouteType.setText(Provider.INCHEON.getCityName(context));
+                    } else {
+                        mRouteType.setText(provider.getCityName(context));
+                    }
                     mRouteType.setVisibility(View.VISIBLE);
-                    mRouteType.setText(stationRoute.getProvider().getCityName(context));
                 } else {
                     mRouteType.setVisibility(View.GONE);
                 }
@@ -349,7 +354,13 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
 
             ArrivalInfo arrivalInfo = stationRoute.getArrivalInfo();
             if (arrivalInfo != null) {
-                mBusArrivalItemViewHolder.setItem(arrivalInfo.getBusArrivalItem1());
+                if(arrivalInfo.isDriveEnd()) {
+                    mBusArrivalItemViewHolder.setItem(null);
+                    mBusArrivalItemViewHolder.mRemainStation.setVisibility(View.VISIBLE);
+                    mBusArrivalItemViewHolder.mRemainStation.setText(R.string.bus_arrival_operation_end);
+                } else {
+                    mBusArrivalItemViewHolder.setItem(arrivalInfo.getBusArrivalItem1());
+                }
             } else {
                 mBusArrivalItemViewHolder.setItem(null);
             }
@@ -499,7 +510,8 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
         public BusArrivalItemViewHolder mBusArrivalItem1;
         public BusArrivalItemViewHolder mBusArrivalItem2;
         public ProgressBar mProgressBar;
-        public ViewGroup mBusArrivalLayout;
+        public View mBusArrivalLayout;
+        public View mBusOperationEndLayout;
         public ArrivalInfo mItem;
         public String mRouteId;
 
@@ -507,7 +519,8 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
             super(v);
             mCardView = (SplitCardView) v.findViewById(R.id.card_view);
             mProgressBar = (ProgressBar) v.findViewById(R.id.progress_bar);
-            mBusArrivalLayout = (ViewGroup) v.findViewById(R.id.bus_arrival_layout);
+            mBusArrivalLayout = v.findViewById(R.id.bus_arrival_layout);
+            mBusOperationEndLayout = v.findViewById(R.id.bus_operation_end_layout);
             mBusArrivalItem1 = new BusArrivalItemViewHolder(v.findViewById(R.id.bus_arrival_item_1));
             mBusArrivalItem2 = new BusArrivalItemViewHolder(v.findViewById(R.id.bus_arrival_item_2));
             mCardView.setRoundTop(false);
@@ -528,30 +541,39 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
                 mBusArrivalLayout.animate().alpha(1f).start();
                 mBusArrivalLayout.setAlpha(0f);
             }
-            mBusArrivalLayout.setVisibility(View.VISIBLE);
 
             mItem = arrivalInfo;
             if (arrivalInfo != null) {
                 mRouteId = arrivalInfo.getRouteId();
-                mBusArrivalItem1.setItem(arrivalInfo.getBusArrivalItem1());
-                mBusArrivalItem2.setItem(arrivalInfo.getBusArrivalItem2());
-                if (mTimer == null) {
-                    mTimer = new Timer(true);
-                    mTimer.scheduleAtFixedRate(new TimerTask() {
-                        @Override
-                        public void run() {
-                            mBusArrivalItem1.countdown();
-                            mBusArrivalItem2.countdown();
-                        }
-                    }, 0, 1000);
-                }
+                if (arrivalInfo.isDriveEnd()) {
+                    mBusArrivalLayout.setVisibility(View.INVISIBLE);
+                    mBusOperationEndLayout.setVisibility(View.VISIBLE);
+                } else {
+                    mBusArrivalLayout.setVisibility(View.VISIBLE);
+                    mBusOperationEndLayout.setVisibility(View.GONE);
 
+                    mBusArrivalItem1.setItem(arrivalInfo.getBusArrivalItem1());
+                    mBusArrivalItem2.setItem(arrivalInfo.getBusArrivalItem2());
+                    if (mTimer == null) {
+                        mTimer = new Timer(true);
+                        mTimer.scheduleAtFixedRate(new TimerTask() {
+                            @Override
+                            public void run() {
+                                mBusArrivalItem1.countdown();
+                                mBusArrivalItem2.countdown();
+                            }
+                        }, 0, 1000);
+                    }
+                }
                 StationRoute stationRoute = mDataProvider.getStation().getStationRoute(arrivalInfo.getRouteId());
                 FavoriteFacade.Color cardColor = FavoriteFacade.getInstance().getFavoriteRouteColor(
                         stationRoute.getProvider(), arrivalInfo.getRouteId());
                 mCardView.setCardBackgroundColor(ThemeUtils.dimColor(cardColor.getColor(context), 0.95f));
 
             } else {
+                mBusArrivalLayout.setVisibility(View.VISIBLE);
+                mBusOperationEndLayout.setVisibility(View.GONE);
+
                 mBusArrivalItem1.setItem(null);
                 mBusArrivalItem2.setItem(null);
                 FavoriteFacade.Color cardColor = FavoriteFacade.Color.WHITE;

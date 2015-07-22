@@ -29,4 +29,15 @@
         android:layout_marginLeft="8dp"
         android:layout_marginStart="8dp" />
 
+    <TextView
+        android:id="@+id/bus_operation_end_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start|center_vertical"
+        android:layout_margin="48dp"
+        android:text="@string/bus_arrival_operation_end"
+        android:textColor="?attr/cardPrimaryTextColor"
+        android:textSize="14sp"
+        android:visibility="gone"/>
+
 </kr.rokoroku.mbus.ui.widget.SplitCardView>

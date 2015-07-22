@@ -10,6 +10,7 @@ import android.graphics.ColorFilter;
 import android.graphics.Outline;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.graphics.Xfermode;
@@ -399,6 +400,7 @@ public class FloatingActionButton extends ImageButton {
     public void setDrawableTint(int color) {
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             getIconDrawable().mutate().setTint(color);
+        } else {
         }
     }
 

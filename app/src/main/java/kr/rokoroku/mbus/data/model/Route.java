@@ -2,6 +2,7 @@ package kr.rokoroku.mbus.data.model;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.text.TextUtils;
 
 import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchAllResult;
 import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchRouteResult;
@@ -123,12 +124,14 @@ public class Route implements Parcelable, Serializable {
         this.name = routeEntity.getRouteNm();
         this.type = RouteType.valueOfGbis(ggEntity.getRouteTypeCd());
         this.allocNormal = routeEntity.getPeekAlloc();
-        if (!"0".equals(routeEntity.getPeekAlloc2()) && !routeEntity.getPeekAlloc().equals(routeEntity.getPeekAlloc2())) {
-            this.allocNormal += "~" + routeEntity.getPeekAlloc2();
+        String peekAlloc2 = routeEntity.getPeekAlloc2();
+        if (!"0".equals(peekAlloc2) && !allocNormal.equals(peekAlloc2) && !TextUtils.isEmpty(peekAlloc2)) {
+            this.allocNormal += "~" + peekAlloc2;
         }
         this.allocWeekend = routeEntity.getNpeekAlloc();
-        if (!"0".equals(routeEntity.getNpeekAlloc2()) && !routeEntity.getNpeekAlloc().equals(routeEntity.getNpeekAlloc2())) {
-            this.allocWeekend += "~" + routeEntity.getNpeekAlloc2();
+        String npeekAlloc2 = routeEntity.getNpeekAlloc2();
+        if (!"0".equals(npeekAlloc2) && !allocWeekend.equals(npeekAlloc2) && !TextUtils.isEmpty(npeekAlloc2)) {
+            this.allocWeekend += "~" + npeekAlloc2;
         }
         this.firstUpTime = routeEntity.getUpFirstTime();
         this.lastUpTime = routeEntity.getUpLastTime();

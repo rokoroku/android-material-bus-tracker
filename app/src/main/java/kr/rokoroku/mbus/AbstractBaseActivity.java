@@ -23,6 +23,7 @@ import android.widget.TextView;
 import java.lang.reflect.Field;
 
 import kr.rokoroku.mbus.core.DatabaseFacade;
+import kr.rokoroku.mbus.core.LocationClient;
 import kr.rokoroku.mbus.util.ThemeUtils;
 
 /**
@@ -71,13 +72,10 @@ public abstract class AbstractBaseActivity extends AppCompatActivity implements 
         initDrawer();
 
         final Thread.UncaughtExceptionHandler defaultUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
-        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-            @Override
-            public void uncaughtException(Thread thread, Throwable ex) {
-                Log.e("UncaughtException", thread.getName());
-                ex.printStackTrace();
-                defaultUncaughtExceptionHandler.uncaughtException(thread, ex);
-            }
+        Thread.setDefaultUncaughtExceptionHandler((thread, ex) -> {
+            Log.e("UncaughtException", thread.getName());
+            ex.printStackTrace();
+            defaultUncaughtExceptionHandler.uncaughtException(thread, ex);
         });
     }
 
@@ -304,6 +302,15 @@ public abstract class AbstractBaseActivity extends AppCompatActivity implements 
 
     private void initDrawer() {
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+        mDrawerLayout.setDrawerListener(new DrawerLayout.SimpleDrawerListener() {
+            @Override
+            public void onDrawerOpened(View drawerView) {
+                MenuItem menuItem = mNavigationDrawerView.getMenu().findItem(R.id.action_map);
+                if(menuItem != null) {
+                    menuItem.setEnabled(LocationClient.isLocationEnabled(getApplicationContext()));
+                }
+            }
+        });
         mNavigationDrawerView = (NavigationView) findViewById(R.id.navigation_drawer_view);
         mNavigationDrawerView.setNavigationItemSelectedListener(menuItem -> onOptionsItemSelected(menuItem));
     }

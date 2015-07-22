@@ -137,8 +137,10 @@ public enum RouteType {
     public String getDescription(Context context) {
         switch (this) {
             case RED:
+            case RED_INCHEON:
                 return context.getString(R.string.route_type_red);
             case GREEN:
+            case GREEN_INCHEON:
                 return context.getString(R.string.route_type_green);
             case BLUE:
                 return context.getString(R.string.route_type_blue);
@@ -154,6 +156,8 @@ public enum RouteType {
                 return context.getString(R.string.route_type_purple);
             case GREEN_SUBURB:
                 return context.getString(R.string.route_type_suburb);
+            case GREEN_SEOUL_LOCAL:
+                return context.getString(R.string.route_type_local);
             default:
                 return context.getString(R.string.route_type_general);
         }
@@ -169,6 +173,17 @@ public enum RouteType {
                 case YELLOW:
                 case AIRPORT:
                 case GREEN_SEOUL_LOCAL:
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean checkIncheonRoute(RouteType routeType) {
+        if (routeType != null) {
+            switch (routeType) {
+                case RED_INCHEON:
+                case GREEN_INCHEON:
                     return true;
             }
         }

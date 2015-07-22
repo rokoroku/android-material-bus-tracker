@@ -223,7 +223,7 @@ public class StationActivity extends AbstractBaseActivity
                                     }
                                 }, 500);
                             }
-                            ApiFacade.getInstance().fillArrivalInfo(mStationDataProvider.getStation(), null, new SimpleProgressCallback<List<ArrivalInfo>>() {
+                            ApiFacade.getInstance().getArrivalInfo(mStationDataProvider.getStation(), null, new SimpleProgressCallback<List<ArrivalInfo>>() {
                                 @Override
                                 public void onComplete(boolean success, List<ArrivalInfo> value) {
                                     if (success && value != null) {

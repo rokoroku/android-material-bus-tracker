@@ -19,6 +19,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.util.TypedValue;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -86,6 +87,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
     private FloatingActionButton mAddNewGroupButton;
     private FloatingActionButton mAddNewFavoriteButton;
     private FloatingActionButton mLocationButton;
+    private FloatingActionButton mSearchButton;
 
     private FavoriteAdapter mFavoriteAdapter;
     private FavoriteDataProvider mFavoriteDataProvider;
@@ -171,7 +173,14 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
         mAddNewGroupButton = (FloatingActionButton) findViewById(R.id.fab_new_group);
         mAddNewFavoriteButton = (FloatingActionButton) findViewById(R.id.fab_new_favorite);
         mLocationButton = (FloatingActionButton) findViewById(R.id.fab_location);
-        mAddNewFavoriteButton.setOnClickListener(v -> showSearch(true));
+        mSearchButton = (FloatingActionButton) findViewById(R.id.fab_search);
+
+        mAddNewFavoriteButton.setOnClickListener(v -> {
+            showSearch(true);
+            if(!mSearchBox.isSearchOpen()) {
+                mSearchBox.toggleSearch();
+            }
+        });
         mAddNewGroupButton.setOnClickListener(v -> {
             new MaterialDialog.Builder(MainActivity.this)
                     .title(R.string.action_new_favorite_group)
@@ -212,7 +221,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
         mLocationButton.hide(false);
         mLocationButton.setShowProgressBackground(false);
         mLocationButton.setOnClickListener(v -> {
-            if(mMapFragment != null) {
+            if (mMapFragment != null) {
                 if (mMapFrame.getVisibility() != View.VISIBLE) {
                     mMapFragment.clearExtras();
 
@@ -223,6 +232,15 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
                 }
             }
             showMap();
+        });
+
+        mSearchButton.hide(false);
+        mSearchButton.setOnClickListener(v -> {
+            String searchText = mSearchBox.getSearchText();
+            if (TextUtils.isEmpty(searchText)) {
+                mSearchBox.triggerSearch(new SearchResult(searchText, null));
+                mSearchBox.toggleSearch();
+            }
         });
     }
 
@@ -268,22 +286,25 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
 
     @Override
     public void onSearchCleared() {
-
+        mSearchButton.hide(true);
     }
 
     @Override
     public void onSearchClosed() {
-
+        mSearchButton.hide(true);
     }
 
     @Override
     public void onSearchTermChanged() {
-
+        if (TextUtils.isEmpty(mSearchBox.getSearchText())) {
+            mSearchButton.hide(true);
+        } else {
+            mSearchButton.show(true);
+        }
     }
 
     @Override
     public void onSearch(SearchResult result) {
-
         String keyword = result.title;
         if (keyword.length() < 2) {
             if (!TextUtils.isEmpty(keyword.replaceAll("\\d", ""))) {
@@ -353,7 +374,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
                 ViewUtils.runOnUiThread(() -> {
                     mSearchFragment.setRefreshing(false);
                     mSearchFragment.setRefreshEnabled(false);
-                    if(mSearchDataProvider.getCount() == 0) {
+                    if (mSearchDataProvider.getCount() == 0) {
                         View placeholder = View.inflate(MainActivity.this, R.layout.empty_placeholer, null);
                         TextView text = (TextView) placeholder.findViewById(R.id.text);
                         text.setText(R.string.placeholder_search_empty);
@@ -378,14 +399,14 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
         if (isDrawerOpen()) {
             closeDrawer();
 
+        } else if (mSearchBox.isSearchOpen()) {
+            mSearchBox.closeSearch();
+
         } else if (mMapFrame.getVisibility() == View.VISIBLE) {
             hideMap();
 
         } else if (mFavoriteFrame.getVisibility() != View.VISIBLE) {
             showFavorite(true);
-
-        } else if (mSearchBox.isSearchOpen()) {
-            mSearchBox.toggleSearch();
 
         } else if (mPlusButton.isOpened()) {
             mPlusButton.close(true);
@@ -554,7 +575,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
 
     private void hideMap() {
         if (mMapFrame.getVisibility() == View.VISIBLE) {
-            if(mSearchFrame.getVisibility() != View.VISIBLE) {
+            if (mSearchFrame.getVisibility() != View.VISIBLE) {
                 mLocationButton.hide(true);
             }
             mSearchBox.setLogoText(previousSearchQuery != null ? previousSearchQuery : getString(R.string.hint_search));
@@ -811,8 +832,10 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == SearchBox.VOICE_RECOGNITION_CODE && resultCode == RESULT_OK) {
             List<String> results = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-            String spokenText = results.get(0);
-            mSearchBox.triggerSearch(new SearchResult(spokenText, null));
+            if (results != null && !results.isEmpty()) {
+                String spokenText = results.get(0);
+                mSearchBox.triggerSearch(new SearchResult(spokenText, null));
+            }
             return;
 
         } else if (requestCode == RESULT_GPS_SETTINGS && resultCode == RESULT_OK) {

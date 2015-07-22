@@ -15,6 +15,7 @@
     <string name="route_type_green">지선 버스</string>
     <string name="route_type_blue">간선 버스</string>
     <string name="route_type_yellow">순환 버스</string>
+    <string name="route_type_local">마을 버스</string>
     <string name="route_type_general">일반 버스</string>
     <string name="route_type_metropolitan">직행 버스</string>
     <string name="route_type_airport">공항 버스</string>
@@ -59,5 +60,6 @@
     <string name="placeholder_search_empty">검색 결과가 없어요!\n다른 검색어를 입력해보시겠어요?</string>
     <string name="placeholder_favorite_empty">즐겨찾기가 비어있어요.\n아래 버튼을 눌러 새 즐겨찾기를 추가 해 보세요.</string>
     <string name="alert_favorite_group_added">그룹이 생성되었습니다.</string>
+    <string name="bus_arrival_operation_end">운행 종료</string>
 
 </resources>

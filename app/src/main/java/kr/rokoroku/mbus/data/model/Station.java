@@ -78,6 +78,11 @@ public class Station implements Parcelable, Serializable {
         this.longitude = latLng.longitude;
         this.provider = Provider.GYEONGGI;
 
+        RemoteEntry localEntry = RemoteEntry.createFromCityString(city, localId);
+        if (localEntry != null && !localEntry.getProvider().equals(provider)) {
+            this.provider = localEntry.getProvider();
+        }
+
         String mobileNoSi = stationEntity.getMobileNoSi();
         RemoteEntry remoteEntry = RemoteEntry.createFromCityString(city, mobileNoSi);
         if (remoteEntry != null) addRemoteEntry(remoteEntry);
@@ -94,6 +99,11 @@ public class Station implements Parcelable, Serializable {
         this.latitude = latLng.latitude;
         this.longitude = latLng.longitude;
         this.provider = Provider.GYEONGGI;
+
+        RemoteEntry localEntry = RemoteEntry.createFromCityString(city, localId);
+        if (localEntry != null && !localEntry.getProvider().equals(provider)) {
+            this.provider = localEntry.getProvider();
+        }
 
         String stationNoSi = listEntity.getStationNoSi();
         RemoteEntry remoteEntry = RemoteEntry.createFromCityString(city, stationNoSi);
@@ -324,12 +334,15 @@ public class Station implements Parcelable, Serializable {
     }
 
     public void putArrivalInfo(ArrivalInfo arrivalInfo) {
-        StationRoute stationRoute = getStationRoute(arrivalInfo.getRouteId());
+        if(arrivalInfo == null || arrivalInfo.getRouteId() == null) return;
+
+        String routeId = arrivalInfo.getRouteId();
+        StationRoute stationRoute = getStationRoute(routeId);
         if (stationRoute != null) {
             stationRoute.setArrivalInfo(arrivalInfo);
         } else {
             if (temporalArrivalInfos == null) temporalArrivalInfos = new TreeMap<>();
-            temporalArrivalInfos.put(arrivalInfo.getRouteId(), arrivalInfo);
+            temporalArrivalInfos.put(routeId, arrivalInfo);
         }
     }
 
@@ -556,21 +569,29 @@ public class Station implements Parcelable, Serializable {
             }
         };
 
-        public static RemoteEntry createFromCityString(String city, String key) {
+        public static RemoteEntry createFromCityString(String city, String localId) {
             RemoteEntry remoteEntry = null;
-            if (!TextUtils.isEmpty(key)) {
-                key = key.trim();
-                if (city != null) switch (city) {
-                    case "부평구":
-                    case "남동구":
-                    case "계양구":
-                    case "서구":
-                        remoteEntry = new RemoteEntry(Provider.INCHEON, key);
-                        break;
+            if (!TextUtils.isEmpty(localId)) {
+                localId = localId.trim();
+                if(localId.startsWith("6") || localId.startsWith("9")) {
+                    if (city != null) switch (city) {
+                        case "중구":
+                        case "동구":
+                        case "남구":
+                        case "연수구":
+                        case "남동구":
+                        case "부평구":
+                        case "계양구":
+                        case "서구":
+                        case "강화군":
+                        case "웅진군":
+                            remoteEntry = new RemoteEntry(Provider.INCHEON, localId);
+                            break;
 
-                    default:
-                        remoteEntry = new RemoteEntry(Provider.SEOUL, key);
-                        break;
+                        default:
+                            remoteEntry = new RemoteEntry(Provider.SEOUL, localId);
+                            break;
+                    }
                 }
             }
             return remoteEntry;

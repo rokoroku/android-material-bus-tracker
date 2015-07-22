@@ -50,7 +50,6 @@ import kr.rokoroku.mbus.data.model.StationRoute;
 import kr.rokoroku.mbus.util.GeoUtils;
 import kr.rokoroku.mbus.util.ProgressCallback;
 import kr.rokoroku.mbus.util.SimpleProgressCallback;
-import kr.rokoroku.mbus.util.ValueCallback;
 import retrofit.Callback;
 import retrofit.RetrofitError;
 import retrofit.android.AndroidApacheClient;
@@ -118,6 +117,7 @@ public class ApiFacade {
             case GYEONGGI:
                 return gbisRestClient;
             case INCHEON:
+                return gbisWebRestClient;
         }
         return null;
     }
@@ -575,10 +575,19 @@ public class ApiFacade {
         final List<Station> resultList = new ArrayList<>();
         final ProgressCallback.ProgressRunner<List<Station>> progressRunner = new ProgressCallback.ProgressRunner<>(callback, 2);
         final ApiWrapperInterface.Callback<List<Station>> resultCallback = new ApiWrapperInterface.Callback<List<Station>>() {
+            final Map<String, Station> seoulStationMap = new HashMap<>();
+
             @Override
             public void onSuccess(List<Station> result) {
                 if (result != null) synchronized (resultList) {
-                    resultList.addAll(result);
+                    for (Station station : result) {
+                        if (!TextUtils.isEmpty(station.getLocalId())) {
+                            if(!seoulStationMap.containsKey(station.getLocalId())) {
+                                seoulStationMap.put(station.getLocalId(), station);
+                                resultList.addAll(result);
+                            }
+                        }
+                    }
                     progressRunner.setResult(resultList);
                 }
                 progressRunner.progress();
@@ -595,9 +604,9 @@ public class ApiFacade {
         getGbisWebRestClient().searchStationByLocation(latitude, longitude, radius, resultCallback);
     }
 
-    public void fillArrivalInfo(@NonNull Station station,
-                                @Nullable StationRoute stationRoute,
-                                @Nullable ProgressCallback<List<ArrivalInfo>> progressCallback) {
+    public void getArrivalInfo(@NonNull Station station,
+                               @Nullable StationRoute stationRoute,
+                               @Nullable ProgressCallback<List<ArrivalInfo>> progressCallback) {
 
         final List<ArrivalInfo> resultArrivalInfos = new ArrayList<>();
         if (stationRoute == null) {
@@ -641,7 +650,7 @@ public class ApiFacade {
                         @Override
                         public void onComplete(boolean success, Station value) {
                             if (success && DatabaseFacade.getInstance().getStationWithSecondaryKey(provider, localId) != null) {
-                                fillArrivalInfo(station, stationRoute, progressCallback);
+                                getArrivalInfo(station, stationRoute, progressCallback);
                                 progressRunner.progress();
                             } else {
                                 progressRunner.end(success, null);
@@ -702,10 +711,10 @@ public class ApiFacade {
 //                callback.success(null, null);
 //            }
 //        });
-
         Provider provider = route.getProvider();
         switch (provider) {
             case GYEONGGI:
+            case INCHEON:
                 getGbisWebRestAdapter().getRouteMapLine(route.getId(), new Callback<GbisSearchMapLineResult>() {
                     @Override
                     public void success(GbisSearchMapLineResult gbisSearchMapLineResult, Response response) {

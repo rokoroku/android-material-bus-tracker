@@ -233,14 +233,6 @@ public class FavoriteAdapter
                 mHandler.post(() -> ViewCompat.animate(holder.mCardView).scaleX(1f).scaleY(1f).setDuration(200));
             }
         }
-
-        if (mInPlaceDroppedGroupPosition == groupPosition && mInPlaceDroppedChildPosition == childPosition) {
-            holder.mOverflowButton.setVisibility(View.VISIBLE);
-            mInPlaceDroppedGroupPosition = -1;
-            mInPlaceDroppedChildPosition = -1;
-        } else {
-            holder.mOverflowButton.setVisibility(View.GONE);
-        }
     }
 
     @Override
@@ -559,7 +551,6 @@ public class FavoriteAdapter
         protected TextView mItemLabel;
         protected TextView mItemDescription;
         protected ImageButton mOverflowButton;
-        protected ImageButton mPaintButton;
         protected View mSeparator;
         protected FavoriteGroup.FavoriteItem mItem;
         protected View mLinkItemLayout;
@@ -577,11 +568,10 @@ public class FavoriteAdapter
             mLinkItemLayout = v.findViewById(R.id.link_layout);
             mLinkItemViewHolder = new FavoriteLinkItemViewHolder(mLinkItemLayout);
             mOverflowButton = (ImageButton) v.findViewById(R.id.overflow_button);
-            mPaintButton = (ImageButton) v.findViewById(R.id.paint_button);
             mSeparator = v.findViewById(R.id.separator);
 
             mCardView.setOnClickListener(this);
-            mOverflowButton.setOnClickListener(this);
+            //mOverflowButton.setOnClickListener(this);
         }
 
         public void setItem(FavoriteGroup.FavoriteItem item) {
@@ -611,8 +601,13 @@ public class FavoriteAdapter
                 }
                 mItemDescription.setText(description);
 
-                if (!Provider.SEOUL.equals(route.getProvider())) {
-                    mItemLabel.setText(route.getProvider().getCityName(context));
+                Provider routeProvider = route.getProvider();
+                if (!Provider.SEOUL.equals(routeProvider)) {
+                    if(RouteType.checkIncheonRoute(route.getType())) {
+                        mItemLabel.setText(Provider.INCHEON.getCityName(context));
+                    } else {
+                        mItemLabel.setText(routeProvider.getCityName(context));
+                    }
                     mItemLabel.setTextColor(color);
                     mItemLabel.setVisibility(View.VISIBLE);
                 } else {

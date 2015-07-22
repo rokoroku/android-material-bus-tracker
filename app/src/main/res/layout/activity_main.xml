@@ -89,6 +89,22 @@
             app:fab_shadowXOffset="0dp"
             app:fab_shadowYOffset="1dp" />
 
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/fab_search"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end|bottom"
+            android:layout_marginBottom="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginRight="16dp"
+            android:src="@drawable/ic_search_black_24dp"
+            app:fab_colorNormal="?attr/colorButtonNormal"
+            app:fab_colorPressed="?attr/colorButtonNormal"
+            app:fab_progress_color="?attr/colorAccent"
+            app:fab_progress_width="2dp"
+            app:fab_shadowXOffset="0dp"
+            app:fab_shadowYOffset="1dp" />
+
     </kr.rokoroku.mbus.ui.widget.FloatingActionLayout>
 
 </android.support.design.widget.CoordinatorLayout>

@@ -75,11 +75,23 @@ public class StationDataProvider {
         if (hasLinkedStation()) {
             switch (routeType) {
                 case GREEN_GYEONGGI:
+                case GREEN_INCHEON:
                     routeType = RouteType.GREEN;
                     break;
 
                 case RED_GYEONGGI:
+                case RED_INCHEON:
                     routeType = RouteType.RED;
+                    break;
+            }
+        } else {
+            switch (routeType) {
+                case GREEN_INCHEON:
+                    routeType = RouteType.GREEN_GYEONGGI;
+                    break;
+
+                case RED_INCHEON:
+                    routeType = RouteType.RED_GYEONGGI;
                     break;
             }
         }
