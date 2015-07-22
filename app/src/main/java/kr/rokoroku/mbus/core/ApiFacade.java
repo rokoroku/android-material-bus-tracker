@@ -468,7 +468,7 @@ public class ApiFacade {
                                               @Nullable SearchDataProvider searchDataProvider,
                                               @Nullable ProgressCallback callback) {
 
-        final String finalKeyword = keyword.replaceAll("-", "").toUpperCase();
+        final String finalKeyword = keyword.matches("\\d{2}-\\d{3}") ? keyword.replaceAll("[-\\s]", "") : keyword.toUpperCase();
         if (searchDataProvider == null) searchDataProvider = new SearchDataProvider();
 
         final SearchDataProvider resultDataProvider = searchDataProvider;
@@ -574,16 +574,22 @@ public class ApiFacade {
                                  @Nullable ProgressCallback<List<Station>> callback) {
         final List<Station> resultList = new ArrayList<>();
         final ProgressCallback.ProgressRunner<List<Station>> progressRunner = new ProgressCallback.ProgressRunner<>(callback, 2);
-        final ApiWrapperInterface.Callback<List<Station>> resultCallback = new ApiWrapperInterface.Callback<List<Station>>() {
+        if (radius < 0) radius = 1000;
+
+        final int finalRadius = radius;
+        getSeoulWebRestClient().searchStationByLocation(latitude, longitude, radius, new ApiWrapperInterface.Callback<List<Station>>() {
             final Map<String, Station> seoulStationMap = new HashMap<>();
+            Throwable throwable = null;
 
             @Override
             public void onSuccess(List<Station> result) {
                 if (result != null) synchronized (resultList) {
+                    DatabaseFacade.getInstance().putStationsToTemporalCache(result);
                     for (Station station : result) {
-                        if (!TextUtils.isEmpty(station.getLocalId())) {
-                            if(!seoulStationMap.containsKey(station.getLocalId())) {
-                                seoulStationMap.put(station.getLocalId(), station);
+                        String localId = station.getLocalId();
+                        if (!TextUtils.isEmpty(localId)) {
+                            if (!seoulStationMap.containsKey(localId)) {
+                                seoulStationMap.put(localId, station);
                                 resultList.addAll(result);
                             }
                         }
@@ -591,17 +597,61 @@ public class ApiFacade {
                     progressRunner.setResult(resultList);
                 }
                 progressRunner.progress();
+                getGbisStations();
             }
 
             @Override
             public void onFailure(Throwable t) {
-                progressRunner.error(t);
+                this.throwable = t;
+                progressRunner.progress();
+                getGbisStations();
             }
-        };
-        if (radius < 0) radius = 1000;
 
-        getSeoulWebRestClient().searchStationByLocation(latitude, longitude, radius, resultCallback);
-        getGbisWebRestClient().searchStationByLocation(latitude, longitude, radius, resultCallback);
+            public void getGbisStations() {
+                getGbisWebRestClient().searchStationByLocation(latitude, longitude, finalRadius, new ApiWrapperInterface.Callback<List<Station>>() {
+                    @Override
+                    public void onSuccess(List<Station> result) {
+                        if (result != null) synchronized (resultList) {
+                            DatabaseFacade.getInstance().putStationsToTemporalCache(result);
+                            for (Station station : result) {
+                                if (!TextUtils.isEmpty(station.getLocalId())) {
+
+                                    int minDistance = Integer.MAX_VALUE;
+                                    Station minDistStation = null;
+                                    LatLng latLng = new LatLng(station.getLatitude(), station.getLongitude());
+                                    for (Station seoulStation : seoulStationMap.values()) {
+                                        LatLng anotherlatLng = new LatLng(seoulStation.getLatitude(), seoulStation.getLongitude());
+                                        int distance = GeoUtils.calculateDistanceInMeter(latLng, anotherlatLng);
+                                        if (distance < minDistance) {
+                                            minDistance = distance;
+                                            minDistStation = seoulStation;
+                                        }
+                                    }
+
+                                    if (minDistance <= 40) {
+                                        minDistStation.addRemoteEntry(new Station.RemoteEntry(station.getProvider(), station.getLocalId()));
+                                        station.addRemoteEntry(new Station.RemoteEntry(minDistStation.getProvider(), minDistStation.getLocalId()));
+                                    } else {
+                                        resultList.add(station);
+                                    }
+                                }
+                            }
+                            progressRunner.setResult(resultList);
+                        }
+                        progressRunner.progress();
+                    }
+
+                    @Override
+                    public void onFailure(Throwable t) {
+                        if (throwable != null) {
+                            progressRunner.error(t);
+                        } else {
+                            progressRunner.progress();
+                        }
+                    }
+                });
+            }
+        });
     }
 
     public void getArrivalInfo(@NonNull Station station,

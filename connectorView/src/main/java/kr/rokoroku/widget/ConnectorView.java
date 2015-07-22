@@ -29,7 +29,7 @@ public final class ConnectorView extends View {
     private static final PorterDuffXfermode CLEAR_XFER_MODE = new PorterDuffXfermode(CLEAR);
 
     public enum ConnectorType {
-        START, NODE, END
+        START, NODE, END, NONE
     }
 
     public enum IconType {
@@ -82,6 +82,9 @@ public final class ConnectorView extends View {
                 break;
             case 2:
                 this.connectorType = ConnectorType.END;
+                break;
+            case 3:
+                this.connectorType = ConnectorType.NONE;
                 break;
         }
 
@@ -143,6 +146,8 @@ public final class ConnectorView extends View {
                 case END:
                     cacheCanvas.drawLine(halfWidth, 0, halfWidth, halfHeight, linePaint);
                     cacheCanvas.drawCircle(halfWidth, halfHeight, strokeSize / 2, linePaint);
+                    break;
+                case NONE:
                     break;
             }
             switch (iconType) {

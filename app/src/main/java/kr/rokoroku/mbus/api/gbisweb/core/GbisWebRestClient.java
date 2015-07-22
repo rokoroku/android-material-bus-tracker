@@ -397,7 +397,7 @@ public class GbisWebRestClient implements ApiWrapperInterface {
                     if (stationRoute != null) {
                         RouteType routeType = RouteType.valueOfGbis(busArrivalInfoEntity.getRouteTypeCd());
                         if (arrivalInfo.getBusArrivalItem1() != null && arrivalInfo.getBusArrivalItem1().getPlateNumber().startsWith("인천")) {
-                            //stationRoute.setProvider(Provider.INCHEON);
+                            stationRoute.setProvider(Provider.INCHEON);
                             if (routeType == RouteType.GREEN_GYEONGGI) {
                                 routeType = RouteType.GREEN_INCHEON;
                             } else if (routeType == RouteType.RED_GYEONGGI) {

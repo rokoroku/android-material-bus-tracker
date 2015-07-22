@@ -25,6 +25,7 @@ public class SplashActivity extends AppCompatActivity {
     private View mLogoLayout;
     private View mDummyView;
     private AsyncTask loadFavoriteTask;
+    private boolean isFinishing = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,16 +36,11 @@ public class SplashActivity extends AppCompatActivity {
 
         mLogoLayout = findViewById(R.id.logo_layout);
         mDummyView = findViewById(R.id.dummy_view);
-        ViewUtils.runOnUiThread(() -> RevealUtils.revealView(mDummyView, RevealUtils.Position.CENTER, 400, new SupportAnimator.SimpleAnimatorListener() {
-            @Override
-            public void onAnimationEnd() {
-                if (!isFinishing()) {
-                    startMainActivity();
-                }
-            }
-        }), 1500);
-        mLogoLayout.setOnClickListener(v -> {
-            if (!isFinishing() && loadFavoriteTask.getStatus() == AsyncTask.Status.FINISHED) {
+        ViewUtils.runOnUiThread(() -> {
+            if (!isFinishing) startMainActivity();
+        }, 1500);
+        findViewById(android.R.id.content).setOnClickListener(v -> {
+            if (!isFinishing && loadFavoriteTask.getStatus() == AsyncTask.Status.FINISHED) {
                 startMainActivity();
             }
         });
@@ -82,12 +78,20 @@ public class SplashActivity extends AppCompatActivity {
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
         ImageView logoImageView = (ImageView) findViewById(R.id.logo_image);
-        ((AnimationDrawable)logoImageView.getDrawable()).start();
+        ((AnimationDrawable) logoImageView.getDrawable()).start();
     }
 
-    public void startMainActivity() {
-        startActivity(new Intent(SplashActivity.this, MainActivity.class));
-        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
-        finish();
+    public synchronized void startMainActivity() {
+        isFinishing = true;
+        RevealUtils.revealView(mDummyView, RevealUtils.Position.CENTER, 500, new SupportAnimator.SimpleAnimatorListener() {
+            @Override
+            public void onAnimationEnd() {
+                if (!isFinishing()) {
+                    startActivity(new Intent(SplashActivity.this, MainActivity.class));
+                    overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+                    finish();
+                }
+            }
+        });
     }
 }

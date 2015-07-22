@@ -65,6 +65,8 @@ public class DatabaseFacade {
     private Map<Provider, Set<String>> hiddenStationRouteTable;
     private Set<SearchHistory> searchHistoryTable;
 
+    private Map<String, Station> temporalStationCache = new HashMap<>();
+
     private DatabaseFacade() {
         try {
             //open (or create) database
@@ -209,7 +211,7 @@ public class DatabaseFacade {
     public Station getStation(Provider provider, String stationId) {
         Map<String, Station> stationMap = stationTable.get(provider);
         if (stationMap != null) return stationMap.get(stationId);
-        else return null;
+        else return temporalStationCache.get(stationId);
     }
 
     public Station getStationWithSecondaryKey(Provider provider, String localId) {
@@ -218,6 +220,24 @@ public class DatabaseFacade {
         String stationId = secondaryMap.get(localId);
         if (stationId != null) return primaryMap.get(stationId);
         else return null;
+    }
+
+    public Station getStationFromTemporalCache(String stationId) {
+        return temporalStationCache.get(stationId);
+    }
+
+    public void putStationsToTemporalCache(Collection<Station> stations) {
+        for (Station station : stations) {
+            if(station.getId() != null) {
+                temporalStationCache.put(station.getId(), station);
+            }
+        }
+    }
+
+    public void putStationToTemporalCache(Station station) {
+        if(station.getId() != null) {
+            temporalStationCache.put(station.getId(), station);
+        }
     }
 
     public synchronized void putStationForEachProvider(Station station) {

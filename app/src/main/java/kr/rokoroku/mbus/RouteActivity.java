@@ -10,12 +10,17 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import com.afollestad.materialdialogs.MaterialDialog;
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
 import com.google.android.gms.common.ConnectionResult;
@@ -24,27 +29,30 @@ import com.h6ah4i.android.widget.advrecyclerview.animator.GeneralItemAnimator;
 import com.h6ah4i.android.widget.advrecyclerview.animator.RefactoredDefaultItemAnimator;
 import com.h6ah4i.android.widget.advrecyclerview.expandable.RecyclerViewExpandableItemManager;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import kr.rokoroku.mbus.core.DatabaseFacade;
-import kr.rokoroku.mbus.ui.adapter.RouteAdapter;
-import kr.rokoroku.mbus.data.RouteDataProvider;
 import kr.rokoroku.mbus.core.ApiFacade;
+import kr.rokoroku.mbus.core.DatabaseFacade;
 import kr.rokoroku.mbus.core.FavoriteFacade;
 import kr.rokoroku.mbus.core.LocationClient;
+import kr.rokoroku.mbus.data.RouteDataProvider;
 import kr.rokoroku.mbus.data.model.Route;
 import kr.rokoroku.mbus.data.model.RouteStation;
 import kr.rokoroku.mbus.data.model.RouteType;
 import kr.rokoroku.mbus.data.model.Station;
+import kr.rokoroku.mbus.ui.adapter.RouteAdapter;
+import kr.rokoroku.mbus.ui.widget.SplitCardView;
 import kr.rokoroku.mbus.util.GeoUtils;
 import kr.rokoroku.mbus.util.SimpleProgressCallback;
 import kr.rokoroku.mbus.util.ThemeUtils;
 import kr.rokoroku.mbus.util.TimeUtils;
 import kr.rokoroku.mbus.util.ViewUtils;
+import kr.rokoroku.widget.ConnectorView;
 
 
 public class RouteActivity extends AbstractBaseActivity
@@ -337,7 +345,26 @@ public class RouteActivity extends AbstractBaseActivity
                 startActionMode(new ActionMode.Callback() {
                     @Override
                     public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-                        mode.setTitle(R.string.hint_select_one);
+                        mode.setTitle(R.string.hint_select_favorite_link);
+
+                        // init marquee animation to toolbar title
+                        try {
+                            View modeCustomView = mode.getCustomView();
+                            Field f = modeCustomView.getClass().getDeclaredField("mTitleTextView");
+                            f.setAccessible(true);
+
+                            TextView titleTextView = null;
+                            titleTextView = (TextView) f.get(modeCustomView);
+                            titleTextView.setEllipsize(TextUtils.TruncateAt.MARQUEE);
+                            titleTextView.setFocusable(true);
+                            titleTextView.setFocusableInTouchMode(true);
+                            titleTextView.requestFocus();
+                            titleTextView.setSingleLine(true);
+                            titleTextView.setSelected(true);
+                            titleTextView.setMarqueeRepeatLimit(-1);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                         return true;
                     }
 
@@ -397,17 +424,27 @@ public class RouteActivity extends AbstractBaseActivity
                                 Collections.sort(sortedStationList, distanceComparator);
 
                                 RouteStation closestStation = null;
+                                RouteStation secondClosestStation = null;
                                 for (RouteStation routeStation : sortedStationList) {
                                     if (routeStation.getLocalId() != null) {
-                                        closestStation = routeStation;
-                                        break;
+                                        if (closestStation == null) {
+                                            closestStation = routeStation;
+                                        } else {
+                                            secondClosestStation = routeStation;
+                                            break;
+                                        }
                                     }
                                 }
 
-                                if (closestStation == null || 1000 < GeoUtils.calculateDistanceInMeter(
+                                if (closestStation == null || GeoUtils.calculateDistanceInMeter(
                                         new LatLng(location.getLatitude(), location.getLongitude()),
-                                        new LatLng(closestStation.getLatitude(), closestStation.getLongitude()))) {
+                                        new LatLng(closestStation.getLatitude(), closestStation.getLongitude())) > 3000) {
                                     Snackbar.make(mCoordinatorLayout, R.string.error_failed_to_retrieve_near_station, Snackbar.LENGTH_LONG).show();
+
+                                } else if (secondClosestStation != null && GeoUtils.calculateDistanceInMeter(
+                                        new LatLng(closestStation.getLatitude(), closestStation.getLongitude()),
+                                        new LatLng(secondClosestStation.getLatitude(), secondClosestStation.getLongitude())) < 500) {
+                                    openChooserDialog(closestStation, secondClosestStation);
 
                                 } else {
                                     redirectTo(closestStation.getLocalId());
@@ -434,6 +471,68 @@ public class RouteActivity extends AbstractBaseActivity
                         }
                     }).build();
         }
+    }
+
+    private void openChooserDialog(RouteStation station1, RouteStation station2) {
+        View chooserView = View.inflate(RouteActivity.this, R.layout.dialog_nearby_station_chooser, null);
+        Route route = mRouteDataProvider.getRoute();
+
+        SplitCardView stationView = (SplitCardView) chooserView.findViewById(R.id.station_1);
+        TextView stationTitle = (TextView) stationView.findViewById(R.id.station_title);
+        TextView stationDescription = (TextView) stationView.findViewById(R.id.station_description);
+        ConnectorView connectorView = (ConnectorView) stationView.findViewById(R.id.connector);
+
+        SplitCardView stationView2 = (SplitCardView) chooserView.findViewById(R.id.station_2);
+        TextView stationTitle2 = (TextView) stationView2.findViewById(R.id.station_title);
+        TextView stationDescription2 = (TextView) stationView2.findViewById(R.id.station_description);
+        ConnectorView connectorView2 = (ConnectorView) stationView2.findViewById(R.id.connector);
+
+        stationView.setRoundTop(true);
+        stationView.setRoundBottom(true);
+        stationView2.setRoundTop(true);
+        stationView2.setRoundBottom(true);
+
+        String destination;
+        String destination2;
+        if (station1.getSequence() < route.getTurnStationSeq()) {
+            destination = route.getTurnStationName();
+            destination2 = route.getRouteStationList().get(route.getRouteStationList().size() - 1).getName();
+        } else {
+            destination = route.getRouteStationList().get(route.getRouteStationList().size() - 1).getName();
+            destination2 = route.getTurnStationName();
+        }
+
+        int lastSeq = route.getRouteStationList().get(route.getRouteStationList().size() - 1).getSequence();
+        connectorView.setConnectorType(station1.getSequence() == 1 ? ConnectorView.ConnectorType.START
+                : station1.getSequence() == lastSeq ? ConnectorView.ConnectorType.END : ConnectorView.ConnectorType.NODE);
+        connectorView2.setConnectorType(station2.getSequence() == 1 ? ConnectorView.ConnectorType.START
+                : station2.getSequence() == lastSeq ? ConnectorView.ConnectorType.END : ConnectorView.ConnectorType.NODE);
+
+        int margin = (int) ViewUtils.dpToPixel(3f, getResources());
+        ((FrameLayout.LayoutParams) connectorView.getLayoutParams()).topMargin = margin;
+        ((FrameLayout.LayoutParams) connectorView.getLayoutParams()).bottomMargin = margin;
+        ((FrameLayout.LayoutParams) connectorView2.getLayoutParams()).topMargin = margin;
+        ((FrameLayout.LayoutParams) connectorView2.getLayoutParams()).bottomMargin = margin;
+
+        stationTitle.setText(station1.getName());
+        stationTitle2.setText(station2.getName());
+        stationDescription.setText(getString(R.string.hint_route_heading_to, destination));
+        stationDescription2.setText(getString(R.string.hint_route_heading_to, destination2));
+
+        MaterialDialog materialDialog = new MaterialDialog.Builder(RouteActivity.this)
+                .title(R.string.hint_choose_nearby_station)
+                .customView(chooserView, false)
+                .cancelable(true)
+                .show();
+
+        stationView.setOnClickListener(v -> {
+            materialDialog.dismiss();
+            redirectTo(station1.getLocalId());
+        });
+        stationView2.setOnClickListener(v -> {
+            materialDialog.dismiss();
+            redirectTo(station2.getLocalId());
+        });
     }
 
     @Override

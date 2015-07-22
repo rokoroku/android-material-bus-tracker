@@ -27,8 +27,8 @@ android {
         applicationId "kr.rokoroku.mbus"
         minSdkVersion 14
         targetSdkVersion 22
-        versionCode 5
-        versionName "0.51"
+        versionCode 6
+        versionName "0.6"
     }
     buildTypes {
         release {

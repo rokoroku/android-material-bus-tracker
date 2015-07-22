@@ -8,10 +8,13 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.github.clans.fab.FloatingActionButton;
@@ -19,6 +22,7 @@ import com.github.clans.fab.FloatingActionMenu;
 import com.h6ah4i.android.widget.advrecyclerview.animator.RefactoredDefaultItemAnimator;
 import com.h6ah4i.android.widget.advrecyclerview.expandable.RecyclerViewExpandableItemManager;
 
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -352,7 +356,25 @@ public class StationActivity extends AbstractBaseActivity
                 startActionMode(new ActionMode.Callback() {
                     @Override
                     public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-                        mode.setTitle(R.string.hint_select_one);
+                        mode.setTitle(R.string.hint_select_favorite_link);
+                        // init marquee animation to toolbar title
+                        try {
+                            View modeCustomView = mode.getCustomView();
+                            Field f = modeCustomView.getClass().getDeclaredField("mTitleTextView");
+                            f.setAccessible(true);
+
+                            TextView titleTextView = null;
+                            titleTextView = (TextView) f.get(modeCustomView);
+                            titleTextView.setEllipsize(TextUtils.TruncateAt.MARQUEE);
+                            titleTextView.setFocusable(true);
+                            titleTextView.setFocusableInTouchMode(true);
+                            titleTextView.requestFocus();
+                            titleTextView.setSingleLine(true);
+                            titleTextView.setSelected(true);
+                            titleTextView.setMarqueeRepeatLimit(-1);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                         return true;
                     }
 

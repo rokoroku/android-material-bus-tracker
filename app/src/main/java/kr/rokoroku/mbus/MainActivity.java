@@ -19,7 +19,6 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.util.TypedValue;
-import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -96,6 +95,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
     private SearchAdapter mSearchAdapter;
     private SearchDataProvider mSearchDataProvider;
     private String previousSearchQuery;
+    private boolean wasLocationEnbaled = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -148,7 +148,40 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
     @Override
     protected void onResume() {
         super.onResume();
-        mLocationButton.setEnabled(LocationClient.isLocationEnabled(this));
+        boolean locationEnabled = LocationClient.isLocationEnabled(this);
+        mLocationButton.setEnabled(locationEnabled);
+
+        if (wasLocationEnbaled != locationEnabled) {
+            wasLocationEnbaled = locationEnabled;
+            enableSearchBoxLocationButton(locationEnabled);
+        }
+    }
+
+    private void enableSearchBoxLocationButton(boolean locationEnabled) {
+
+        if (locationEnabled) {
+            Drawable locationDrawable = ContextCompat.getDrawable(this, R.drawable.ic_my_location_black_24dp);
+            ViewUtils.setTint(locationDrawable, ThemeUtils.getResourceColor(this, R.color.md_grey_600));
+            mSearchBox.setSideButtonDrawable(locationDrawable);
+            mSearchBox.setSideButtonOnClickListener(v -> {
+                if (mMapFragment != null) {
+                    if (mMapFrame.getVisibility() != View.VISIBLE) {
+                        mMapFragment.clearExtras();
+
+                    } else {
+                        mLocationButton.setIndeterminate(true);
+                        mLocationButton.setDrawableTint(ThemeUtils.getThemeColor(MainActivity.this, R.attr.colorAccent));
+                        mMapFragment.updateLocation(true);
+                    }
+                }
+                showMap();
+                mSearchBox.setSideButtonOnClickListener(null);
+                mSearchBox.setSideButtonDrawable(null);
+            });
+        } else {
+            mSearchBox.setSideButtonOnClickListener(null);
+            mSearchBox.setSideButtonDrawable(null);
+        }
     }
 
     private void initSearchBox() {
@@ -177,7 +210,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
 
         mAddNewFavoriteButton.setOnClickListener(v -> {
             showSearch(true);
-            if(!mSearchBox.isSearchOpen()) {
+            if (!mSearchBox.isSearchOpen()) {
                 mSearchBox.toggleSearch();
             }
         });
@@ -496,12 +529,6 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
         if (mSearchBox != null) {
             ArrayList<SearchResult> searchResults = new ArrayList<>();
 
-            // add nearby search hint to searchResults
-            if (LocationClient.isLocationEnabled(this)) {
-                Drawable locationDrawable = ContextCompat.getDrawable(this, R.drawable.ic_my_location_black_24dp);
-                searchResults.add(new SearchResult(getString(R.string.hint_search_by_location), locationDrawable));
-            }
-
             // add historic items to searchResults
             List<SearchHistory> searchHistoryTable = new ArrayList<>(DatabaseFacade.getInstance().getSearchHistoryTable());
             Collections.sort(searchHistoryTable);
@@ -569,6 +596,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
             if (TextUtils.isEmpty(previousSearchQuery)) previousSearchQuery = null;
             mSearchBox.setLogoText(getString(R.string.hint_nearby_location));
             mLocationButton.show(true);
+            enableSearchBoxLocationButton(false);
         }
         showToolbarLayer();
     }
@@ -580,6 +608,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
             }
             mSearchBox.setLogoText(previousSearchQuery != null ? previousSearchQuery : getString(R.string.hint_search));
             RevealUtils.unrevealView(mMapFrame, RevealUtils.Position.CENTER, 600, null);
+            enableSearchBoxLocationButton(LocationClient.isLocationEnabled(this));
         }
     }
 
@@ -677,7 +706,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
 
                 @Override
                 public void onLocationUpdate(Location location) {
-                    mLocationButton.postDelayed(() -> {
+                    ViewUtils.runOnUiThread(() -> {
                         mLocationButton.setClickable(true);
                         mLocationButton.setDrawableTint(Color.BLACK);
                         mLocationButton.setIndeterminate(false);

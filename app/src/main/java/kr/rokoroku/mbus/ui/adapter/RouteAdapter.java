@@ -616,11 +616,11 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
 
             if (arrivalInfo != null) {
                 mStationId = arrivalInfo.getStationId();
-                if(arrivalInfo.isDriveEnd()) {
+                if(arrivalInfo.getBusArrivalItem1() == null && arrivalInfo.isDriveEnd()) {
                     mBusOperationEndLayout.setVisibility(View.VISIBLE);
-                    mBusArrivalLayout.setVisibility(View.GONE);
+                    mBusArrivalLayout.setVisibility(View.INVISIBLE);
                 } else {
-                    mBusOperationEndLayout.setVisibility(View.GONE);
+                    mBusOperationEndLayout.setVisibility(View.INVISIBLE);
                     mBusArrivalLayout.setVisibility(View.VISIBLE);
                     mBusArrivalItem1.setItem(arrivalInfo.getBusArrivalItem1());
                     mBusArrivalItem2.setItem(arrivalInfo.getBusArrivalItem2());
@@ -711,7 +711,8 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
                 initTimer();
             }
 
-            mItemView.post(() -> {
+            ViewUtils.runOnUiThread(() -> {
+                Context context = mItemView.getContext();
                 if (mItem != null) {
                     long timeDiff = mItem.getPredictTime().getTime() - System.currentTimeMillis();
                     if (timeDiff >= 0) {
@@ -724,7 +725,7 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
                         }
 
                         if (mItem.getBehind() > 0) {
-                            String remainString = mItem.getBehind() + " 정류장 전";
+                            String remainString = context.getString(R.string.bus_arrival_behind_stations, mItem.getBehind());
                             mRemainStation.setText(remainString);
                         } else {
                             mRemainStation.setText("");
@@ -742,8 +743,8 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
                         if (mBusDescription != null) {
                             if (mItem.getRemainSeat() >= 0) {
                                 String remainSeatString;
-                                if (mItem.getRemainSeat() == 0) remainSeatString = "빈 자리 없음";
-                                else remainSeatString = "남은 좌석 : " + mItem.getRemainSeat();
+                                if (mItem.getRemainSeat() == 0) remainSeatString = context.getString(R.string.bus_arrival_no_remain_seat);
+                                else remainSeatString = context.getString(R.string.bus_arrival_remain_seat, mItem.getRemainSeat());
                                 mBusDescription.setVisibility(View.VISIBLE);
                                 mBusDescription.setText(remainSeatString);
                             } else {
@@ -760,7 +761,7 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
                         }
 
                     } else {
-                        String passString = "버스가 도착했거나 지나갔습니다.";
+                        String passString = context.getString(R.string.bus_arrival_passed);
                         mRemainTime.setVisibility(View.GONE);
                         mRemainStation.setText(passString);
                         if (mBusIcon != null) mBusIcon.setVisibility(View.GONE);

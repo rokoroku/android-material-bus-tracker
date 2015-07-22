@@ -176,13 +176,13 @@ public class Station implements Parcelable, Serializable {
     }
 
     /**
-     * Important! this contructor doesn't contain stationId.
+     * Important! this constructor doesn't contain stationId.
      * Rather, it uses localId as stationId.
      *
      * @param resultEntity result entity from SeoulWebRestClient
      */
     public Station(StationByPositionResult.ResultEntity resultEntity) {
-        this.id = resultEntity.arsId;
+        this.id = "ars" + resultEntity.arsId;
         this.name = resultEntity.stationName;
         this.setLocalId(resultEntity.arsId);
         this.latitude = resultEntity.gpsY;

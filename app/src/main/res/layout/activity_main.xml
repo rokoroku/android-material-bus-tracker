@@ -55,7 +55,7 @@
                 android:id="@+id/fab_new_group"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:src="@drawable/ic_favorite_add_black_24dp"
+                android:src="@drawable/ic_folder_plus_black_24dp"
                 app:fab_colorNormal="?attr/colorButtonNormal"
                 app:fab_colorPressed="?attr/colorButtonNormal"
                 app:fab_label="@string/action_new_favorite_group"

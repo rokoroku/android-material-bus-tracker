@@ -1,10 +1,15 @@
 <resources>
-    <string name="app_name">머티리얼 버스 (베타)</string>
+    <string name="app_name">버스랑 정류장 (베타)</string>
 
     <string name="bus_operation_duration">운행시간</string>
     <string name="bus_allocation_interval">배차간격</string>
     <string name="bus_operating_company">본사</string>
     <string name="bus_garage">차고지</string>
+    <string name="bus_arrival_behind_stations">%1$d 정류장 전</string>
+    <string name="bus_arrival_remain_seat">남은 좌석 : %1$d</string>
+    <string name="bus_arrival_no_remain_seat">빈 자리 없음</string>
+    <string name="bus_arrival_passed">버스가 도착했거나 지나갔습니다.</string>
+    <string name="bus_arrival_operation_end">운행 종료</string>
 
     <string name="weekday">주중</string>
     <string name="weekend">주말</string>
@@ -31,6 +36,7 @@
     <string name="action_undo">실행 취소</string>
     <string name="action_show_on_map">지도에서 보기</string>
     <string name="action_add_to_favorite">즐겨찾기에 추가</string>
+    <string name="action_add_to_favorite_with_link">바로가기를 연결하여 즐겨찾기에 추가</string>
     <string name="action_new_favorite_group">새 그룹</string>
     <string name="action_new_favorite_entry">새 즐겨찾기</string>
     <string name="action_rename_favorite_group">그룹 이름 변경</string>
@@ -41,7 +47,7 @@
     <string name="hint_search_by_location">주변 정류장 검색</string>
     <string name="hint_nearby_location">주변 정류장</string>
     <string name="hint_route_heading_to">%1$s 방면</string>
-    <string name="hint_select_one">하나 골라요.</string>
+    <string name="hint_select_favorite_link">등록할 지점을 선택하세요.</string>
     <string name="hint_input_group_name">그룹 이름을 입력하세요.</string>
     <string name="hint_powered_by">Powered by %1$s</string>
     <string name="hint_information_unavailable">정보 없음</string>
@@ -53,13 +59,13 @@
 
     <string name="error_with_reason">오류가 발생했습니다. (%1$s)</string>
     <string name="error_search_keyword_too_short">2글자 이상 입력하세요.</string>
-    <string name="error_failed_to_retrieve_near_station">근처의 정류장을 찾을 수 없습니다. (1km 내외)</string>
+    <string name="error_failed_to_retrieve_near_station">근처의 정류장을 찾을 수 없습니다. (3km 내외)</string>
     <string name="error_failed_to_retrieve_map_line">노선 정보를 가져오는데 실패하였습니다.</string>
 
     <string name="placeholder_search_start">검색할 키워드를 입력하세요.\n(노선, 정류장 이름 혹은 ID로 검색할 수 있어요.)</string>
     <string name="placeholder_search_empty">검색 결과가 없어요!\n다른 검색어를 입력해보시겠어요?</string>
     <string name="placeholder_favorite_empty">즐겨찾기가 비어있어요.\n아래 버튼을 눌러 새 즐겨찾기를 추가 해 보세요.</string>
     <string name="alert_favorite_group_added">그룹이 생성되었습니다.</string>
-    <string name="bus_arrival_operation_end">운행 종료</string>
+    <string name="hint_choose_nearby_station">가까운 정류장을 선택하세요.</string>
 
 </resources>

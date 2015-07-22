@@ -45,17 +45,17 @@
                 android:src="@drawable/ic_label_outline_black_24dp"
                 app:fab_colorNormal="?attr/colorButtonNormal"
                 app:fab_colorPressed="?attr/colorButtonNormal"
-                app:fab_label="즐겨찾기에 추가"
+                app:fab_label="@string/action_add_to_favorite"
                 app:fab_size="mini" />
 
             <com.github.clans.fab.FloatingActionButton
                 android:id="@+id/fab_bookmark_selection"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:src="@drawable/ic_label_black_24dp"
+                android:src="@drawable/ic_link_grey_600_24dp"
                 app:fab_colorNormal="?attr/colorButtonNormal"
                 app:fab_colorPressed="?attr/colorButtonNormal"
-                app:fab_label="선택한 위치로 즐겨찾기에 추가"
+                app:fab_label="@string/action_add_to_favorite_with_link"
                 app:fab_size="mini" />
 
         </com.github.clans.fab.FloatingActionMenu>

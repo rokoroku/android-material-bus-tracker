@@ -335,7 +335,7 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
                 mRouteType.setTextColor(color);
 
                 Provider provider = stationRoute.getProvider();
-                if (mDataProvider.hasLinkedStation() && !Provider.SEOUL.equals(provider)) {
+                if (!mDataProvider.getProvider().equals(provider)) {
                     if (RouteType.checkIncheonRoute(type)) {
                         mRouteType.setText(Provider.INCHEON.getCityName(context));
                     } else {
@@ -354,15 +354,15 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
 
             ArrivalInfo arrivalInfo = stationRoute.getArrivalInfo();
             if (arrivalInfo != null) {
-                if(arrivalInfo.isDriveEnd()) {
-                    mBusArrivalItemViewHolder.setItem(null);
+                if (arrivalInfo.getBusArrivalItem1() == null && arrivalInfo.isDriveEnd()) {
+                    mBusArrivalItemViewHolder.setItem(arrivalInfo, null);
                     mBusArrivalItemViewHolder.mRemainStation.setVisibility(View.VISIBLE);
                     mBusArrivalItemViewHolder.mRemainStation.setText(R.string.bus_arrival_operation_end);
                 } else {
-                    mBusArrivalItemViewHolder.setItem(arrivalInfo.getBusArrivalItem1());
+                    mBusArrivalItemViewHolder.setItem(arrivalInfo, arrivalInfo.getBusArrivalItem1());
                 }
             } else {
-                mBusArrivalItemViewHolder.setItem(null);
+                mBusArrivalItemViewHolder.setItem(arrivalInfo, null);
             }
         }
 
@@ -545,15 +545,15 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
             mItem = arrivalInfo;
             if (arrivalInfo != null) {
                 mRouteId = arrivalInfo.getRouteId();
-                if (arrivalInfo.isDriveEnd()) {
+                if (arrivalInfo.getBusArrivalItem1() == null && arrivalInfo.isDriveEnd()) {
                     mBusArrivalLayout.setVisibility(View.INVISIBLE);
                     mBusOperationEndLayout.setVisibility(View.VISIBLE);
                 } else {
                     mBusArrivalLayout.setVisibility(View.VISIBLE);
-                    mBusOperationEndLayout.setVisibility(View.GONE);
+                    mBusOperationEndLayout.setVisibility(View.INVISIBLE);
 
-                    mBusArrivalItem1.setItem(arrivalInfo.getBusArrivalItem1());
-                    mBusArrivalItem2.setItem(arrivalInfo.getBusArrivalItem2());
+                    mBusArrivalItem1.setItem(arrivalInfo, arrivalInfo.getBusArrivalItem1());
+                    mBusArrivalItem2.setItem(arrivalInfo, arrivalInfo.getBusArrivalItem2());
                     if (mTimer == null) {
                         mTimer = new Timer(true);
                         mTimer.scheduleAtFixedRate(new TimerTask() {
@@ -574,8 +574,8 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
                 mBusArrivalLayout.setVisibility(View.VISIBLE);
                 mBusOperationEndLayout.setVisibility(View.GONE);
 
-                mBusArrivalItem1.setItem(null);
-                mBusArrivalItem2.setItem(null);
+                mBusArrivalItem1.setItem(arrivalInfo, null);
+                mBusArrivalItem2.setItem(arrivalInfo, null);
                 FavoriteFacade.Color cardColor = FavoriteFacade.Color.WHITE;
                 if (mRouteId != null) {
                     cardColor = FavoriteFacade.getInstance().getFavoriteRouteColor(
@@ -600,6 +600,7 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
         public TextView mBusDescription;
         public TextView mRemainTime;
         public TextView mRemainStation;
+        private ArrivalInfo mArrivalInfo;
         private ArrivalInfo.BusArrivalItem mItem;
 
         public BusArrivalItemViewHolder(View v) {
@@ -614,7 +615,8 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
             mArrivalViewReferenceSet.add(new WeakReference<>(this));
         }
 
-        public void setItem(ArrivalInfo.BusArrivalItem arrivalItem) {
+        public void setItem(ArrivalInfo arrivalInfo, ArrivalInfo.BusArrivalItem arrivalItem) {
+            mArrivalInfo = arrivalInfo;
             mItem = arrivalItem;
             if (mItem != null) {
                 if (mBusIcon != null) {
@@ -649,7 +651,8 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
                 initTimer();
             }
 
-            mItemView.post(() -> {
+            ViewUtils.runOnUiThread(() -> {
+                Context context = mItemView.getContext();
                 if (mItem != null) {
                     long timeDiff = mItem.getPredictTime().getTime() - System.currentTimeMillis();
                     if (timeDiff >= 0) {
@@ -662,7 +665,7 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
                         }
 
                         if (mItem.getBehind() > 0) {
-                            String remainString = mItem.getBehind() + " 정류장 전";
+                            String remainString = context.getString(R.string.bus_arrival_behind_stations, mItem.getBehind());
                             mRemainStation.setText(remainString);
                         } else {
                             mRemainStation.setText("");
@@ -680,8 +683,8 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
                         if (mBusDescription != null) {
                             if (mItem.getRemainSeat() >= 0) {
                                 String remainSeatString;
-                                if (mItem.getRemainSeat() == 0) remainSeatString = "빈 자리 없음";
-                                else remainSeatString = "남은 좌석 : " + mItem.getRemainSeat();
+                                if (mItem.getRemainSeat() == 0) remainSeatString = context.getString(R.string.bus_arrival_no_remain_seat);
+                                else remainSeatString = context.getString(R.string.bus_arrival_remain_seat, mItem.getRemainSeat());
                                 mBusDescription.setVisibility(View.VISIBLE);
                                 mBusDescription.setText(remainSeatString);
                             } else {
@@ -697,8 +700,8 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
                             mRemainTime.setTextColor(Color.BLACK);
                         }
 
-                    } else {
-                        String passString = "버스가 도착했거나 지나갔습니다.";
+                    } else if (!mArrivalInfo.isDriveEnd()) {
+                        String passString = context.getString(R.string.bus_arrival_passed);
                         mRemainTime.setVisibility(View.GONE);
                         mRemainStation.setText(passString);
                         if (mBusIcon != null) mBusIcon.setVisibility(View.GONE);
@@ -706,7 +709,7 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
                         if (mBusDescription != null) mBusDescription.setText("");
                     }
                 } else {
-                    setItem(null);
+                    setItem(mArrivalInfo, null);
                 }
             });
         }

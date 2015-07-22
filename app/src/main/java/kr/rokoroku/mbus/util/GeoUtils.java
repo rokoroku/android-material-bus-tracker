@@ -8,7 +8,7 @@ import com.google.android.gms.maps.model.LatLngBounds;
  */
 public class GeoUtils {
 
-    public final static double AVERAGE_RADIUS_OF_EARTH = 6371;
+    public final static double AVERAGE_RADIUS_OF_EARTH = 6371000;
 
     public static Double[] inverseMercator(Double x, Double y) {
         Double lon = (x / 20037508.34) * 180;
@@ -80,8 +80,7 @@ public class GeoUtils {
                 * Math.sin(lngDistance / 2) * Math.sin(lngDistance / 2);
 
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-        return (int) (Math.round(AVERAGE_RADIUS_OF_EARTH * c * 1000));
+        return (int) (AVERAGE_RADIUS_OF_EARTH * c);
     }
 
 

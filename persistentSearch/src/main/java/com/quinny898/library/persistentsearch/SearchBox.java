@@ -66,8 +66,8 @@ public class SearchBox extends RelativeLayout {
     private ArrayList<SearchResult> searchables;
     private boolean searchOpen;
     private boolean animate;
-    private boolean isMic;
-    private ImageView mic;
+    private boolean isSideButtonEnable;
+    private ImageView sideButton;
     private ImageView drawerLogo;
     private SearchListener listener;
     private MenuListener menuListener;
@@ -84,7 +84,8 @@ public class SearchBox extends RelativeLayout {
     private Activity mContainerActivity;
     private Fragment mContainerFragment;
     private android.support.v4.app.Fragment mContainerSupportFragment;
-
+    private Drawable sideButtonDrawable;
+    private OnClickListener mSideButtonOnClickListener;
 
     /**
      * Create a new searchbox
@@ -116,14 +117,14 @@ public class SearchBox extends RelativeLayout {
         super(context, attrs, defStyle);
         inflate(context, R.layout.searchbox, this);
         this.searchOpen = false;
-        this.isMic = true;
+        this.isSideButtonEnable = true;
         this.materialMenu = (MaterialMenuView) findViewById(R.id.material_menu_button);
         this.logo = (TextView) findViewById(R.id.logo);
         this.search = (EditText) findViewById(R.id.search);
         this.results = (ListView) findViewById(R.id.results);
         this.context = context;
         this.pb = (ProgressBar) findViewById(R.id.pb);
-        this.mic = (ImageView) findViewById(R.id.mic);
+        this.sideButton = (ImageView) findViewById(R.id.mic);
         this.drawerLogo = (ImageView) findViewById(R.id.drawer_logo);
         materialMenu.setOnClickListener(new OnClickListener() {
 
@@ -184,14 +185,22 @@ public class SearchBox extends RelativeLayout {
         });
         logoText = "Search";
 
-        micStateChanged();
-        mic.setOnClickListener(new OnClickListener() {
+        sideButtonStateChanged();
+        sideButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (voiceRecognitionListener != null) {
                     voiceRecognitionListener.onClick();
+                } else if (!isSideButtonEnable) {
+                    setSearchString("", true);
+                } else if (mSideButtonOnClickListener != null) {
+                    mSideButtonOnClickListener.onClick(v);
+                    if(isSearchOpen()) {
+                        closeSearch();
+                        searchOpen = false;
+                    }
                 } else {
-                    micClick();
+                    startVoiceRecognition();
                 }
             }
         });
@@ -359,7 +368,7 @@ public class SearchBox extends RelativeLayout {
      */
     public void enableVoiceRecognition(Activity context) {
         mContainerActivity = context;
-        micStateChanged();
+        sideButtonStateChanged();
     }
 
     /**
@@ -369,7 +378,7 @@ public class SearchBox extends RelativeLayout {
      */
     public void enableVoiceRecognition(Fragment context) {
         mContainerFragment = context;
-        micStateChanged();
+        sideButtonStateChanged();
     }
 
     /**
@@ -379,20 +388,34 @@ public class SearchBox extends RelativeLayout {
      */
     public void enableVoiceRecognition(android.support.v4.app.Fragment context) {
         mContainerSupportFragment = context;
-        micStateChanged();
+        sideButtonStateChanged();
     }
 
     private boolean isMicEnabled() {
         return isVoiceRecognitionIntentSupported && (mContainerActivity != null || mContainerSupportFragment != null || mContainerFragment != null);
     }
 
-    private void micStateChanged() {
-        mic.setVisibility((!isMic || isMicEnabled()) ? VISIBLE : INVISIBLE);
+    private void sideButtonStateChanged() {
+        sideButton.setVisibility((!isSideButtonEnable || isMicEnabled()) ? VISIBLE : INVISIBLE);
     }
 
-    private void micStateChanged(boolean isMic) {
-        this.isMic = isMic;
-        micStateChanged();
+    private void sideButtonStateChanged(boolean enable) {
+        this.isSideButtonEnable = enable;
+        sideButtonStateChanged();
+    }
+
+
+    public void setSideButtonOnClickListener(OnClickListener onClickListener) {
+        this.mSideButtonOnClickListener = onClickListener;
+    }
+
+    public void setSideButtonDrawable(Drawable sideButtonDrawable) {
+        if(this.sideButtonDrawable != sideButtonDrawable) {
+            this.sideButtonDrawable = sideButtonDrawable;
+            Drawable drawable = sideButtonDrawable != null ? sideButtonDrawable :
+                    context.getResources().getDrawable(R.drawable.ic_action_mic);
+            sideButton.setImageDrawable(drawable);
+        }
     }
 
     /**
@@ -400,27 +423,14 @@ public class SearchBox extends RelativeLayout {
      *
      * @param show Whether to show
      */
-
     public void showLoading(boolean show) {
         if (show) {
             pb.setVisibility(View.VISIBLE);
-            mic.setVisibility(View.INVISIBLE);
+            sideButton.setVisibility(View.INVISIBLE);
         } else {
             pb.setVisibility(View.INVISIBLE);
-            mic.setVisibility(View.VISIBLE);
+            sideButton.setVisibility(View.VISIBLE);
         }
-    }
-
-    /**
-     * Mandatory method for the onClick event
-     */
-    public void micClick() {
-        if (!isMic) {
-            setSearchString("", true);
-        } else {
-            startVoiceRecognition();
-        }
-
     }
 
     /**
@@ -715,6 +725,7 @@ public class SearchBox extends RelativeLayout {
         toggleSearch();
     }
 
+
     private void openSearch(Boolean openKeyboard) {
         if (morphAnimationEnabled) {
             this.materialMenu.animateState(IconState.ARROW);
@@ -731,14 +742,15 @@ public class SearchBox extends RelativeLayout {
             @Override
             public void afterTextChanged(Editable s) {
                 if (s.length() > 0) {
-                    micStateChanged(false);
-                    mic.setImageDrawable(context.getResources().getDrawable(
+                    sideButtonStateChanged(false);
+                    sideButton.setImageDrawable(context.getResources().getDrawable(
                             R.drawable.ic_clear));
                     updateResults();
                 } else {
-                    micStateChanged(true);
-                    mic.setImageDrawable(context.getResources().getDrawable(
-                            R.drawable.ic_action_mic));
+                    sideButtonStateChanged(true);
+                    Drawable drawable = sideButtonDrawable != null ? sideButtonDrawable :
+                            context.getResources().getDrawable(R.drawable.ic_action_mic);
+                    sideButton.setImageDrawable(drawable);
                     if (initialResults != null) {
                         setInitialResults();
                     } else {
@@ -781,8 +793,8 @@ public class SearchBox extends RelativeLayout {
         if (listener != null)
             listener.onSearchOpened();
         if (getSearchText().length() > 0) {
-            micStateChanged(false);
-            mic.setImageDrawable(context.getResources().getDrawable(
+            sideButtonStateChanged(false);
+            sideButton.setImageDrawable(context.getResources().getDrawable(
                     R.drawable.ic_clear));
         }
         if (openKeyboard) {
@@ -820,9 +832,10 @@ public class SearchBox extends RelativeLayout {
         this.results.setVisibility(View.GONE);
         if (listener != null)
             listener.onSearchClosed();
-        micStateChanged(true);
-        mic.setImageDrawable(context.getResources().getDrawable(
-                R.drawable.ic_action_mic));
+        sideButtonStateChanged(true);
+        Drawable drawable = sideButtonDrawable != null ? sideButtonDrawable :
+                context.getResources().getDrawable(R.drawable.ic_action_mic);
+        sideButton.setImageDrawable(drawable);
         InputMethodManager inputMethodManager = (InputMethodManager) context
                 .getSystemService(Context.INPUT_METHOD_SERVICE);
         inputMethodManager.hideSoftInputFromWindow(getApplicationWindowToken(),

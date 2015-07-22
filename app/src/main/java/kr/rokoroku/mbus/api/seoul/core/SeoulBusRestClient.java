@@ -32,6 +32,7 @@ import kr.rokoroku.mbus.data.model.Station;
 import kr.rokoroku.mbus.data.model.StationRoute;
 import kr.rokoroku.mbus.util.ProgressCallback;
 import kr.rokoroku.mbus.util.SimpleProgressCallback;
+import retrofit.Callback;
 import retrofit.RestAdapter;
 import retrofit.RetrofitError;
 import retrofit.client.Client;
@@ -75,9 +76,9 @@ public class SeoulBusRestClient implements ApiWrapperInterface {
     }
 
     public SeoulWebRestClient getWebClient() {
-        if(webClient == null) {
+        if (webClient == null) {
             webClient = ApiFacade.getInstance().getSeoulWebRestClient();
-            if(webClient == null) {
+            if (webClient == null) {
                 webClient = new SeoulWebRestClient(client);
             }
         }
@@ -197,7 +198,7 @@ public class SeoulBusRestClient implements ApiWrapperInterface {
             @Override
             public void onFailure(Throwable t) {
                 Route route = DatabaseFacade.getInstance().getRoute(getProvider(), routeId);
-                if(route != null && shouldUseWebInterface(route.getType())) {
+                if (route != null && shouldUseWebInterface(route.getType())) {
                     callback.onFailure(t);
 
                 } else {
@@ -257,7 +258,7 @@ public class SeoulBusRestClient implements ApiWrapperInterface {
     @Override
     public void getRouteRealtimeInfo(String routeId, Callback<List<BusLocation>> callback) {
         Route route = DatabaseFacade.getInstance().getRoute(getProvider(), routeId);
-        if(route != null && shouldUseWebInterface(route.getType())) {
+        if (route != null && shouldUseWebInterface(route.getType())) {
             getWebClient().getRouteRealtimeInfo(routeId, callback);
         } else {
             getAdapter().getRouteBusPositionList(routeId, new retrofit.Callback<SeoulBusLocationList>() {
@@ -296,9 +297,16 @@ public class SeoulBusRestClient implements ApiWrapperInterface {
     @Override
     public void getStationBaseInfo(String stationId, Callback<Station> callback) {
         Station station = DatabaseFacade.getInstance().getStation(provider, stationId);
-        if (station != null && station.getLocalId() != null && !station.isLocalRouteInfoAvailable()) {
-            final String arsId = station.getLocalId();
-            getWebClient().getStationBaseInfo(arsId, new Callback<Station>() {
+        if (stationId.startsWith("ars") || (station != null && station.getLocalId() != null && !station.isLocalRouteInfoAvailable())) {
+            String localId;
+            if(stationId.startsWith("ars")) {
+                localId = stationId.substring(3);
+            } else {
+                localId = station.getLocalId();
+            }
+
+            final String arsId = localId;
+            final Callback<Station> stationCallback = new Callback<Station>() {
                 @Override
                 public void onSuccess(Station result) {
                     callback.onSuccess(result);
@@ -385,7 +393,8 @@ public class SeoulBusRestClient implements ApiWrapperInterface {
                         }
                     });
                 }
-            });
+            };
+            getWebClient().getStationBaseInfo(arsId, stationCallback);
 
         } else if (station != null) {
             // non-stop station (arsId == null)
