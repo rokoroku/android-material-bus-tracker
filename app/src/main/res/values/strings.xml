@@ -37,18 +37,18 @@
     <string name="action_show_on_map">지도에서 보기</string>
     <string name="action_add_to_favorite">즐겨찾기에 추가</string>
     <string name="action_add_to_favorite_with_link">바로가기를 연결하여 즐겨찾기에 추가</string>
-    <string name="action_new_favorite_group">새 그룹</string>
+    <string name="action_new_favorite_group">새 폴더</string>
     <string name="action_new_favorite_entry">새 즐겨찾기</string>
-    <string name="action_rename_favorite_group">그룹 이름 변경</string>
+    <string name="action_rename_favorite_group">폴더 이름 변경</string>
     <string name="action_remove_from_favorite">즐겨찾기에서 제거</string>
 
-    <string name="favorite_default_group">기본 그룹</string>
+    <string name="favorite_default_group">기본 폴더</string>
     <string name="hint_search">노선, 정류장 이름 또는 ID</string>
     <string name="hint_search_by_location">주변 정류장 검색</string>
     <string name="hint_nearby_location">주변 정류장</string>
     <string name="hint_route_heading_to">%1$s 방면</string>
     <string name="hint_select_favorite_link">등록할 지점을 선택하세요.</string>
-    <string name="hint_input_group_name">그룹 이름을 입력하세요.</string>
+    <string name="hint_input_group_name">폴더 이름을 입력하세요.</string>
     <string name="hint_powered_by">Powered by %1$s</string>
     <string name="hint_information_unavailable">정보 없음</string>
 

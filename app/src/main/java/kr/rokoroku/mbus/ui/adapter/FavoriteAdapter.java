@@ -627,7 +627,7 @@ public class FavoriteAdapter
                 int color = Color.BLACK;
 
                 if (station == null) return;
-                mItemTitle.setText(station.getName());
+                String stationName = station.getName();
                 mItemTitle.setTextColor(color);
                 mItemTitle.setTypeface(Typeface.DEFAULT);
                 mItemTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
@@ -640,8 +640,11 @@ public class FavoriteAdapter
 
                 StationRoute stationRoute = item.getExtraData(StationRoute.class);
                 if (stationRoute == null) {
+                    mItemTitle.setText(stationName);
                     mLinkItemLayout.setVisibility(View.GONE);
                 } else {
+                    String[] split = stationName.split("\\.");
+                    mItemTitle.setText(split.length >= 2 ? split[0] + "." + split[1] : stationName);
                     mLinkItemLayout.setVisibility(View.VISIBLE);
                     mLinkItemViewHolder.setItem(station, stationRoute);
                 }

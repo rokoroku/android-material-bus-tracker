@@ -24,6 +24,13 @@ public class ArrivalInfo implements Parcelable {
     private BusArrivalItem busArrivalItem2;
     private long timestamp;
 
+    public ArrivalInfo(String routeId, String stationId) {
+        this.routeId = routeId;
+        this.stationId = stationId;
+        this.isDriveEnd = false;
+        this.timestamp = System.currentTimeMillis();
+    }
+
     /**
      * Constructor for Gbis Model
      *

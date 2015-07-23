@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">ShowcaseView</string>
+    <string name="showcase_button">HIDE</string>
+    <string name="showcase_description">Showcase Description</string>
+</resources>

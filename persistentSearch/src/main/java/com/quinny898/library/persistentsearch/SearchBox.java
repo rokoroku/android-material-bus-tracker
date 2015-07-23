@@ -78,6 +78,7 @@ public class SearchBox extends RelativeLayout {
     private ArrayList<SearchResult> initialResults;
     private boolean searchWithoutSuggestions = true;
     private boolean morphAnimationEnabled = false;
+    private boolean isUserrSideButtonEnabled = false;
 
     private boolean isVoiceRecognitionIntentSupported;
     private VoiceRecognitionListener voiceRecognitionListener;
@@ -195,7 +196,7 @@ public class SearchBox extends RelativeLayout {
                     setSearchString("", true);
                 } else if (mSideButtonOnClickListener != null) {
                     mSideButtonOnClickListener.onClick(v);
-                    if(isSearchOpen()) {
+                    if (isSearchOpen()) {
                         closeSearch();
                         searchOpen = false;
                     }
@@ -404,18 +405,21 @@ public class SearchBox extends RelativeLayout {
         sideButtonStateChanged();
     }
 
+    public void setUserSideButtonFunctionEnabled(boolean enable) {
+        this.isUserrSideButtonEnabled = enable;
+    }
 
     public void setSideButtonOnClickListener(OnClickListener onClickListener) {
         this.mSideButtonOnClickListener = onClickListener;
     }
 
     public void setSideButtonDrawable(Drawable sideButtonDrawable) {
-        if(this.sideButtonDrawable != sideButtonDrawable) {
+        if (this.sideButtonDrawable != sideButtonDrawable) {
             this.sideButtonDrawable = sideButtonDrawable;
-            Drawable drawable = sideButtonDrawable != null ? sideButtonDrawable :
-                    context.getResources().getDrawable(R.drawable.ic_action_mic);
-            sideButton.setImageDrawable(drawable);
         }
+        Drawable drawable = (isUserrSideButtonEnabled && sideButtonDrawable != null) ? sideButtonDrawable :
+                context.getResources().getDrawable(R.drawable.ic_action_mic);
+        sideButton.setImageDrawable(drawable);
     }
 
     /**
@@ -563,12 +567,12 @@ public class SearchBox extends RelativeLayout {
     /**
      * Set the searchbox's current text manually
      *
-     * @param text Text
+     * @param text  Text
      * @param focus
      */
     public void setSearchString(String text, boolean focus) {
         this.search.setText(text);
-        if(focus) {
+        if (focus) {
             this.search.requestFocus();
         }
     }
@@ -725,7 +729,6 @@ public class SearchBox extends RelativeLayout {
         toggleSearch();
     }
 
-
     private void openSearch(Boolean openKeyboard) {
         if (morphAnimationEnabled) {
             this.materialMenu.animateState(IconState.ARROW);
@@ -748,7 +751,7 @@ public class SearchBox extends RelativeLayout {
                     updateResults();
                 } else {
                     sideButtonStateChanged(true);
-                    Drawable drawable = sideButtonDrawable != null ? sideButtonDrawable :
+                    Drawable drawable = (isUserrSideButtonEnabled && sideButtonDrawable != null) ? sideButtonDrawable :
                             context.getResources().getDrawable(R.drawable.ic_action_mic);
                     sideButton.setImageDrawable(drawable);
                     if (initialResults != null) {
@@ -833,13 +836,14 @@ public class SearchBox extends RelativeLayout {
         if (listener != null)
             listener.onSearchClosed();
         sideButtonStateChanged(true);
-        Drawable drawable = sideButtonDrawable != null ? sideButtonDrawable :
+        Drawable drawable = (isUserrSideButtonEnabled && sideButtonDrawable != null) ? sideButtonDrawable :
                 context.getResources().getDrawable(R.drawable.ic_action_mic);
         sideButton.setImageDrawable(drawable);
         InputMethodManager inputMethodManager = (InputMethodManager) context
                 .getSystemService(Context.INPUT_METHOD_SERVICE);
         inputMethodManager.hideSoftInputFromWindow(getApplicationWindowToken(),
                 0);
+        this.search.clearFocus();
     }
 
     private void setLogoTextInt(String text) {

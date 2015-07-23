@@ -9,6 +9,7 @@
       <module fileurl="file://$PROJECT_DIR$/connectorView/connectorView.iml" filepath="$PROJECT_DIR$/connectorView/connectorView.iml" />
       <module fileurl="file://$PROJECT_DIR$/fab/fab.iml" filepath="$PROJECT_DIR$/fab/fab.iml" />
       <module fileurl="file://$PROJECT_DIR$/persistentSearch/persistentSearch.iml" filepath="$PROJECT_DIR$/persistentSearch/persistentSearch.iml" />
+      <module fileurl="file://$PROJECT_DIR$/showcaseview/showcaseview.iml" filepath="$PROJECT_DIR$/showcaseview/showcaseview.iml" />
     </modules>
   </component>
 </project>

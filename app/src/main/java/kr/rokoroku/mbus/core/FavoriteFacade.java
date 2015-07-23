@@ -129,20 +129,22 @@ public class FavoriteFacade {
         return defaultGroup;
     }
 
-    public void addToFavorite(Route route, RouteStation routeStation) {
+    public FavoriteGroup addToFavorite(Route route, RouteStation routeStation) {
         FavoriteGroup favoriteGroup = getDefaultFavoriteGroup();
         FavoriteGroup.FavoriteItem item = new FavoriteGroup.FavoriteItem(route);
         if (routeStation != null) item.setExtraData(routeStation);
 
         favoriteGroup.add(item);
+        return favoriteGroup;
     }
 
 
-    public void addToFavorite(Station station, StationRoute stationRoute) {
+    public FavoriteGroup addToFavorite(Station station, StationRoute stationRoute) {
         FavoriteGroup favoriteGroup = getDefaultFavoriteGroup();
         FavoriteGroup.FavoriteItem item = new FavoriteGroup.FavoriteItem(station);
         if (stationRoute != null) item.setExtraData(stationRoute);
 
         favoriteGroup.add(item);
+        return favoriteGroup;
     }
 }

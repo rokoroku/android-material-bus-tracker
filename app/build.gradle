@@ -57,6 +57,7 @@ dependencies {
     compile project(':circularReveal')
     compile project(':persistentSearch')
     compile project(':advRecyclerView')
+    compile project(':showcaseview')
     compile project(':fab')
 
     compile 'com.android.support:design:22.2.0'

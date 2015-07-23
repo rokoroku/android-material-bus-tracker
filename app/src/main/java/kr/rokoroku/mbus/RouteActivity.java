@@ -177,6 +177,7 @@ public class RouteActivity extends AbstractBaseActivity
         }
     }
 
+    @SuppressWarnings("unchecked")
     private synchronized boolean refreshData(boolean force) {
 
         Route route = mRouteDataProvider.getRoute();
@@ -202,8 +203,10 @@ public class RouteActivity extends AbstractBaseActivity
                             public void onComplete(boolean success, Object value) {
                                 if (success) {
                                     scheduleTimer(BaseApplication.REFRESH_INTERVAL);
+                                    mBusRouteAdapter.clearArrivalInfoCache();
+                                    mBusRouteAdapter.notifyDataSetChanged();
                                 }
-                                mSwipeRefreshLayout.postDelayed(() -> {
+                                ViewUtils.runOnUiThread(() -> {
                                     isRefreshing = false;
                                     mSwipeRefreshLayout.setRefreshing(false);
                                     if (mRedirectStationId != null) {
@@ -228,7 +231,7 @@ public class RouteActivity extends AbstractBaseActivity
                             }
                         });
                     } else {
-                        mSwipeRefreshLayout.postDelayed(() -> {
+                        ViewUtils.runOnUiThread(() -> {
                             isRefreshing = false;
                             mSwipeRefreshLayout.setRefreshing(false);
                         }, 500);
@@ -353,7 +356,7 @@ public class RouteActivity extends AbstractBaseActivity
                             Field f = modeCustomView.getClass().getDeclaredField("mTitleTextView");
                             f.setAccessible(true);
 
-                            TextView titleTextView = null;
+                            TextView titleTextView;
                             titleTextView = (TextView) f.get(modeCustomView);
                             titleTextView.setEllipsize(TextUtils.TruncateAt.MARQUEE);
                             titleTextView.setFocusable(true);

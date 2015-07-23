@@ -17,6 +17,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.RecyclerView;
+import android.text.Html;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.MenuItem;
@@ -42,6 +43,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import co.naughtyspirit.showcaseview.ShowcaseView;
+import co.naughtyspirit.showcaseview.targets.TargetView;
+import co.naughtyspirit.showcaseview.utils.PositionsUtil;
 import io.codetail.animation.SupportAnimator;
 import kr.rokoroku.mbus.core.ApiFacade;
 import kr.rokoroku.mbus.core.DatabaseFacade;
@@ -142,6 +146,9 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
         super.onRestart();
         if (mFavoriteAdapter != null) {
             mFavoriteAdapter.notifyDataSetChanged();
+            if (mFavoriteDataProvider.getGroupCount() == 1) {
+                mFavoriteAdapter.getExpandableItemManager().expandGroup(0);
+            }
         }
     }
 
@@ -149,39 +156,16 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
     protected void onResume() {
         super.onResume();
         boolean locationEnabled = LocationClient.isLocationEnabled(this);
-        mLocationButton.setEnabled(locationEnabled);
 
         if (wasLocationEnbaled != locationEnabled) {
             wasLocationEnbaled = locationEnabled;
+            mLocationButton.setEnabled(locationEnabled);
             enableSearchBoxLocationButton(locationEnabled);
         }
     }
 
     private void enableSearchBoxLocationButton(boolean locationEnabled) {
-
-        if (locationEnabled) {
-            Drawable locationDrawable = ContextCompat.getDrawable(this, R.drawable.ic_my_location_black_24dp);
-            ViewUtils.setTint(locationDrawable, ThemeUtils.getResourceColor(this, R.color.md_grey_600));
-            mSearchBox.setSideButtonDrawable(locationDrawable);
-            mSearchBox.setSideButtonOnClickListener(v -> {
-                if (mMapFragment != null) {
-                    if (mMapFrame.getVisibility() != View.VISIBLE) {
-                        mMapFragment.clearExtras();
-
-                    } else {
-                        mLocationButton.setIndeterminate(true);
-                        mLocationButton.setDrawableTint(ThemeUtils.getThemeColor(MainActivity.this, R.attr.colorAccent));
-                        mMapFragment.updateLocation(true);
-                    }
-                }
-                showMap();
-                mSearchBox.setSideButtonOnClickListener(null);
-                mSearchBox.setSideButtonDrawable(null);
-            });
-        } else {
-            mSearchBox.setSideButtonOnClickListener(null);
-            mSearchBox.setSideButtonDrawable(null);
-        }
+        mSearchBox.setUserSideButtonFunctionEnabled(locationEnabled);
     }
 
     private void initSearchBox() {
@@ -198,6 +182,26 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             mSearchBox.setElevation(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 8, getResources().getDisplayMetrics()));
         }
+
+        Drawable locationDrawable = ContextCompat.getDrawable(this, R.drawable.ic_my_location_black_24dp);
+        ViewUtils.setTint(locationDrawable, ThemeUtils.getResourceColor(this, R.color.md_grey_600));
+        mSearchBox.setSideButtonDrawable(locationDrawable);
+        mSearchBox.setSideButtonOnClickListener(v -> {
+            if (mMapFragment != null) {
+                if (mMapFrame.getVisibility() != View.VISIBLE) {
+                    mMapFragment.clearExtras();
+
+                } else {
+                    mLocationButton.setIndeterminate(true);
+                    mLocationButton.setDrawableTint(ThemeUtils.getThemeColor(MainActivity.this, R.attr.colorAccent));
+                    mMapFragment.updateLocation(true);
+                }
+            }
+            showMap();
+            mSearchBox.setSideButtonOnClickListener(null);
+            mSearchBox.setSideButtonDrawable(null);
+        });
+
         reloadSearchSuggestion();
     }
 
@@ -581,6 +585,29 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
         }
     }
 
+    private void showFirstFavoriteHintIfNotShown() {
+        String preferenceKey = "Hint_Favorite";
+        if (mFavoriteFragment != null && !getSharedPreferences(ShowcaseView.PREFERENCE_NAME, MODE_PRIVATE).contains(preferenceKey)) {
+            RecyclerView recyclerView = mFavoriteFragment.getRecyclerView();
+            View childView = null;
+            for (int i = 1; i < recyclerView.getChildCount() - 1; i++) {
+                View view = recyclerView.getChildAt(i);
+                if (recyclerView.getChildViewHolder(view) instanceof FavoriteAdapter.ItemViewHolder) {
+                    childView = view;
+                    break;
+                }
+            }
+            if (childView != null) {
+                new ShowcaseView.Builder(this, preferenceKey)
+                        .setDescription("<br><br>힌트!<br><br> 1. <b>길게 눌러서 위치 변경</b><br> 2. <b>좌우로 밀어서 삭제</b>", PositionsUtil.ItemPosition.CENTER)
+                        .setTarget(new TargetView(childView, TargetView.ShowcaseType.RECTANGLE))
+                        .setHideOnAction(true)
+                        .setOneShot(true)
+                        .build();
+            }
+        }
+    }
+
     private void showMap() {
         if (mMapFragment == null) {
             initMapFragment();
@@ -688,6 +715,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
             mSearchBox.setLogoText(getString(R.string.hint_search));
             mSearchBox.closeSearch();
         }
+        ViewUtils.runOnUiThread(this::showFirstFavoriteHintIfNotShown, 600);
         showToolbarLayer();
     }
 
@@ -739,15 +767,22 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
                 if (object != null) {
                     switch (menuItem.getItemId()) {
                         case R.id.action_add_to_favorite:
+                            FavoriteGroup favoriteGroup = null;
                             if (object instanceof Route) {
-                                FavoriteFacade.getInstance().addToFavorite((Route) object, null);
-                                Snackbar.make(mCoordinatorLayout, R.string.alert_added_to_favorite, Snackbar.LENGTH_LONG).show();
-
+                                favoriteGroup = FavoriteFacade.getInstance().addToFavorite((Route) object, null);
                             } else if (object instanceof Station) {
-                                FavoriteFacade.getInstance().addToFavorite((Station) object, null);
-                                Snackbar.make(mCoordinatorLayout, R.string.alert_added_to_favorite, Snackbar.LENGTH_LONG).show();
-
+                                favoriteGroup = FavoriteFacade.getInstance().addToFavorite((Station) object, null);
                             }
+                            Snackbar.make(mCoordinatorLayout, R.string.alert_added_to_favorite, Snackbar.LENGTH_LONG).show();
+
+                            mFavoriteAdapter.notifyDataSetChanged();
+                            for (int i = 0; i < mFavoriteDataProvider.getGroupCount(); i++) {
+                                if (mFavoriteDataProvider.getGroupItem(i).equals(favoriteGroup)) {
+                                    mFavoriteAdapter.getExpandableItemManager().expandGroup(i);
+                                    break;
+                                }
+                            }
+
                             break;
 
                         case R.id.action_map:

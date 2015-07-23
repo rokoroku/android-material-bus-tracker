@@ -1,0 +1,19 @@
+apply plugin: 'com.android.library'
+
+dependencies {
+    repositories {
+        mavenCentral()
+    }
+}
+
+android {
+    compileSdkVersion 22
+    buildToolsVersion "22.0.1"
+
+    defaultConfig {
+        versionName "1.0"
+        versionCode 1
+        targetSdkVersion 22
+        minSdkVersion 11
+    }
+}

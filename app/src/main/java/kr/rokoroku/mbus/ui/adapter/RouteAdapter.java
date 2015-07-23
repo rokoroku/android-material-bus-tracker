@@ -91,6 +91,10 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
         this.mExpandableItemManager = mExpandableItemManager;
     }
 
+    public void clearArrivalInfoCache() {
+        if(mArrivalInfoCache != null) mArrivalInfoCache.clear();
+    }
+
     @Override
     public int getGroupCount() {
         int count = mDataProvider.getCount();
@@ -269,9 +273,10 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
                     public void onComplete(boolean success, List<ArrivalInfo> value) {
                         ArrivalInfo resultArrivalInfo = finalStationRoute.getArrivalInfo();
                         holder.setItem(resultArrivalInfo);
-                        if(resultArrivalInfo != null) {
-                            putArrivalInfoCache(finalStationRoute.getLocalStationId(), resultArrivalInfo);
+                        if(resultArrivalInfo == null) {
+                            resultArrivalInfo = new ArrivalInfo(routeStation.getRouteId(), routeStation.getId());
                         }
+                        putArrivalInfoCache(finalStationRoute.getLocalStationId(), resultArrivalInfo);
                     }
 
                     @Override

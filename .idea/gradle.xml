@@ -16,6 +16,7 @@
             <option value="$PROJECT_DIR$/connectorView" />
             <option value="$PROJECT_DIR$/fab" />
             <option value="$PROJECT_DIR$/persistentSearch" />
+            <option value="$PROJECT_DIR$/showcaseview" />
           </set>
         </option>
       </GradleProjectSettings>
