@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import kr.rokoroku.mbus.BaseApplication;
+import kr.rokoroku.mbus.api.AnswerWrapper;
 import kr.rokoroku.mbus.api.gbis.model.GbisBusArrival;
 import kr.rokoroku.mbus.api.gbis.model.GbisBusArrivalList;
 import kr.rokoroku.mbus.api.gbis.model.GbisBusLocation;
@@ -57,6 +58,7 @@ public class GbisRestClient implements ApiWrapperInterface {
                     })
                     .build()
                     .create(GbisRestInterface.class);
+            adapter = AnswerWrapper.wrap(adapter);
         }
         return adapter;
     }

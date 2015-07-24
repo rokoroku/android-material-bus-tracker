@@ -146,7 +146,7 @@ public abstract class AbstractBaseActivity extends AppCompatActivity implements 
     @Override
     protected void onStop() {
         super.onStop();
-        DatabaseFacade.getInstance().commitAsync();
+        //DatabaseFacade.getInstance().commitAsync();
     }
 
     @Override
@@ -317,14 +317,14 @@ public abstract class AbstractBaseActivity extends AppCompatActivity implements 
         mDrawerLayout.setDrawerListener(new DrawerLayout.SimpleDrawerListener() {
             @Override
             public void onDrawerOpened(View drawerView) {
-                MenuItem menuItem = mNavigationDrawerView.getMenu().findItem(R.id.action_map);
+                MenuItem menuItem = mNavigationDrawerView.getMenu().findItem(R.id.nav_action_map);
                 if(menuItem != null) {
                     menuItem.setEnabled(LocationClient.isLocationEnabled(getApplicationContext()));
                 }
             }
         });
         mNavigationDrawerView = (NavigationView) findViewById(R.id.navigation_drawer_view);
-        mNavigationDrawerView.setNavigationItemSelectedListener(menuItem -> onOptionsItemSelected(menuItem));
+        mNavigationDrawerView.setNavigationItemSelectedListener(this::onOptionsItemSelected);
     }
 
     public void openDrawer() {

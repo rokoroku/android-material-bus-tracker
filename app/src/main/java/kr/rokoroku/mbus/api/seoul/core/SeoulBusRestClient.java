@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import kr.rokoroku.mbus.BaseApplication;
+import kr.rokoroku.mbus.api.AnswerWrapper;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusArrival;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusArrivalList;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusLocation;
@@ -74,6 +75,7 @@ public class SeoulBusRestClient implements ApiWrapperInterface {
                     })
                     .build()
                     .create(SeoulBusRestInterface.class);
+            adapter = AnswerWrapper.wrap(adapter);
         }
         return adapter;
     }

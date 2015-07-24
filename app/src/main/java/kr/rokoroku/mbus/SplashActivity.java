@@ -37,7 +37,7 @@ public class SplashActivity extends AppCompatActivity {
         mDummyView = findViewById(R.id.dummy_view);
         ViewUtils.runOnUiThread(() -> {
             if (!isFinishing) startMainActivity();
-        }, 1500);
+        }, 1600);
         findViewById(android.R.id.content).setOnClickListener(v -> {
             if (!isFinishing && loadFavoriteTask.getStatus() == AsyncTask.Status.FINISHED) {
                 startMainActivity();

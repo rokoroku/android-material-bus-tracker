@@ -8,6 +8,8 @@ import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.Pair;
 
+import com.crashlytics.android.answers.Answers;
+import com.crashlytics.android.answers.SearchEvent;
 import com.google.android.gms.maps.model.LatLng;
 import com.squareup.okhttp.Cache;
 import com.squareup.okhttp.OkHttpClient;
@@ -470,6 +472,7 @@ public class ApiFacade {
 
         final String finalKeyword = keyword.matches("\\d{2}-\\d{3}") ? keyword.replaceAll("[-\\s]", "") : keyword.toUpperCase();
         if (searchDataProvider == null) searchDataProvider = new SearchDataProvider();
+        Answers.getInstance().logSearch(new SearchEvent().putQuery(finalKeyword));
 
         final SearchDataProvider resultDataProvider = searchDataProvider;
         final ProgressCallback.ProgressRunner progressRunner = new ProgressCallback.ProgressRunner(callback, 4);
@@ -572,6 +575,10 @@ public class ApiFacade {
 
     public void searchByPosition(double latitude, double longitude, int radius,
                                  @Nullable ProgressCallback<List<Station>> callback) {
+
+        String query = String.format("(%.3f, %.3f)", longitude, latitude);
+        Answers.getInstance().logSearch(new SearchEvent().putQuery(query));
+
         final List<Station> resultList = new ArrayList<>();
         final ProgressCallback.ProgressRunner<List<Station>> progressRunner = new ProgressCallback.ProgressRunner<>(callback, 2);
         if (radius < 0) radius = 1000;

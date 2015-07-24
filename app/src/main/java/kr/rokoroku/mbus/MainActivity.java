@@ -102,7 +102,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
     private SearchAdapter mSearchAdapter;
     private SearchDataProvider mSearchDataProvider;
     private String previousSearchQuery;
-    private boolean wasLocationEnbaled = false;
+    private boolean wasLocationEnabled = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -177,8 +177,8 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
         super.onResume();
         boolean locationEnabled = LocationClient.isLocationEnabled(this);
 
-        if (wasLocationEnbaled != locationEnabled) {
-            wasLocationEnbaled = locationEnabled;
+        if (wasLocationEnabled != locationEnabled) {
+            wasLocationEnabled = locationEnabled;
             mLocationButton.setEnabled(locationEnabled);
             enableSearchBoxLocationButton(locationEnabled);
         }
@@ -487,7 +487,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
             closeDrawer();
 
         } else if (mSearchBox.isSearchOpen()) {
-            mSearchBox.closeSearch();
+            mSearchBox.toggleSearch();
             View focus = mSearchBox.findFocus();
             if (focus != null) focus.clearFocus();
 
@@ -502,8 +502,8 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
 
         } else {
             new MaterialDialog.Builder(this)
-                    .title("종료")
-                    .content("종료할꺼야?")
+                    .title(R.string.action_quit)
+                    .content(R.string.hint_quit)
                     .positiveText(android.R.string.ok)
                     .negativeText(android.R.string.no)
                     .callback(new MaterialDialog.ButtonCallback() {
@@ -534,7 +534,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
 
     @Override
     public void onGroupItemRemoved(int groupPosition) {
-        Snackbar.make(mCoordinatorLayout, "그룹이 제거되었습니다.", Snackbar.LENGTH_LONG)
+        Snackbar.make(mCoordinatorLayout, R.string.alert_favorite_group_removed, Snackbar.LENGTH_LONG)
                 .setAction(R.string.action_undo, v -> {
                     undoLastRemoval();
                 }).show();
@@ -543,7 +543,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
 
     @Override
     public void onChildItemRemoved(int groupPosition, int childPosition) {
-        Snackbar.make(mCoordinatorLayout, "즐겨찾기가 제거되었습니다.", Snackbar.LENGTH_LONG)
+        Snackbar.make(mCoordinatorLayout, R.string.alert_favorite_removed, Snackbar.LENGTH_LONG)
                 .setAction(R.string.action_undo, v -> {
                     undoLastRemoval();
                 }).show();

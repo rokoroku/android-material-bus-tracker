@@ -84,32 +84,31 @@ public class DatabaseFacade {
             BaseApplication.getSharedPreferences().edit()
                     .putInt(BaseApplication.PREFERENCE_DB_VERSION, DATABASE_VERSION)
                     .apply();
-
+            //printAll();
+            return;
         } catch (Exception e) {
             Log.e(TAG, "Exception in DatabaseFacade", e);
+        }
+
+        {
             Context context = contextWeakReference.get();
             if (context == null) context = BaseApplication.getInstance();
             File userfile = new File(context.getCacheDir().getAbsolutePath(), DATABASE_FILENAME_USER);
             File datafile = new File(context.getCacheDir().getAbsolutePath(), DATABASE_FILENAME_STATIC);
 
-            if (userfile.delete() && datafile.delete()) {
-                createOrLoadFile();
-                createOrLoadTables();
+            if(userfile.exists()) {
+                userfile.delete();
             }
-        } else {
-            Context context = contextWeakReference.get();
-            if (context == null) context = BaseApplication.getInstance();
-            File userfile = new File(context.getCacheDir().getAbsolutePath(), DATABASE_FILENAME_USER);
-            File datafile = new File(context.getCacheDir().getAbsolutePath(), DATABASE_FILENAME_STATIC);
-            //noinspection ResultOfMethodCallIgnored
-            userfile.delete();
-            //noinspection ResultOfMethodCallIgnored
-            datafile.delete();
-
+            if(datafile.exists()) {
+                datafile.delete();
+            }
             createOrLoadFile();
             createOrLoadTables();
+
+            BaseApplication.getSharedPreferences().edit()
+                    .putInt(BaseApplication.PREFERENCE_DB_VERSION, DATABASE_VERSION)
+                    .apply();
         }
-        //printAll();
     }
 
     private synchronized void createOrLoadFile() {
@@ -332,11 +331,18 @@ public class DatabaseFacade {
                 @Override
                 protected Void doInBackground(Void[] params) {
                     synchronized (DatabaseFacade.this) {
+                        boolean result = true;
                         try {
                             dataDB.commit();
+                        } catch (Exception e) {
+                            result = false;
+                        }
+                        try {
                             userDB.commit();
                         } catch (Exception e) {
-                            e.printStackTrace();
+                            result = false;
+                        }
+                        if (!result) {
                             reopen();
                         }
                     }

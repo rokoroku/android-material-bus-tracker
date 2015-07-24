@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.os.Build;
 
 import com.crashlytics.android.Crashlytics;
+import com.crashlytics.android.answers.Answers;
 import com.google.android.gms.analytics.GoogleAnalytics;
 import com.google.android.gms.analytics.Tracker;
 
@@ -52,10 +53,11 @@ public class BaseApplication extends Application {
         tracker.enableAdvertisingIdCollection(true);
         tracker.enableAutoActivityTracking(true);
 
-        if (!BuildConfig.DEBUG) {
-            Fabric.with(this, new Crashlytics());
+        if (BuildConfig.DEBUG) {
+            Fabric.with(this, new Answers());
             logLevel = RestAdapter.LogLevel.HEADERS_AND_ARGS;
         } else {
+            Fabric.with(this, new Crashlytics());
             logLevel = RestAdapter.LogLevel.NONE;
         }
 

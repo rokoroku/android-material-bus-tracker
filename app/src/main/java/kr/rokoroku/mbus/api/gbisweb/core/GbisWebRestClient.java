@@ -6,7 +6,6 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.gson.Gson;
 
 import java.lang.ref.SoftReference;
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -17,14 +16,14 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import kr.rokoroku.mbus.BaseApplication;
+import kr.rokoroku.mbus.api.AnswerWrapper;
+import kr.rokoroku.mbus.api.ApiWrapperInterface;
 import kr.rokoroku.mbus.api.gbis.core.GbisException;
 import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchAllResult;
 import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchMapLineResult;
 import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchRouteResult;
 import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchStationByPosResult;
 import kr.rokoroku.mbus.api.gbisweb.model.GbisStationRouteResult;
-import kr.rokoroku.mbus.api.ApiMethodNotSupportedException;
-import kr.rokoroku.mbus.api.ApiWrapperInterface;
 import kr.rokoroku.mbus.core.DatabaseFacade;
 import kr.rokoroku.mbus.data.model.ArrivalInfo;
 import kr.rokoroku.mbus.data.model.BusLocation;
@@ -41,7 +40,6 @@ import kr.rokoroku.mbus.util.GeoUtils;
 import kr.rokoroku.mbus.util.ProgressCallback;
 import kr.rokoroku.mbus.util.SimpleProgressCallback;
 import kr.rokoroku.mbus.util.ViewUtils;
-import retrofit.Callback;
 import retrofit.RestAdapter;
 import retrofit.RetrofitError;
 import retrofit.android.AndroidLog;
@@ -79,6 +77,7 @@ public class GbisWebRestClient implements ApiWrapperInterface {
                     .setConverter(new GsonConverter(new Gson(), "UTF-8"))
                     .build()
                     .create(GbisWebRestInterface.class);
+            adapter = AnswerWrapper.wrap(adapter);
         }
         return adapter;
     }

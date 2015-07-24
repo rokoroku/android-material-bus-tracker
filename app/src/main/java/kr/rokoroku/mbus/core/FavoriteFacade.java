@@ -135,6 +135,7 @@ public class FavoriteFacade {
         if (routeStation != null) item.setExtraData(routeStation);
 
         favoriteGroup.add(item);
+        DatabaseFacade.getInstance().putBookmark(currentFavorite.getName(), currentFavorite);
         return favoriteGroup;
     }
 
@@ -145,6 +146,7 @@ public class FavoriteFacade {
         if (stationRoute != null) item.setExtraData(stationRoute);
 
         favoriteGroup.add(item);
+        DatabaseFacade.getInstance().putBookmark(currentFavorite.getName(), currentFavorite);
         return favoriteGroup;
     }
 }

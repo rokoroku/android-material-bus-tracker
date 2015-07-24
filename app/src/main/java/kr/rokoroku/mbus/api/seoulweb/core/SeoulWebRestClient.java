@@ -5,7 +5,7 @@ import com.google.android.gms.maps.model.LatLng;
 import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.UnsupportedEncodingException;
-import java.lang.ref.WeakReference;
+import java.lang.ref.SoftReference;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,6 +15,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import kr.rokoroku.mbus.BaseApplication;
+import kr.rokoroku.mbus.api.AnswerWrapper;
 import kr.rokoroku.mbus.api.ApiWrapperInterface;
 import kr.rokoroku.mbus.api.seoul.core.SeoulBusException;
 import kr.rokoroku.mbus.api.seoulweb.model.RouteStationResult;
@@ -50,7 +51,7 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
     private Provider provider;
     private SeoulWebRestInterface adapter;
 
-    private Map<String, WeakReference<StationRouteResult>> stationRouteCache;
+    private Map<String, SoftReference<StationRouteResult>> stationRouteCache;
     private Timer cacheTimer;
 
     public SeoulWebRestClient(Client client) {
@@ -68,6 +69,7 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
                     .setConverter(new SeoulWebResponseConverter())
                     .build()
                     .create(SeoulWebRestInterface.class);
+            adapter = AnswerWrapper.wrap(adapter);
         }
         return adapter;
     }
@@ -417,7 +419,7 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
             stationRouteCache = new HashMap<>();
         }
         if (!stationRouteCache.containsKey(routeId)) {
-            stationRouteCache.put(routeId, new WeakReference<>(routeStationResult));
+            stationRouteCache.put(routeId, new SoftReference<>(routeStationResult));
 
             if (cacheTimer == null) {
                 cacheTimer = new Timer();
@@ -440,7 +442,7 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
 
     private StationRouteResult getCachedStationResult(String routeId) {
         if (stationRouteCache != null) {
-            WeakReference<StationRouteResult> reference = stationRouteCache.get(routeId);
+            SoftReference<StationRouteResult> reference = stationRouteCache.get(routeId);
             if (reference != null) {
                 StationRouteResult cachedResult = reference.get();
                 if (cachedResult != null) {
