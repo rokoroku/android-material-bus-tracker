@@ -21,6 +21,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.MenuItem;
 import android.view.View;
@@ -293,9 +294,14 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
         mSearchButton.hide(false);
         mSearchButton.setOnClickListener(v -> {
             String searchText = mSearchBox.getSearchText();
-            if (TextUtils.isEmpty(searchText)) {
+            if (!TextUtils.isEmpty(searchText)) {
                 mSearchBox.triggerSearch(new SearchResult(searchText, null));
-                mSearchBox.toggleSearch();
+                View focus = mSearchBox.findFocus();
+                if (focus != null) focus.clearFocus();
+                if (mSearchBox.isSearchOpen()) {
+                    mSearchBox.toggleSearch();
+                }
+                mSearchButton.hide(true);
             }
         });
     }
@@ -482,6 +488,8 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
 
         } else if (mSearchBox.isSearchOpen()) {
             mSearchBox.closeSearch();
+            View focus = mSearchBox.findFocus();
+            if (focus != null) focus.clearFocus();
 
         } else if (mMapFrame.getVisibility() == View.VISIBLE) {
             hideMap();
@@ -578,13 +586,26 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
             ArrayList<SearchResult> searchResults = new ArrayList<>();
 
             // add historic items to searchResults
-            List<SearchHistory> searchHistoryTable = new ArrayList<>(DatabaseFacade.getInstance().getSearchHistoryTable());
-            Collections.sort(searchHistoryTable);
+            List<SearchHistory> searchHistoryTable = new ArrayList<>();
+            try {
+                Set<SearchHistory> searchHistories = DatabaseFacade.getInstance().getSearchHistoryTable();
+                searchHistoryTable.addAll(searchHistories);
+                Collections.sort(searchHistoryTable);
+            } catch (Exception e) {
+                Log.e(TAG_FRAGMENT_SEARCH, "Exception in reloadSearchSuggestion", e);
+                try {
+                    DatabaseFacade.getInstance().getSearchHistoryTable().clear();
+                } catch (Exception e1) {
+                    //ignore
+                }
+            }
 
-            Drawable historyDrawable = ContextCompat.getDrawable(this, R.drawable.ic_history_grey_600_18dp);
-            int historyColor = ThemeUtils.getResourceColor(this, R.color.md_grey_600);
-            for (SearchHistory searchHistory : searchHistoryTable) {
-                searchResults.add(new SearchResult(searchHistory.getTitle(), historyDrawable, historyColor));
+            if(!searchHistoryTable.isEmpty()) {
+                Drawable historyDrawable = ContextCompat.getDrawable(this, R.drawable.ic_history_grey_600_18dp);
+                int historyColor = ThemeUtils.getResourceColor(this, R.color.md_grey_600);
+                for (SearchHistory searchHistory : searchHistoryTable) {
+                    searchResults.add(new SearchResult(searchHistory.getTitle(), historyDrawable, historyColor));
+                }
             }
 
             // add favorite items to searchResults
@@ -770,6 +791,8 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
             Bundle args = new Bundle();
             args.putBoolean(MapFragment.EXTRA_ENABLE_SEARCH, true);
             mMapFragment = MapFragment.newInstance(args);
+        }
+        if (mMapFragment != null) {
             mMapFragment.setOnEventListener(new MapFragment.OnEventListener() {
                 @Override
                 public void onMapLoaded(GoogleMap map) {

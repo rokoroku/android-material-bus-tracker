@@ -5,6 +5,7 @@ import android.util.Log;
 import java.util.ArrayList;
 import java.util.List;
 
+import kr.rokoroku.mbus.BaseApplication;
 import kr.rokoroku.mbus.api.ApiMethodNotSupportedException;
 import kr.rokoroku.mbus.api.seoul.core.SeoulBusException;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusArrival;
@@ -38,6 +39,7 @@ import kr.rokoroku.mbus.util.SimpleProgressCallback;
 import retrofit.Callback;
 import retrofit.RestAdapter;
 import retrofit.RetrofitError;
+import retrofit.android.AndroidLog;
 import retrofit.client.Client;
 import retrofit.client.Response;
 
@@ -66,7 +68,8 @@ public class TagoRestClient implements ApiWrapperInterface {
             adapter = new RestAdapter.Builder()
                     .setEndpoint(BASE_URL)
                     .setClient(client)
-                    .setLogLevel(RestAdapter.LogLevel.BASIC)
+                    .setLog(new AndroidLog("TagoRestClient"))
+                    .setLogLevel(BaseApplication.logLevel)
                     .setConverter(new TagoXmlConverter())
                     .setRequestInterceptor(request -> {
                         if (apiKey != null) {

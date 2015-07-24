@@ -1,6 +1,7 @@
 package kr.rokoroku.mbus;
 
 import android.app.Application;
+import android.content.SharedPreferences;
 import android.os.Build;
 
 import com.crashlytics.android.Crashlytics;
@@ -11,18 +12,21 @@ import io.fabric.sdk.android.Fabric;
 import kr.rokoroku.mbus.core.ApiFacade;
 import kr.rokoroku.mbus.core.DatabaseFacade;
 import kr.rokoroku.mbus.core.LocationClient;
+import retrofit.RestAdapter;
 
 /**
  * Created by rok on 2015. 5. 31..
  */
 public class BaseApplication extends Application {
 
-    public static final int REFRESH_INTERVAL = 60 * 1000;
+    public static final int REFRESH_INTERVAL = 30 * 1000;
     public static final String SHARED_PREFERENCE_KEY = "pref";
+    public static final String PREFERENCE_DB_VERSION = "pref_db_version";
     public static final String PREFERENCE_HOME_SCREEN = "pref_home_screen";
     public static final String PREFERENCE_THEME = "pref_theme";
 
     public static boolean showAd = false;
+    public static RestAdapter.LogLevel logLevel;
     public static GoogleAnalytics analytics;
     public static Tracker tracker;
 
@@ -50,6 +54,9 @@ public class BaseApplication extends Application {
 
         if (!BuildConfig.DEBUG) {
             Fabric.with(this, new Crashlytics());
+            logLevel = RestAdapter.LogLevel.HEADERS_AND_ARGS;
+        } else {
+            logLevel = RestAdapter.LogLevel.NONE;
         }
 
         // set theme
@@ -71,5 +78,9 @@ public class BaseApplication extends Application {
 
     public static BaseApplication getInstance() {
         return instance;
+    }
+
+    public static SharedPreferences getSharedPreferences() {
+        return instance.getSharedPreferences(SHARED_PREFERENCE_KEY, MODE_PRIVATE);
     }
 }

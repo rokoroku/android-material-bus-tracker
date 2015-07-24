@@ -181,6 +181,7 @@ public class StationActivity extends AbstractBaseActivity
 
         Station station = mStationDataProvider.getStation();
         setTitle(station.getName());
+        showToolbarLayer();
 
         mSwipeRefreshLayout.setRefreshing(true);
         if (TimeUtils.checkShouldUpdate(station.getLastUpdateTime()) || force) {

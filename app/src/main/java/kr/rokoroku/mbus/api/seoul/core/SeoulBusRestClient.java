@@ -5,6 +5,7 @@ import android.util.Log;
 import java.util.ArrayList;
 import java.util.List;
 
+import kr.rokoroku.mbus.BaseApplication;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusArrival;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusArrivalList;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusLocation;
@@ -35,6 +36,7 @@ import kr.rokoroku.mbus.util.SimpleProgressCallback;
 import retrofit.Callback;
 import retrofit.RestAdapter;
 import retrofit.RetrofitError;
+import retrofit.android.AndroidLog;
 import retrofit.client.Client;
 import retrofit.client.Response;
 
@@ -62,7 +64,8 @@ public class SeoulBusRestClient implements ApiWrapperInterface {
             adapter = new RestAdapter.Builder()
                     .setEndpoint(BASE_URL)
                     .setClient(client)
-                    .setLogLevel(RestAdapter.LogLevel.BASIC)
+                    .setLog(new AndroidLog("SeoulBusRestClient"))
+                    .setLogLevel(BaseApplication.logLevel)
                     .setConverter(new SeoulBusXmlConverter())
                     .setRequestInterceptor(request -> {
                         if (apiKey != null) {
@@ -299,7 +302,7 @@ public class SeoulBusRestClient implements ApiWrapperInterface {
         Station station = DatabaseFacade.getInstance().getStation(provider, stationId);
         if (stationId.startsWith("ars") || (station != null && station.getLocalId() != null && !station.isLocalRouteInfoAvailable())) {
             String localId;
-            if(stationId.startsWith("ars")) {
+            if (stationId.startsWith("ars")) {
                 localId = stationId.substring(3);
             } else {
                 localId = station.getLocalId();

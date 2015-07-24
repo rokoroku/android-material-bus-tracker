@@ -182,6 +182,7 @@ public class RouteActivity extends AbstractBaseActivity
 
         Route route = mRouteDataProvider.getRoute();
         setToolbarTitle(route);
+        showToolbarLayer();
 
         mSwipeRefreshLayout.setRefreshing(true);
 

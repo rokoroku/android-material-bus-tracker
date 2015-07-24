@@ -3,6 +3,7 @@ package kr.rokoroku.mbus.api.gbis.core;
 import java.util.ArrayList;
 import java.util.List;
 
+import kr.rokoroku.mbus.BaseApplication;
 import kr.rokoroku.mbus.api.gbis.model.GbisBusArrival;
 import kr.rokoroku.mbus.api.gbis.model.GbisBusArrivalList;
 import kr.rokoroku.mbus.api.gbis.model.GbisBusLocation;
@@ -19,6 +20,7 @@ import kr.rokoroku.mbus.data.model.RouteType;
 import kr.rokoroku.mbus.data.model.Station;
 import retrofit.RestAdapter;
 import retrofit.RetrofitError;
+import retrofit.android.AndroidLog;
 import retrofit.client.Client;
 import retrofit.client.Response;
 
@@ -45,7 +47,8 @@ public class GbisRestClient implements ApiWrapperInterface {
             adapter = new RestAdapter.Builder()
                     .setEndpoint(BASE_URL)
                     .setClient(client)
-                    .setLogLevel(RestAdapter.LogLevel.BASIC)
+                    .setLog(new AndroidLog("GbisRestClient"))
+                    .setLogLevel(BaseApplication.logLevel)
                     .setConverter(new GbisXmlConverter())
                     .setRequestInterceptor(request -> {
                         if (apiKey != null) {

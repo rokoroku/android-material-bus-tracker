@@ -58,11 +58,11 @@ public enum Provider {
     public String getProviderText() {
         switch (this) {
             case GYEONGGI:
-                return "경기버스정보시스템";
+                return "경기도 버스정보시스템";
             case SEOUL:
-                return "서울교통정보과";
+                return "서울시 교통정보과";
             case INCHEON:
-                return "인천버스정보시스템";
+                return "인천시 버스정보시스템";
         }
         return null;
     }

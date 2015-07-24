@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">버스랑 정류장 (베타)</string>
+    <string name="app_name">버스와 정류장 (베타)</string>
 
     <string name="bus_operation_duration">운행시간</string>
     <string name="bus_allocation_interval">배차간격</string>

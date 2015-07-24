@@ -64,7 +64,7 @@ public class SeoulWebRestClient implements ApiWrapperInterface {
                     .setEndpoint("http:")
                     .setClient(client)
                     .setLog(new AndroidLog("SeoulWebRestClient"))
-                    .setLogLevel(RestAdapter.LogLevel.HEADERS_AND_ARGS)
+                    .setLogLevel(BaseApplication.logLevel)
                     .setConverter(new SeoulWebResponseConverter())
                     .build()
                     .create(SeoulWebRestInterface.class);

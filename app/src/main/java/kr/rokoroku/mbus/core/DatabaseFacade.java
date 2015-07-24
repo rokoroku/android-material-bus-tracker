@@ -33,6 +33,11 @@ import kr.rokoroku.mbus.data.model.Station;
  */
 public class DatabaseFacade {
 
+    private static final String TAG = "DBFacade";
+    private static final String DATABASE_FILENAME_USER = "user.db";
+    private static final String DATABASE_FILENAME_STATIC = "data.db";
+    private static final int DATABASE_VERSION = 1;
+
     public static final String TABLE_ROUTE_PREFIX = "route_";
     public static final String TABLE_STATION_PREFIX = "station_";
     public static final String TABLE_HIDDEN_ROUTE = "hidden_route_";
@@ -40,8 +45,6 @@ public class DatabaseFacade {
     public static final String TABLE_FAVORITE = "favorite";
     public static final String TABLE_SEARCH_HISTORY = "search_history";
     public static final String DEFAULT_FAVORITE_ID = "Default";
-
-    private static final String TAG = "DBHelper";
 
     private static DatabaseFacade instance;
     private static WeakReference<Context> contextWeakReference;
@@ -55,7 +58,8 @@ public class DatabaseFacade {
         return instance;
     }
 
-    private DB db;
+    private DB userDB;
+    private DB dataDB;
     private Map<Provider, BTreeMap<String, Route>> routeTable;
     private Map<Provider, BTreeMap<String, Station>> stationTable;
     private Map<Provider, Map<String, String>> secondaryStationKeyTable;
@@ -68,22 +72,42 @@ public class DatabaseFacade {
     private Map<String, Station> temporalStationCache = new HashMap<>();
 
     private DatabaseFacade() {
-        try {
+
+        int dbVersion = BaseApplication.getSharedPreferences()
+                .getInt(BaseApplication.PREFERENCE_DB_VERSION, -1);
+
+        if (dbVersion == -1 || dbVersion == DATABASE_VERSION) try {
             //open (or create) database
             createOrLoadFile();
             createOrLoadTables();
 
+            BaseApplication.getSharedPreferences().edit()
+                    .putInt(BaseApplication.PREFERENCE_DB_VERSION, DATABASE_VERSION)
+                    .apply();
+
         } catch (Exception e) {
             Log.e(TAG, "Exception in DatabaseFacade", e);
-
             Context context = contextWeakReference.get();
             if (context == null) context = BaseApplication.getInstance();
-            File file = new File(context.getCacheDir().getAbsolutePath(), "data.db");
+            File userfile = new File(context.getCacheDir().getAbsolutePath(), DATABASE_FILENAME_USER);
+            File datafile = new File(context.getCacheDir().getAbsolutePath(), DATABASE_FILENAME_STATIC);
 
-            if (file.delete()) {
+            if (userfile.delete() && datafile.delete()) {
                 createOrLoadFile();
                 createOrLoadTables();
             }
+        } else {
+            Context context = contextWeakReference.get();
+            if (context == null) context = BaseApplication.getInstance();
+            File userfile = new File(context.getCacheDir().getAbsolutePath(), DATABASE_FILENAME_USER);
+            File datafile = new File(context.getCacheDir().getAbsolutePath(), DATABASE_FILENAME_STATIC);
+            //noinspection ResultOfMethodCallIgnored
+            userfile.delete();
+            //noinspection ResultOfMethodCallIgnored
+            datafile.delete();
+
+            createOrLoadFile();
+            createOrLoadTables();
         }
         //printAll();
     }
@@ -92,11 +116,16 @@ public class DatabaseFacade {
 
         Context context = contextWeakReference.get();
         if (context == null) context = BaseApplication.getInstance();
-        File file = new File(context.getCacheDir().getAbsolutePath(), "data.db");
-
+        File userfile = new File(context.getCacheDir().getAbsolutePath(), DATABASE_FILENAME_USER);
+        File datafile = new File(context.getCacheDir().getAbsolutePath(), DATABASE_FILENAME_STATIC);
         try {
-            this.db = DBMaker
-                    .fileDB(file)
+            this.userDB = DBMaker
+                    .fileDB(userfile)
+                    .asyncWriteEnable()
+                    .cacheHardRefEnable()
+                    .make();
+            this.dataDB = DBMaker
+                    .fileDB(datafile)
                     .asyncWriteEnable()
                     .cacheHardRefEnable()
                     .make();
@@ -114,12 +143,12 @@ public class DatabaseFacade {
         this.hiddenStationRouteTable = new HashMap<>();
 
         for (Provider provider : Provider.values()) {
-            BTreeMap<String, Route> routeBTreeMap = db.treeMap(TABLE_ROUTE_PREFIX + provider.getCityCode());
-            BTreeMap<String, Station> stationBTreeMap = db.treeMap(TABLE_STATION_PREFIX + provider.getCityCode());
+            BTreeMap<String, Route> routeBTreeMap = dataDB.treeMap(TABLE_ROUTE_PREFIX + provider.getCityCode());
+            BTreeMap<String, Station> stationBTreeMap = dataDB.treeMap(TABLE_STATION_PREFIX + provider.getCityCode());
             Map<String, String> secondaryKeyTable = createSecondaryKeyTable(stationBTreeMap);
 
-            NavigableSet<String> hiddenStationSet = db.treeSet(TABLE_HIDDEN_STATION + provider.getCityCode());
-            NavigableSet<String> hiddenRouteSet = db.treeSet(TABLE_HIDDEN_ROUTE + provider.getCityCode());
+            NavigableSet<String> hiddenStationSet = userDB.treeSet(TABLE_HIDDEN_STATION + provider.getCityCode());
+            NavigableSet<String> hiddenRouteSet = userDB.treeSet(TABLE_HIDDEN_ROUTE + provider.getCityCode());
 
             this.routeTable.put(provider, routeBTreeMap);
             this.stationTable.put(provider, stationBTreeMap);
@@ -128,11 +157,11 @@ public class DatabaseFacade {
             this.hiddenStationRouteTable.put(provider, hiddenRouteSet);
         }
 
-        this.searchHistoryTable = db.hashSetCreate(TABLE_SEARCH_HISTORY)
+        this.searchHistoryTable = userDB.hashSetCreate(TABLE_SEARCH_HISTORY)
                 .expireMaxSize(10)
                 .makeOrGet();
 
-        this.bookmarkTable = db.treeMapCreate(TABLE_FAVORITE)
+        this.bookmarkTable = userDB.treeMapCreate(TABLE_FAVORITE)
                 .keySerializer(BTreeKeySerializer.STRING)
                 .valueSerializer(Favorite.serializer)
                 .makeOrGet();
@@ -158,13 +187,14 @@ public class DatabaseFacade {
 
     public synchronized void clear() {
         for (Provider provider : Provider.values()) {
-            db.delete(TABLE_ROUTE_PREFIX + provider.getCityCode());
-            db.delete(TABLE_STATION_PREFIX + provider.getCityCode());
-            db.delete(TABLE_HIDDEN_STATION + provider.getCityCode());
-            db.delete(TABLE_HIDDEN_ROUTE + provider.getCityCode());
-            db.delete(TABLE_FAVORITE);
+            dataDB.delete(TABLE_ROUTE_PREFIX + provider.getCityCode());
+            dataDB.delete(TABLE_STATION_PREFIX + provider.getCityCode());
+            userDB.delete(TABLE_HIDDEN_STATION + provider.getCityCode());
+            userDB.delete(TABLE_HIDDEN_ROUTE + provider.getCityCode());
+            userDB.delete(TABLE_FAVORITE);
         }
-        db.commit();
+        dataDB.commit();
+        userDB.commit();
         createOrLoadTables();
     }
 
@@ -228,14 +258,14 @@ public class DatabaseFacade {
 
     public void putStationsToTemporalCache(Collection<Station> stations) {
         for (Station station : stations) {
-            if(station.getId() != null) {
+            if (station.getId() != null) {
                 temporalStationCache.put(station.getId(), station);
             }
         }
     }
 
     public void putStationToTemporalCache(Station station) {
-        if(station.getId() != null) {
+        if (station.getId() != null) {
             temporalStationCache.put(station.getId(), station);
         }
     }
@@ -303,7 +333,8 @@ public class DatabaseFacade {
                 protected Void doInBackground(Void[] params) {
                     synchronized (DatabaseFacade.this) {
                         try {
-                            db.commit();
+                            dataDB.commit();
+                            userDB.commit();
                         } catch (Exception e) {
                             e.printStackTrace();
                             reopen();
@@ -322,13 +353,14 @@ public class DatabaseFacade {
     }
 
     private synchronized void reopen() {
-        db.close();
+        userDB.close();
+        dataDB.close();
         createOrLoadFile();
         createOrLoadTables();
     }
 
     public synchronized void rollback() {
-        db.rollback();
+        userDB.rollback();
     }
 
     private void printAll() {

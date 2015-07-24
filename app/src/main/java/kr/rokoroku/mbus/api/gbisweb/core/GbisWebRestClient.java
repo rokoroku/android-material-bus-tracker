@@ -5,6 +5,7 @@ import android.text.TextUtils;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.gson.Gson;
 
+import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -58,9 +59,9 @@ public class GbisWebRestClient implements ApiWrapperInterface {
     private Client client;
     private Provider provider;
     private GbisWebRestInterface adapter;
-    private Map<String, WeakReference<GbisSearchAllResult>> searchResultCache;
-    private Map<String, WeakReference<GbisSearchRouteResult>> searchRouteResultCache;
-    private Map<String, WeakReference<GbisStationRouteResult>> stationRouteResultCache;
+    private Map<String, SoftReference<GbisSearchAllResult>> searchResultCache;
+    private Map<String, SoftReference<GbisSearchRouteResult>> searchRouteResultCache;
+    private Map<String, SoftReference<GbisStationRouteResult>> stationRouteResultCache;
     private Timer cacheTimer;
 
     public GbisWebRestClient(Client client) {
@@ -74,7 +75,7 @@ public class GbisWebRestClient implements ApiWrapperInterface {
                     .setEndpoint(BASE_URL)
                     .setClient(client)
                     .setLog(new AndroidLog("GbisWebRestClient"))
-                    .setLogLevel(RestAdapter.LogLevel.HEADERS_AND_ARGS)
+                    .setLogLevel(BaseApplication.logLevel)
                     .setConverter(new GsonConverter(new Gson(), "UTF-8"))
                     .build()
                     .create(GbisWebRestInterface.class);
@@ -115,10 +116,20 @@ public class GbisWebRestClient implements ApiWrapperInterface {
                     // search one more time if there exist more entries
                     int routeCount = Integer.parseInt(gbisWebSearchAllResult.getResult().getBusRoute().getTotalCount());
                     if (cachedSearchResult == null && routeCount > 10 && page[0] < 1) {
+                        GbisSearchAllResult newCachedSearchResult = getCachedSearchResult(keyword);
+                        if (newCachedSearchResult != null) {
+                            newCachedSearchResult.getResult().getBusRoute().getList().addAll(busRouteEntity.getList());
+                        } else {
+                            putSearchResultCache(keyword, gbisWebSearchAllResult);
+                        }
                         getAdapter().searchAll(keyword, ++page[0], ++page[1], this);
                         return;
+
                     } else {
-                        putSearchResultCache(keyword, gbisWebSearchAllResult);
+                        GbisSearchAllResult newCachedSearchResult = getCachedSearchResult(keyword);
+                        if (newCachedSearchResult == null) {
+                            putSearchResultCache(keyword, gbisWebSearchAllResult);
+                        }
                     }
                 }
                 callback.onSuccess(routeList);
@@ -165,10 +176,19 @@ public class GbisWebRestClient implements ApiWrapperInterface {
                     // search one more time if there exist more entries
                     int stationCount = Integer.parseInt(gbisWebSearchAllResult.getResult().getBusStation().getTotalCount());
                     if (cachedSearchResult == null && stationCount > 10 && page[0] <= 1) {
+                        GbisSearchAllResult newCachedSearchResult = getCachedSearchResult(keyword);
+                        if (newCachedSearchResult != null) {
+                            newCachedSearchResult.getResult().getBusStation().getList().addAll(busStationEntity.getList());
+                        } else {
+                            putSearchResultCache(keyword, gbisWebSearchAllResult);
+                        }
                         getAdapter().searchAll(keyword, ++page[0], ++page[1], this);
                         return;
                     } else {
-                        putSearchResultCache(keyword, gbisWebSearchAllResult);
+                        GbisSearchAllResult newCachedSearchResult = getCachedSearchResult(keyword);
+                        if (newCachedSearchResult == null) {
+                            putSearchResultCache(keyword, gbisWebSearchAllResult);
+                        }
                     }
                 }
                 callback.onSuccess(stationList);
@@ -520,12 +540,12 @@ public class GbisWebRestClient implements ApiWrapperInterface {
         if (searchResultCache == null) {
             searchResultCache = new HashMap<>();
         }
-        searchResultCache.put(keyword, new WeakReference<>(gbisSearchAllResult));
+        searchResultCache.put(keyword, new SoftReference<>(gbisSearchAllResult));
     }
 
     private GbisSearchAllResult getCachedSearchResult(String keyword) {
         if (searchResultCache != null) {
-            WeakReference<GbisSearchAllResult> reference = searchResultCache.get(keyword);
+            SoftReference<GbisSearchAllResult> reference = searchResultCache.get(keyword);
             if (reference != null) {
                 GbisSearchAllResult gbisSearchAllResult = reference.get();
                 if (gbisSearchAllResult != null) {
@@ -543,7 +563,7 @@ public class GbisWebRestClient implements ApiWrapperInterface {
             searchRouteResultCache = new HashMap<>();
         }
         if (!searchRouteResultCache.containsKey(routeId)) {
-            searchRouteResultCache.put(routeId, new WeakReference<>(gbisSearchRouteResult));
+            searchRouteResultCache.put(routeId, new SoftReference<>(gbisSearchRouteResult));
 
             if (cacheTimer == null) {
                 cacheTimer = new Timer();
@@ -566,7 +586,7 @@ public class GbisWebRestClient implements ApiWrapperInterface {
 
     private GbisSearchRouteResult getCachedSearchRouteResult(String routeId) {
         if (searchRouteResultCache != null) {
-            WeakReference<GbisSearchRouteResult> reference = searchRouteResultCache.get(routeId);
+            SoftReference<GbisSearchRouteResult> reference = searchRouteResultCache.get(routeId);
             if (reference != null) {
                 GbisSearchRouteResult gbisSearchRouteResult = reference.get();
                 if (gbisSearchRouteResult != null) {
@@ -584,7 +604,7 @@ public class GbisWebRestClient implements ApiWrapperInterface {
             stationRouteResultCache = new HashMap<>();
         }
         if (!stationRouteResultCache.containsKey(stationId)) {
-            stationRouteResultCache.put(stationId, new WeakReference<>(gbisStationRouteResult));
+            stationRouteResultCache.put(stationId, new SoftReference<>(gbisStationRouteResult));
 
             if (cacheTimer == null) {
                 cacheTimer = new Timer();
@@ -607,7 +627,7 @@ public class GbisWebRestClient implements ApiWrapperInterface {
 
     private GbisStationRouteResult getCachedStationRouteResult(String stationId) {
         if (stationRouteResultCache != null) {
-            WeakReference<GbisStationRouteResult> reference = stationRouteResultCache.get(stationId);
+            SoftReference<GbisStationRouteResult> reference = stationRouteResultCache.get(stationId);
             if (reference != null) {
                 GbisStationRouteResult stationRouteResult = reference.get();
                 if (stationRouteResult != null) {
