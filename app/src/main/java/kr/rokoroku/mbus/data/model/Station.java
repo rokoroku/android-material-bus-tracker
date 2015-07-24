@@ -10,6 +10,11 @@ import android.text.TextUtils;
 
 import com.google.android.gms.maps.model.LatLng;
 
+import org.mapdb.Serializer;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,6 +34,7 @@ import kr.rokoroku.mbus.api.seoulweb.model.SearchStationResult;
 import kr.rokoroku.mbus.api.seoulweb.model.StationByPositionResult;
 import kr.rokoroku.mbus.api.seoulweb.model.StationRouteResult;
 import kr.rokoroku.mbus.util.GeoUtils;
+import kr.rokoroku.mbus.util.SerializationUtil;
 
 public class Station implements Parcelable, Serializable {
 
@@ -334,7 +340,7 @@ public class Station implements Parcelable, Serializable {
     }
 
     public void putArrivalInfo(ArrivalInfo arrivalInfo) {
-        if(arrivalInfo == null || arrivalInfo.getRouteId() == null) return;
+        if (arrivalInfo == null || arrivalInfo.getRouteId() == null) return;
 
         String routeId = arrivalInfo.getRouteId();
         StationRoute stationRoute = getStationRoute(routeId);
@@ -467,39 +473,6 @@ public class Station implements Parcelable, Serializable {
         dest.writeLong(lastUpdateTime != null ? lastUpdateTime.getTime() : -1);
     }
 
-    protected Station(Parcel in) {
-        this.id = in.readString();
-        this.name = in.readString();
-        this.city = in.readString();
-        this.localId = in.readString();
-        this.longitude = (Double) in.readValue(Double.class.getClassLoader());
-        this.latitude = (Double) in.readValue(Double.class.getClassLoader());
-        int tempProvider = in.readInt();
-        this.provider = tempProvider == -1 ? null : Provider.values()[tempProvider];
-        boolean isRouteListExist = in.readByte() == 1;
-        boolean isLinkedEntryListExist = in.readByte() == 1;
-        if (isRouteListExist) {
-            this.stationRouteList = new ArrayList<>();
-            this.stationRouteList = in.createTypedArrayList(StationRoute.CREATOR);
-        }
-        if (isLinkedEntryListExist) {
-            this.remoteEntryList = new ArrayList<>();
-            this.remoteEntryList = in.createTypedArrayList(RemoteEntry.CREATOR);
-        }
-        long tmpLastUpdateTime = in.readLong();
-        this.lastUpdateTime = tmpLastUpdateTime == -1 ? null : new Date(tmpLastUpdateTime);
-    }
-
-    public static final Creator<Station> CREATOR = new Creator<Station>() {
-        public Station createFromParcel(Parcel source) {
-            return new Station(source);
-        }
-
-        public Station[] newArray(int size) {
-            return new Station[size];
-        }
-    };
-
     public static class RemoteEntry implements Parcelable, Serializable {
         private Provider provider;
         private String key;
@@ -573,7 +546,7 @@ public class Station implements Parcelable, Serializable {
             RemoteEntry remoteEntry = null;
             if (!TextUtils.isEmpty(localId)) {
                 localId = localId.trim();
-                if(localId.startsWith("6") || localId.startsWith("9")) {
+                if (localId.startsWith("6") || localId.startsWith("9")) {
                     if (city != null) switch (city) {
                         case "중구":
                         case "동구":
@@ -630,4 +603,72 @@ public class Station implements Parcelable, Serializable {
             return diffLhsLat + diffLhsLng;
         }
     }
+
+    protected Station(Parcel in) {
+        this.id = in.readString();
+        this.name = in.readString();
+        this.city = in.readString();
+        this.localId = in.readString();
+        this.longitude = (Double) in.readValue(Double.class.getClassLoader());
+        this.latitude = (Double) in.readValue(Double.class.getClassLoader());
+        int tempProvider = in.readInt();
+        this.provider = tempProvider == -1 ? null : Provider.values()[tempProvider];
+        boolean isRouteListExist = in.readByte() == 1;
+        boolean isLinkedEntryListExist = in.readByte() == 1;
+        if (isRouteListExist) {
+            this.stationRouteList = new ArrayList<>();
+            this.stationRouteList = in.createTypedArrayList(StationRoute.CREATOR);
+        }
+        if (isLinkedEntryListExist) {
+            this.remoteEntryList = new ArrayList<>();
+            this.remoteEntryList = in.createTypedArrayList(RemoteEntry.CREATOR);
+        }
+        long tmpLastUpdateTime = in.readLong();
+        this.lastUpdateTime = tmpLastUpdateTime == -1 ? null : new Date(tmpLastUpdateTime);
+    }
+
+    public static final Creator<Station> CREATOR = new Creator<Station>() {
+        public Station createFromParcel(Parcel source) {
+            return new Station(source);
+        }
+
+        public Station[] newArray(int size) {
+            return new Station[size];
+        }
+    };
+
+    public static final Serializer<Station> SERIALIZER = new Serializer<Station>() {
+        @Override
+        public void serialize(DataOutput out, Station value) throws IOException {
+            SerializationUtil.serializeString(out, value.id);
+            SerializationUtil.serializeString(out, value.name);
+            SerializationUtil.serializeString(out, value.city);
+            SerializationUtil.serializeString(out, value.localId);
+            SerializationUtil.serializeDouble(out, value.latitude);
+            SerializationUtil.serializeDouble(out, value.longitude);
+            Provider.SERIALIZER.serialize(out, value.provider);
+
+            SerializationUtil.writeByteArray(out, SerializationUtil.serialize(value.remoteEntryList));
+            SerializationUtil.writeByteArray(out, SerializationUtil.serialize(value.stationRouteList));
+        }
+
+        @Override
+        public Station deserialize(DataInput in, int available) throws IOException {
+            Station station = new Station();
+            station.id = SerializationUtil.deserializeString(in);
+            station.name = SerializationUtil.deserializeString(in);
+            station.city = SerializationUtil.deserializeString(in);
+            station.localId = SerializationUtil.deserializeString(in);
+            station.latitude = SerializationUtil.deserializeDouble(in);
+            station.longitude = SerializationUtil.deserializeDouble(in);
+            station.provider = Provider.SERIALIZER.deserialize(in, available);
+
+            //noinspection unchecked
+            station.remoteEntryList = SerializationUtil.deserialize(SerializationUtil.readByteArray(in), ArrayList.class);
+            //noinspection unchecked
+            station.stationRouteList = SerializationUtil.deserialize(SerializationUtil.readByteArray(in), ArrayList.class);
+
+            return station;
+        }
+    };
 }

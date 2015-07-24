@@ -4,13 +4,19 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.TextUtils;
 
+import org.mapdb.Serializer;
+
 import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchAllResult;
 import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchRouteResult;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusRouteInfo;
 import kr.rokoroku.mbus.api.seoulweb.model.RouteStationResult;
 import kr.rokoroku.mbus.api.seoulweb.model.SearchRouteResult;
+import kr.rokoroku.mbus.util.SerializationUtil;
 import kr.rokoroku.mbus.util.TimeUtils;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.io.Serializable;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -158,7 +164,7 @@ public class Route implements Parcelable, Serializable {
             routeStation.setDirection(Direction.UP);
             routeStationList.add(routeStation);
             if (turnStationSeq == routeStation.getSequence()) {
-                    turnStationId = routeStation.getId();
+                turnStationId = routeStation.getId();
             }
         }
         if (turnStationSeq == -1) {
@@ -177,7 +183,7 @@ public class Route implements Parcelable, Serializable {
 
     public void setGbisRealtimeBusEntity(GbisSearchRouteResult.ResultEntity resultEntity) {
         int index = 0;
-        if(resultEntity.getRealTime() != null) {
+        if (resultEntity.getRealTime() != null) {
             for (GbisSearchRouteResult.ResultEntity.RealTimeEntity.BusEntity busEntity : resultEntity.getRealTime().getList()) {
                 BusLocation busLocation = new BusLocation(busEntity);
                 busLocation.setRouteId(this.id);
@@ -561,5 +567,70 @@ public class Route implements Parcelable, Serializable {
         }
     };
 
+    public static final Serializer<Route> SERIALIZER = new Serializer<Route>() {
+        @Override
+        public void serialize(DataOutput out, Route value) throws IOException {
+            SerializationUtil.serializeString(out, value.id);
+            SerializationUtil.serializeString(out, value.name);
+            RouteType.SERIALIZER.serialize(out, value.type);
+            Provider.SERIALIZER.serialize(out, value.provider);
 
+            SerializationUtil.serializeString(out, value.startStationId);
+            SerializationUtil.serializeString(out, value.startStationName);
+            SerializationUtil.serializeString(out, value.endStationId);
+            SerializationUtil.serializeString(out, value.endStationName);
+            SerializationUtil.serializeString(out, value.turnStationId);
+            SerializationUtil.serializeString(out, value.turnStationName);
+            out.writeInt(value.turnStationSeq);
+
+            SerializationUtil.serializeString(out, value.firstUpTime);
+            SerializationUtil.serializeString(out, value.lastUpTime);
+            SerializationUtil.serializeString(out, value.firstDownTime);
+            SerializationUtil.serializeString(out, value.lastDownTime);
+            SerializationUtil.serializeString(out, value.allocNormal);
+            SerializationUtil.serializeString(out, value.allocWeekend);
+            SerializationUtil.serializeString(out, value.regionName);
+            SerializationUtil.serializeString(out, value.companyName);
+            SerializationUtil.serializeString(out, value.companyTel);
+            SerializationUtil.serializeString(out, value.garageName);
+            SerializationUtil.serializeString(out, value.garageTel);
+            District.SERIALIZER.serialize(out, value.district);
+
+            SerializationUtil.writeByteArray(out, SerializationUtil.serialize(value.routeStationList));
+        }
+
+        @Override
+        public Route deserialize(DataInput in, int available) throws IOException {
+            Route route = new Route();
+            route.id = SerializationUtil.deserializeString(in);
+            route.name = SerializationUtil.deserializeString(in);
+            route.type = RouteType.SERIALIZER.deserialize(in, available);
+            route.provider = Provider.SERIALIZER.deserialize(in, available);
+
+            route.startStationId = SerializationUtil.deserializeString(in);
+            route.startStationName = SerializationUtil.deserializeString(in);
+            route.endStationId = SerializationUtil.deserializeString(in);
+            route.endStationName = SerializationUtil.deserializeString(in);
+            route.turnStationId = SerializationUtil.deserializeString(in);
+            route.turnStationName = SerializationUtil.deserializeString(in);
+            route.turnStationSeq = in.readInt();
+
+            route.firstUpTime = SerializationUtil.deserializeString(in);
+            route.lastUpTime = SerializationUtil.deserializeString(in);
+            route.firstDownTime = SerializationUtil.deserializeString(in);
+            route.lastDownTime = SerializationUtil.deserializeString(in);
+            route.allocNormal = SerializationUtil.deserializeString(in);
+            route.allocWeekend = SerializationUtil.deserializeString(in);
+            route.regionName = SerializationUtil.deserializeString(in);
+            route.companyName = SerializationUtil.deserializeString(in);
+            route.companyTel = SerializationUtil.deserializeString(in);
+            route.garageName = SerializationUtil.deserializeString(in);
+            route.garageTel = SerializationUtil.deserializeString(in);
+            route.district = District.SERIALIZER.deserialize(in, available);
+
+            //noinspection unchecked
+            route.routeStationList = SerializationUtil.deserialize(SerializationUtil.readByteArray(in), ArrayList.class);
+            return route;
+        }
+    };
 }

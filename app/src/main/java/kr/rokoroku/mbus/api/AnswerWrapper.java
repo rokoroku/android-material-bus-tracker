@@ -48,23 +48,23 @@ public class AnswerWrapper {
 
     public static CustomEvent createCustomEvent(String tag, String method) {
         CustomEvent customEvent = new CustomEvent(tag);
-        if(method != null) customEvent.putCustomAttribute(KEY_METHOD, method);
+        if (method != null) customEvent.putCustomAttribute(KEY_METHOD, method);
         return customEvent;
-    };
+    }
 
     public static CustomEvent createCustomEvent(String tag, String method, String result) {
         CustomEvent customEvent = new CustomEvent(tag);
-        if(method != null) customEvent.putCustomAttribute(KEY_METHOD, method);
-        if(result != null) customEvent.putCustomAttribute(KEY_RESULT, result);
+        if (method != null) customEvent.putCustomAttribute(KEY_METHOD, method);
+        if (result != null) customEvent.putCustomAttribute(KEY_RESULT, result);
         return customEvent;
-    };
+    }
 
     public static CustomEvent createCustomEvent(String tag, String method, Number value) {
         CustomEvent customEvent = new CustomEvent(tag);
-        if(method != null) customEvent.putCustomAttribute(KEY_METHOD, method);
-        if(value != null) customEvent.putCustomAttribute(KEY_VALUE, value);
+        if (method != null) customEvent.putCustomAttribute(KEY_METHOD, method);
+        if (value != null) customEvent.putCustomAttribute(KEY_VALUE, value);
         return customEvent;
-    };
+    }
 
     public static Callback createWrappedCallback(Callback callback, String tag, String method) {
         return new Callback() {
@@ -77,10 +77,23 @@ public class AnswerWrapper {
             @Override
             public void failure(RetrofitError error) {
                 callback.failure(error);
-                Answers.getInstance().logCustom(createCustomEvent(tag, method, error.getMessage()));
+                String failReason = "Failure";
+                if (error != null) try {
+                    Throwable errorCause = error.getCause();
+                    RetrofitError.Kind errorKind = error.getKind();
+                    if (errorKind != null) {
+                        failReason = errorKind.name();
+                    }
+                    if (errorCause == null) {
+                        failReason += ":" + errorCause.getClass().getName();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                Answers.getInstance().logCustom(createCustomEvent(tag, method, failReason));
             }
         };
-    };
+    }
 
     public static SeoulBusRestInterface wrap(SeoulBusRestInterface seoulBusRestInterface) {
         return new SeoulBusRestInterface() {

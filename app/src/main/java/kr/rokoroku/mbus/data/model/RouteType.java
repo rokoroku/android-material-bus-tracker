@@ -3,6 +3,12 @@ package kr.rokoroku.mbus.data.model;
 import android.content.Context;
 import android.support.annotation.Nullable;
 
+import org.mapdb.Serializer;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+
 import kr.rokoroku.mbus.R;
 import kr.rokoroku.mbus.util.ThemeUtils;
 
@@ -189,4 +195,27 @@ public enum RouteType {
         }
         return false;
     }
+
+    public static final Serializer<RouteType> SERIALIZER = new Serializer<RouteType>() {
+        @Override
+        public void serialize(DataOutput out, RouteType value) throws IOException {
+            if(value == null) {
+                out.writeByte(0);
+            } else {
+                out.writeByte(1);
+                out.writeInt(value.value);
+            }
+        }
+
+        @Override
+        public RouteType deserialize(DataInput in, int available) throws IOException {
+            boolean isNull = in.readByte() == 0;
+            if(!isNull) {
+                int value = in.readInt();
+                return RouteType.valueOf(value);
+            } else {
+                return null;
+            }
+        }
+    };
 }

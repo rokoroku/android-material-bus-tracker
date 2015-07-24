@@ -60,6 +60,8 @@ public class DatabaseFacade {
 
     private DB userDB;
     private DB dataDB;
+    private boolean isDataDbChanged = false;
+    private boolean isUserDbChanged = false;
     private Map<Provider, BTreeMap<String, Route>> routeTable;
     private Map<Provider, BTreeMap<String, Station>> stationTable;
     private Map<Provider, Map<String, String>> secondaryStationKeyTable;
@@ -96,10 +98,10 @@ public class DatabaseFacade {
             File userfile = new File(context.getCacheDir().getAbsolutePath(), DATABASE_FILENAME_USER);
             File datafile = new File(context.getCacheDir().getAbsolutePath(), DATABASE_FILENAME_STATIC);
 
-            if(userfile.exists()) {
+            if (userfile.exists()) {
                 userfile.delete();
             }
-            if(datafile.exists()) {
+            if (datafile.exists()) {
                 datafile.delete();
             }
             createOrLoadFile();
@@ -142,8 +144,14 @@ public class DatabaseFacade {
         this.hiddenStationRouteTable = new HashMap<>();
 
         for (Provider provider : Provider.values()) {
-            BTreeMap<String, Route> routeBTreeMap = dataDB.treeMap(TABLE_ROUTE_PREFIX + provider.getCityCode());
-            BTreeMap<String, Station> stationBTreeMap = dataDB.treeMap(TABLE_STATION_PREFIX + provider.getCityCode());
+            BTreeMap<String, Route> routeBTreeMap = dataDB.treeMapCreate(TABLE_ROUTE_PREFIX + provider.getCityCode())
+                    .keySerializer(BTreeKeySerializer.STRING)
+                    .valueSerializer(Route.SERIALIZER)
+                    .makeOrGet();
+            BTreeMap<String, Station> stationBTreeMap = dataDB.treeMapCreate(TABLE_STATION_PREFIX + provider.getCityCode())
+                    .keySerializer(BTreeKeySerializer.STRING)
+                    .valueSerializer(Station.SERIALIZER)
+                    .makeOrGet();
             Map<String, String> secondaryKeyTable = createSecondaryKeyTable(stationBTreeMap);
 
             NavigableSet<String> hiddenStationSet = userDB.treeSet(TABLE_HIDDEN_STATION + provider.getCityCode());
@@ -162,7 +170,7 @@ public class DatabaseFacade {
 
         this.bookmarkTable = userDB.treeMapCreate(TABLE_FAVORITE)
                 .keySerializer(BTreeKeySerializer.STRING)
-                .valueSerializer(Favorite.serializer)
+                .valueSerializer(Favorite.SERIALIZER)
                 .makeOrGet();
 
         if (bookmarkTable.get(DEFAULT_FAVORITE_ID) == null) {
@@ -224,6 +232,7 @@ public class DatabaseFacade {
         final String key = route.getId();
         if (key != null) {
             routeMap.put(key, route);
+            isDataDbChanged = true;
         }
     }
 
@@ -298,6 +307,7 @@ public class DatabaseFacade {
         final String key = station.getId();
         if (key != null) {
             stationMap.put(key, station);
+            isDataDbChanged = true;
         }
     }
 
@@ -317,6 +327,7 @@ public class DatabaseFacade {
 
     public synchronized void putBookmark(String id, Favorite favorite) {
         bookmarkTable.put(id, favorite);
+        isUserDbChanged = true;
     }
 
     public Set<SearchHistory> getSearchHistoryTable() {
@@ -331,20 +342,23 @@ public class DatabaseFacade {
                 @Override
                 protected Void doInBackground(Void[] params) {
                     synchronized (DatabaseFacade.this) {
-                        boolean result = true;
-                        try {
+                        boolean success = true;
+
+                        if (isDataDbChanged) try {
                             dataDB.commit();
                         } catch (Exception e) {
-                            result = false;
+                            success = false;
                         }
-                        try {
+                        if (isUserDbChanged) try {
                             userDB.commit();
                         } catch (Exception e) {
-                            result = false;
+                            success = false;
                         }
-                        if (!result) {
+                        if (!success) {
                             reopen();
                         }
+                        isUserDbChanged = false;
+                        isDataDbChanged = false;
                     }
                     return null;
                 }

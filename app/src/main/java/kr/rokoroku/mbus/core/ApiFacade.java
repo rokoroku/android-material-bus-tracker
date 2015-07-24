@@ -577,7 +577,7 @@ public class ApiFacade {
                                  @Nullable ProgressCallback<List<Station>> callback) {
 
         String query = String.format("(%.3f, %.3f)", longitude, latitude);
-        Answers.getInstance().logSearch(new SearchEvent().putQuery(query));
+        Answers.getInstance().logSearch(new SearchEvent().putCustomAttribute("Position", query));
 
         final List<Station> resultList = new ArrayList<>();
         final ProgressCallback.ProgressRunner<List<Station>> progressRunner = new ProgressCallback.ProgressRunner<>(callback, 2);

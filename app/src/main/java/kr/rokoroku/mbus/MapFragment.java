@@ -410,6 +410,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
                 double northEastLatitude = 0;
                 double northEastLongitude = 0;
 
+                mStationTable = new HashMap<>();
                 for (RouteStation routeStation : routeStationList) {
                     if (turnStation == null && routeStation.getSequence() == route.getTurnStationSeq()) {
                         turnStation = routeStation;
@@ -432,6 +433,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
                             .visible(false);
                     Marker marker = map.addMarker(markerOptions);
                     markers.add(marker);
+                    mStationTable.put(routeStation.getLocalId(), routeStation);
                 }
 
                 if (lastStation == null) {
@@ -520,7 +522,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
     }
 
     private void updateMarkers(CameraPosition cameraPosition) {
-        if (markers != null) {
+        if (markers != null && getMap() != null) {
             boolean visible = true;
             Bitmap bitmap = null;
 

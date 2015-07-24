@@ -146,7 +146,7 @@ public abstract class AbstractBaseActivity extends AppCompatActivity implements 
     @Override
     protected void onStop() {
         super.onStop();
-        //DatabaseFacade.getInstance().commitAsync();
+        DatabaseFacade.getInstance().commitAsync();
     }
 
     @Override

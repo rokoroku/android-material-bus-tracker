@@ -116,41 +116,20 @@ public class Favorite implements Serializable {
     }
 
 
-    public static Serializer<Favorite> serializer = new Serializer<Favorite>() {
-
-        public void writeByteArray(DataOutput out, byte[] bytes) throws IOException {
-            int size = bytes != null ? bytes.length : 0;
-
-            out.writeInt(size);
-            if(size > 0) {
-                out.write(bytes);
-            }
-        }
-
-        public byte[] readByteArray(DataInput in) throws IOException {
-            int size = in.readInt();
-
-            if(size > 0) {
-                byte[] bytes = new byte[size];
-                in.readFully(bytes);
-                return bytes;
-            } else {
-                return null;
-            }
-        }
+    public static Serializer<Favorite> SERIALIZER = new Serializer<Favorite>() {
 
         @Override
         public void serialize(DataOutput out, Favorite value) throws IOException {
             out.writeUTF(value.name);
-            writeByteArray(out, SerializationUtil.serialize(value.coloredRouteTable));
-            writeByteArray(out, SerializationUtil.serialize(value.coloredStationTable));
+            SerializationUtil.writeByteArray(out, SerializationUtil.serialize(value.coloredRouteTable));
+            SerializationUtil.writeByteArray(out, SerializationUtil.serialize(value.coloredStationTable));
 
             out.writeInt(value.favoriteGroups.size());
             for (FavoriteGroup favoriteGroup : value.favoriteGroups) {
                 out.writeUTF(favoriteGroup.getName());
                 out.writeInt(favoriteGroup.size());
                 for (FavoriteGroup.FavoriteItem favoriteItem : favoriteGroup.getItems()) {
-                    writeByteArray(out, SerializationUtil.serialize(favoriteItem));
+                    SerializationUtil.writeByteArray(out, SerializationUtil.serialize(favoriteItem));
                 }
             }
         }
@@ -159,12 +138,8 @@ public class Favorite implements Serializable {
         @SuppressWarnings("unchecked")
         public Favorite deserialize(DataInput in, int available) throws IOException {
             Favorite favorite = new Favorite(in.readUTF());
-
-            byte[] routeBytes = readByteArray(in);
-            if(routeBytes != null) favorite.coloredRouteTable = SerializationUtil.deserialize(routeBytes, HashMap.class);
-
-            byte[] stationBytes = readByteArray(in);
-            if(stationBytes != null) favorite.coloredRouteTable = SerializationUtil.deserialize(stationBytes, HashMap.class);
+            favorite.coloredRouteTable = SerializationUtil.deserialize(SerializationUtil.readByteArray(in), HashMap.class);
+            favorite.coloredStationTable = SerializationUtil.deserialize(SerializationUtil.readByteArray(in), HashMap.class);
 
             int favoriteGroupSize = in.readInt();
             for(int i=0; i<favoriteGroupSize; i++) {
@@ -173,7 +148,7 @@ public class Favorite implements Serializable {
 
                 FavoriteGroup favoriteGroup = new FavoriteGroup(name);
                 for(int j=0; j<favoriteItemSize; j++) {
-                    byte[] favoriteItemBytes = readByteArray(in);
+                    byte[] favoriteItemBytes = SerializationUtil.readByteArray(in);
                     if(favoriteItemBytes != null) {
                         FavoriteGroup.FavoriteItem favoriteItem = SerializationUtil.deserialize(favoriteItemBytes, FavoriteGroup.FavoriteItem.class);
                         favoriteGroup.add(j, favoriteItem);

@@ -47,6 +47,7 @@ public class MapsActivity extends AppCompatActivity implements MapFragment.OnEve
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
+        mCoordinatorLayout = (CoordinatorLayout) findViewById(R.id.coordinator_layout);
 
         initToolbar();
         initMapFragment(savedInstanceState);
@@ -80,7 +81,6 @@ public class MapsActivity extends AppCompatActivity implements MapFragment.OnEve
                     .add(R.id.fragment_frame, mMapFragment, MAP_FRAGMENT_TAG)
                     .commit();
         }
-        mCoordinatorLayout = (CoordinatorLayout) findViewById(R.id.coordinator_layout);
         mMapFragment.setOnEventListener(this);
     }
 
@@ -91,7 +91,7 @@ public class MapsActivity extends AppCompatActivity implements MapFragment.OnEve
             //noinspection ConstantConditions
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 CoordinatorLayout.LayoutParams layoutParams = (CoordinatorLayout.LayoutParams) mToolbar.getLayoutParams();
                 layoutParams.topMargin = ViewUtils.getStatusBarHeight(this);
             }
@@ -102,7 +102,7 @@ public class MapsActivity extends AppCompatActivity implements MapFragment.OnEve
 
             TextView titleTextView = null;
             titleTextView = (TextView) f.get(mToolbar);
-            if(titleTextView != null) {
+            if (titleTextView != null) {
                 titleTextView.setEllipsize(TextUtils.TruncateAt.MARQUEE);
                 titleTextView.setFocusable(true);
                 titleTextView.setFocusableInTouchMode(true);
@@ -131,13 +131,15 @@ public class MapsActivity extends AppCompatActivity implements MapFragment.OnEve
             if (routeType != null && !RouteType.UNKNOWN.equals(routeType)) {
                 mToolbar.setTitleTextColor(routeType.getColor(this));
             }
-
+            if (mMapFragment != null) {
+                mMapFragment.setRoute(mRouteExtra);
+            }
         } else if (mStationExtra != null) {
             setTitle(mStationExtra.getName());
-        }
 
-        if(mMapFragment != null) {
-            mMapFragment.setArguments(intent.getExtras());
+            if (mMapFragment != null) {
+                mMapFragment.setStation(mStationExtra);
+            }
         }
 
         setIntent(intent);
@@ -183,5 +185,4 @@ public class MapsActivity extends AppCompatActivity implements MapFragment.OnEve
     public void onErrorMessage(String error) {
         Snackbar.make(mCoordinatorLayout, error, Snackbar.LENGTH_LONG).show();
     }
-
 }

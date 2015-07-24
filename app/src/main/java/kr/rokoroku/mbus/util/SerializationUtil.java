@@ -20,6 +20,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import kr.rokoroku.mbus.data.model.RouteType;
+
 /**
  * Created by rok on 2015. 7. 7..
  * <p>
@@ -93,7 +95,7 @@ public class SerializationUtil {
     }
 
     public static byte[] serialize(Object object) {
-        try {
+        if(object != null) try {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             ObjectOutput out = new ObjectOutputStream(bos);
             out.writeObject(object);
@@ -107,7 +109,7 @@ public class SerializationUtil {
     }
 
     public static <T> T deserialize(byte[] bytes, Class<T> clazz) {
-        try {
+        if(bytes != null) try {
             ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
             ObjectInput in = new ObjectInputStream(bis);
             Object object = in.readObject();
@@ -122,18 +124,21 @@ public class SerializationUtil {
     public static void serialize(DataOutput out, Object object) throws IOException {
         if (object == null) {
             out.writeByte(0);
-        } else try {
-            out.writeByte(1);
-            Field field = object.getClass().getDeclaredField("SERIALIZER");
-            Serializer serializer = (Serializer) field.getDeclaringClass().cast(Serializer.class);
-            serializer.serialize(out, object);
 
-        } catch (Exception e) {
-            e.printStackTrace();
+        } else {
+            try {
+                out.writeByte(1);
+                Field field = object.getClass().getDeclaredField("SERIALIZER");
+                Serializer serializer = (Serializer) field.getDeclaringClass().cast(Serializer.class);
+                serializer.serialize(out, object);
 
-            byte[] bytes = serialize(object);
-            out.writeInt(bytes.length);
-            out.write(bytes);
+            } catch (Exception e) {
+                e.printStackTrace();
+
+                byte[] bytes = serialize(object);
+                out.writeInt(bytes.length);
+                out.write(bytes);
+            }
         }
     }
 
@@ -155,4 +160,64 @@ public class SerializationUtil {
             return null;
         }
     }
+
+    public static void serializeString(DataOutput out, String string) throws IOException {
+        if(string == null) {
+            out.writeByte(0);
+        } else {
+            out.writeByte(1);
+            out.writeUTF(string);
+        }
+    }
+
+    public static String deserializeString(DataInput in) throws IOException {
+        boolean isNull = in.readByte() == 0;
+        if(!isNull) {
+            return in.readUTF();
+        } else {
+            return null;
+        }
+    }
+
+
+    public static void serializeDouble(DataOutput out, Double aDouble) throws IOException {
+        if(aDouble == null) {
+            out.writeByte(0);
+        } else {
+            out.writeByte(1);
+            out.writeDouble(aDouble);
+        }
+    }
+
+    public static Double deserializeDouble(DataInput in) throws IOException {
+        boolean isNull = in.readByte() == 0;
+        if(!isNull) {
+            return in.readDouble();
+        } else {
+            return null;
+        }
+    }
+
+
+    public static void writeByteArray(DataOutput out, byte[] bytes) throws IOException {
+        int size = bytes != null ? bytes.length : 0;
+
+        out.writeInt(size);
+        if(size > 0) {
+            out.write(bytes);
+        }
+    }
+
+    public static byte[] readByteArray(DataInput in) throws IOException {
+        int size = in.readInt();
+
+        if(size > 0) {
+            byte[] bytes = new byte[size];
+            in.readFully(bytes);
+            return bytes;
+        } else {
+            return null;
+        }
+    }
+
 }

@@ -125,6 +125,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
         alertGpsEnable();
         SharedPreferences sharedPreferences = getSharedPreferences(BaseApplication.SHARED_PREFERENCE_KEY, MODE_PRIVATE);
         String homeScreen = sharedPreferences.getString(BaseApplication.PREFERENCE_HOME_SCREEN, "1");
+        boolean locationEnabled = LocationClient.isLocationEnabled(this);
         switch (homeScreen) {
             case "0":
                 showSearch(false);
@@ -136,7 +137,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
 
             case "2":
                 showFavorite(false);
-                if (LocationClient.isLocationEnabled(this)) {
+                if (locationEnabled) {
                     showMap();
                 }
                 break;
@@ -176,12 +177,11 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
     protected void onResume() {
         super.onResume();
         boolean locationEnabled = LocationClient.isLocationEnabled(this);
-
         if (wasLocationEnabled != locationEnabled) {
-            wasLocationEnabled = locationEnabled;
             mLocationButton.setEnabled(locationEnabled);
             enableSearchBoxLocationButton(locationEnabled);
         }
+        wasLocationEnabled = locationEnabled;
     }
 
     private void enableSearchBoxLocationButton(boolean locationEnabled) {
@@ -221,6 +221,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
             mSearchBox.setSideButtonOnClickListener(null);
             mSearchBox.setSideButtonDrawable(null);
         });
+        mSearchBox.setUserSideButtonFunctionEnabled(LocationClient.isLocationEnabled(this));
 
         reloadSearchSuggestion();
     }

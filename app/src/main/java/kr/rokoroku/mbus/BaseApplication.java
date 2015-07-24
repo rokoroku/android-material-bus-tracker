@@ -55,7 +55,7 @@ public class BaseApplication extends Application {
 
         if (BuildConfig.DEBUG) {
             Fabric.with(this, new Answers());
-            logLevel = RestAdapter.LogLevel.HEADERS_AND_ARGS;
+            logLevel = RestAdapter.LogLevel.BASIC;
         } else {
             Fabric.with(this, new Crashlytics());
             logLevel = RestAdapter.LogLevel.NONE;

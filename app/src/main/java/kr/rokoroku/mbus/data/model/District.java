@@ -2,6 +2,12 @@ package kr.rokoroku.mbus.data.model;
 
 import android.content.Context;
 
+import org.mapdb.Serializer;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+
 import kr.rokoroku.mbus.R;
 
 /**
@@ -13,10 +19,17 @@ public enum District {
     INCHEON(3),
     UNKNOWN(-1);
 
-    private int value;
+    private final int value;
 
     District(int value) {
         this.value = value;
+    }
+
+    public static District valueOf(int code) {
+        for (District district : District.values()) {
+            if (district.value == code) return district;
+        }
+        return null;
     }
 
     public static District valueOfGbis(String siflag) {
@@ -26,10 +39,7 @@ public enum District {
         } catch (Exception ignored) {
 
         }
-        for (District district : District.values()) {
-            if (district.value == flag) return district;
-        }
-        return UNKNOWN;
+        return valueOf(flag);
     }
 
 
@@ -54,4 +64,27 @@ public enum District {
         }
         return context.getString(strRes);
     }
+
+    public static final Serializer<District> SERIALIZER = new Serializer<District>() {
+        @Override
+        public void serialize(DataOutput out, District value) throws IOException {
+            if(value == null) {
+                out.writeByte(0);
+            } else {
+                out.writeByte(1);
+                out.writeInt(value.value);
+            }
+        }
+
+        @Override
+        public District deserialize(DataInput in, int available) throws IOException {
+            boolean isNull = in.readByte() == 0;
+            if(!isNull) {
+                int value = in.readInt();
+                return District.valueOf(value);
+            } else {
+                return null;
+            }
+        }
+    };
 }
