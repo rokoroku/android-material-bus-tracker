@@ -2,6 +2,9 @@ package kr.rokoroku.mbus;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
@@ -17,7 +20,6 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.RecyclerView;
-import android.text.Html;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.MenuItem;
@@ -120,16 +122,33 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
         initMapFragment();
 
         alertGpsEnable();
-        showFavorite(false);
+        SharedPreferences sharedPreferences = getSharedPreferences(BaseApplication.SHARED_PREFERENCE_KEY, MODE_PRIVATE);
+        String homeScreen = sharedPreferences.getString(BaseApplication.PREFERENCE_HOME_SCREEN, "1");
+        switch (homeScreen) {
+            case "0":
+                showSearch(false);
+                break;
+            default:
+            case "1":
+                showFavorite(false);
+                break;
+
+            case "2":
+                showFavorite(false);
+                if (LocationClient.isLocationEnabled(this)) {
+                    showMap();
+                }
+                break;
+        }
     }
 
     private void alertGpsEnable() {
         if (!LocationClient.isLocationEnabled(this)) {
             MaterialDialog dialog = new MaterialDialog.Builder(this)
-                    .title("GPS 사용 설정")
-                    .content("위치 정보를 허용하시면 더 다양한 기능을 이용할 수 있어요.")
-                    .positiveText("좋아")
-                    .negativeText("싫어")
+                    .title(R.string.action_enable_gps)
+                    .content(R.string.hint_enable_gps)
+                    .positiveText(R.string.action_ok)
+                    .negativeText(R.string.action_no)
                     .callback(new MaterialDialog.ButtonCallback() {
                         @Override
                         public void onPositive(MaterialDialog dialog) {
@@ -311,6 +330,31 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
                 mMapFragment.clearExtras();
                 closeDrawer();
                 return true;
+
+            case R.id.nav_action_settings:
+                Intent intent = new Intent(this, SettingsActivity.class);
+                startActivity(intent);
+                closeDrawer();
+                return true;
+
+            case R.id.nav_action_about:
+                MaterialDialog aboutDialog = new MaterialDialog.Builder(this)
+                        .customView(R.layout.popup_about, true)
+                        .cancelable(true)
+                        .build();
+                TextView titleTextView = (TextView) aboutDialog.getView().findViewById(R.id.app_title);
+                TextView versionTextView = (TextView) aboutDialog.getView().findViewById(R.id.app_version);
+                try {
+                    titleTextView.setText(getString(R.string.app_name).replace("(베타)", ""));
+                    PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+                    versionTextView.setText("v" + pInfo.versionName + " (beta)");
+                } catch (PackageManager.NameNotFoundException e) {
+                    versionTextView.setText("");
+                    e.printStackTrace();
+                }
+                aboutDialog.show();
+                closeDrawer();
+                return true;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -483,7 +527,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
     @Override
     public void onGroupItemRemoved(int groupPosition) {
         Snackbar.make(mCoordinatorLayout, "그룹이 제거되었습니다.", Snackbar.LENGTH_LONG)
-                .setAction("UNDO", v -> {
+                .setAction(R.string.action_undo, v -> {
                     undoLastRemoval();
                 }).show();
         showToolbarLayer();
@@ -492,7 +536,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
     @Override
     public void onChildItemRemoved(int groupPosition, int childPosition) {
         Snackbar.make(mCoordinatorLayout, "즐겨찾기가 제거되었습니다.", Snackbar.LENGTH_LONG)
-                .setAction("UNDO", v -> {
+                .setAction(R.string.action_undo, v -> {
                     undoLastRemoval();
                 }).show();
         showToolbarLayer();
@@ -599,7 +643,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
             }
             if (childView != null) {
                 new ShowcaseView.Builder(this, preferenceKey)
-                        .setDescription("<br><br>힌트!<br><br> 1. <b>길게 눌러서 위치 변경</b><br> 2. <b>좌우로 밀어서 삭제</b>", PositionsUtil.ItemPosition.CENTER)
+                        .setDescription(getString(R.string.hint_favorite_tutorial), PositionsUtil.ItemPosition.CENTER)
                         .setTarget(new TargetView(childView, TargetView.ShowcaseType.RECTANGLE))
                         .setHideOnAction(true)
                         .setOneShot(true)
@@ -715,7 +759,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
             mSearchBox.setLogoText(getString(R.string.hint_search));
             mSearchBox.closeSearch();
         }
-        ViewUtils.runOnUiThread(this::showFirstFavoriteHintIfNotShown, 600);
+        ViewUtils.runOnUiThread(this::showFirstFavoriteHintIfNotShown, 500);
         showToolbarLayer();
     }
 
@@ -761,6 +805,9 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
         FragmentManager fragmentManager = getSupportFragmentManager();
         mSearchFragment = (RecyclerViewFragment) fragmentManager.findFragmentByTag(TAG_FRAGMENT_SEARCH);
         if (mSearchFragment == null) {
+            mSearchFragment = RecyclerViewFragment.createInstance(TAG_FRAGMENT_SEARCH);
+        }
+        if (mSearchAdapter == null) {
             mSearchDataProvider = new SearchDataProvider();
             mSearchAdapter = new SearchAdapter(mSearchDataProvider);
             mSearchAdapter.setOnChildMenuItemClickListener((menuItem, object) -> {
@@ -773,7 +820,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
                             } else if (object instanceof Station) {
                                 favoriteGroup = FavoriteFacade.getInstance().addToFavorite((Station) object, null);
                             }
-                            Snackbar.make(mCoordinatorLayout, R.string.alert_added_to_favorite, Snackbar.LENGTH_LONG).show();
+                            Snackbar.make(mCoordinatorLayout, R.string.alert_favorite_added, Snackbar.LENGTH_LONG).show();
 
                             mFavoriteAdapter.notifyDataSetChanged();
                             for (int i = 0; i < mFavoriteDataProvider.getGroupCount(); i++) {
@@ -807,8 +854,9 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
                     }
                 }
             });
-
-            mSearchFragment = RecyclerViewFragment.createInstance(TAG_FRAGMENT_SEARCH);
+        }
+        if (mSearchFragment != null && mSearchAdapter != null) {
+            mSearchFragment.setAdapter(mSearchAdapter);
         }
     }
 
@@ -816,6 +864,9 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
         FragmentManager fragmentManager = getSupportFragmentManager();
         mFavoriteFragment = (RecyclerViewFragment) fragmentManager.findFragmentByTag(TAG_FRAGMENT_FAVORITE);
         if (mFavoriteFragment == null) {
+            mFavoriteFragment = RecyclerViewFragment.createInstance(TAG_FRAGMENT_FAVORITE);
+        }
+        if (mFavoriteAdapter == null) {
             Favorite favorite = FavoriteFacade.getInstance().getCurrentFavorite();
             Parcelable eimSavedState = (savedInstanceState != null) ? savedInstanceState.getParcelable(SAVED_STATE_EXPANDABLE_ITEM_MANAGER) : null;
             mFavoriteItemManager = new RecyclerViewExpandableItemManager(eimSavedState);
@@ -834,7 +885,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
                 @Override
                 public void onChildItemRemoved(int groupPosition, int childPosition) {
                     Snackbar.make(mCoordinatorLayout, R.string.alert_favorite_removed, Snackbar.LENGTH_LONG)
-                            .setAction("UNDO", v -> {
+                            .setAction(R.string.action_undo, v -> {
                                 undoLastRemoval();
                             }).show();
                     showToolbarLayer();
@@ -867,7 +918,9 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
                     }
                 }
             });
-            mFavoriteFragment = RecyclerViewFragment.createInstance(TAG_FRAGMENT_FAVORITE);
+        }
+        if (mFavoriteFragment != null && mFavoriteAdapter != null) {
+            mFavoriteFragment.setAdapter(mFavoriteAdapter);
         }
     }
 

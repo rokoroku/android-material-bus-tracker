@@ -8,6 +8,7 @@ import android.location.LocationProvider;
 import android.os.Bundle;
 import android.os.Looper;
 import android.support.annotation.Nullable;
+import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
@@ -80,7 +81,7 @@ public class LocationClient implements GoogleApiClient.ConnectionCallbacks,
 
                     @Override
                     public void onProviderEnabled(String provider) {
-
+                        Log.d("ProviderEnabled", "provider: " + provider);
                     }
 
                     @Override
@@ -133,6 +134,7 @@ public class LocationClient implements GoogleApiClient.ConnectionCallbacks,
                         LocationRequest locationRequest = new LocationRequest()
                                 .setNumUpdates(1)
                                 .setMaxWaitTime(5000)
+                                .setExpirationTime(5000)
                                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
                         LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, locationRequest, this);
                     } else {
@@ -287,17 +289,6 @@ public class LocationClient implements GoogleApiClient.ConnectionCallbacks,
     public static void init(Context context) {
         final LocationClient locationClient = new LocationClient(context);
         locationClient.buildDeviceLocationManager(context);
-        locationClient.setListener(new Listener() {
-            @Override
-            public void onLocationUpdate(Location location) {
-                locationClient.stop();
-            }
-
-            @Override
-            public void onError(String failReason, ConnectionResult connectionResult) {
-                locationClient.stop();
-            }
-        });
         locationClient.start(true);
     }
 

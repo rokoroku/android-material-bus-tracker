@@ -477,7 +477,7 @@ public class RouteActivity extends AbstractBaseActivity
     }
 
     private void openChooserDialog(RouteStation station1, RouteStation station2) {
-        View chooserView = View.inflate(RouteActivity.this, R.layout.dialog_nearby_station_chooser, null);
+        View chooserView = View.inflate(RouteActivity.this, R.layout.popup_nearby_station_chooser, null);
         Route route = mRouteDataProvider.getRoute();
 
         SplitCardView stationView = (SplitCardView) chooserView.findViewById(R.id.station_1);
@@ -595,7 +595,7 @@ public class RouteActivity extends AbstractBaseActivity
 
     private void addToFavorite(RouteStation routeStation) {
         FavoriteFacade.getInstance().addToFavorite(mRouteDataProvider.getRoute(), routeStation);
-        Snackbar.make(mCoordinatorLayout, R.string.alert_added_to_favorite, Snackbar.LENGTH_LONG).show();
+        Snackbar.make(mCoordinatorLayout, R.string.alert_favorite_added, Snackbar.LENGTH_LONG).show();
     }
 
 }

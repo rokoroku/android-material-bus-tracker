@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.LayoutRes;
 import android.support.design.widget.NavigationView;
-import android.support.design.widget.Snackbar;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
@@ -47,6 +46,7 @@ public abstract class AbstractBaseActivity extends AppCompatActivity implements 
     private RecyclerView.OnScrollListener mScrollListener;
     private RecyclerView.ItemDecoration mItemDecoration;
     private int mUpperSurfaceHeight = 0;
+    private int mThemeId = 0;
     private boolean mIsActivityVisible;
 
     private Menu mMenu;
@@ -58,7 +58,8 @@ public abstract class AbstractBaseActivity extends AppCompatActivity implements 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        setTheme(BaseApplication.getInstance().getThemeId());
+        this.mThemeId = BaseApplication.getInstance().getCurrentTheme();
+        this.setTheme(mThemeId);
         super.onCreate(savedInstanceState);
         super.setContentView(R.layout.activity_base);
 
@@ -77,6 +78,17 @@ public abstract class AbstractBaseActivity extends AppCompatActivity implements 
             ex.printStackTrace();
             defaultUncaughtExceptionHandler.uncaughtException(thread, ex);
         });
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        int themeId = BaseApplication.getInstance().getCurrentTheme();
+        if(themeId != mThemeId) {
+            mThemeId = themeId;
+            setTheme(themeId);
+            recreate();
+        }
     }
 
     @Override

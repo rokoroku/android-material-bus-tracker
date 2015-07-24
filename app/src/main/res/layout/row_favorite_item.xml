@@ -13,6 +13,7 @@
         android:layout_marginBottom="@dimen/cardview_item_spacing"
         android:clickable="true"
         android:foreground="?android:attr/selectableItemBackground"
+        card_view:cardBackgroundColor="?attr/cardColorDefault"
         card_view:cardCornerRadius="2dp">
 
         <!--Route Information Layout-->

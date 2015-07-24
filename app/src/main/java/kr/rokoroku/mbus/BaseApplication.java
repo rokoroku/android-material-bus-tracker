@@ -18,15 +18,18 @@ import kr.rokoroku.mbus.core.LocationClient;
 public class BaseApplication extends Application {
 
     public static final int REFRESH_INTERVAL = 60 * 1000;
+    public static final String SHARED_PREFERENCE_KEY = "pref";
+    public static final String PREFERENCE_HOME_SCREEN = "pref_home_screen";
+    public static final String PREFERENCE_THEME = "pref_theme";
 
     public static boolean showAd = false;
+    public static GoogleAnalytics analytics;
+    public static Tracker tracker;
 
     private static BaseApplication instance;
     private final static int[] themes = {R.style.AppTheme_Light, R.style.AppTheme};
-    public static int themeIndex = 0;
+    private int themeIndex = 0;
 
-    public static GoogleAnalytics analytics;
-    public static Tracker tracker;
 
     @Override
     public void onCreate() {
@@ -49,20 +52,24 @@ public class BaseApplication extends Application {
             Fabric.with(this, new Crashlytics());
         }
 
+        // set theme
+        String prefTheme = getSharedPreferences(SHARED_PREFERENCE_KEY, MODE_PRIVATE).getString(PREFERENCE_THEME, "0");
+        themeIndex = Integer.parseInt(prefTheme);
     }
 
+    public int getCurrentThemeIndex() {
+        return themeIndex;
+    }
 
-
-    public int getThemeId() {
+    public int getCurrentTheme() {
         return themes[themeIndex];
     }
 
-    public void switchTheme() {
-        themeIndex = (themeIndex + 1) % 2;
+    public void setThemeIndex(int index) {
+        this.themeIndex = index;
     }
 
     public static BaseApplication getInstance() {
         return instance;
     }
-
 }

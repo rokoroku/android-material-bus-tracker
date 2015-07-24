@@ -38,19 +38,24 @@
         <activity
             android:name=".StationActivity"
             android:configChanges="orientation|screenSize" />
-
         <activity
             android:name=".MapsActivity"
             android:configChanges="orientation|screenSize" />
+        <activity
+            android:name=".SettingsActivity"
+            android:label="@string/title_activity_settings"
+            android:parentActivityName=".MainActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="kr.rokoroku.mbus.MainActivity" />
+        </activity>
 
         <meta-data
             android:name="com.google.android.maps.v2.API_KEY"
             android:value="@string/google_maps_key" />
-
         <meta-data
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version" />
-
         <meta-data
             android:name="io.fabric.ApiKey"
             android:value="dd94aa1b9c3f5caa95114bce97b1a02d3b66c279" />

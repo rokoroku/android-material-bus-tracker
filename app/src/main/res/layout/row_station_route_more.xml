@@ -2,11 +2,12 @@
 <kr.rokoroku.mbus.ui.widget.SplitCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:card_view="http://schemas.android.com/apk/res-auto"
     android:id="@+id/card_view"
-    card_view:cardCornerRadius="4dp"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:clickable="true"
-    android:foreground="?android:attr/selectableItemBackground">
+    android:foreground="?android:attr/selectableItemBackground"
+    card_view:cardBackgroundColor="?attr/cardColorDefault"
+    card_view:cardCornerRadius="4dp">
 
     <!--Progress Ring-->
     <ProgressBar
@@ -38,6 +39,6 @@
         android:text="@string/bus_arrival_operation_end"
         android:textColor="?attr/cardPrimaryTextColor"
         android:textSize="14sp"
-        android:visibility="gone"/>
+        android:visibility="gone" />
 
 </kr.rokoroku.mbus.ui.widget.SplitCardView>

@@ -147,7 +147,7 @@ public class StationDataProvider {
                 boolean conflict = false;
                 for (StationRoute route : typedStationRouteList) {
                     if (route.getRouteName().equals(stationRoute.getRouteName())) {
-                        if (!Provider.SEOUL.equals(stationRoute.getProvider()) && !stationRoute.getRouteName().startsWith("N")) {
+                        if (!Provider.SEOUL.equals(stationRoute.getProvider())) {
                             conflict = true;
                         }
                     }

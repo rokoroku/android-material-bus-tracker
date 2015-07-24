@@ -1,0 +1,26 @@
+<resources>
+    <string name="title_activity_settings">환경 설정</string>
+    <string name="pref_home_screen_title">홈 스크린 설정</string>
+    <string-array name="pref_home_screen_titles">
+        <item>@string/nav_title_search</item>
+        <item>@string/nav_title_favorite</item>
+        <item>@string/nav_title_nearby_station</item>
+    </string-array>
+    <string-array name="pref_home_screen_values">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </string-array>
+
+    <string name="pref_theme_title">테마 설정</string>
+    <string name="pref_theme_summary">어플리케이션의 외관을 설정합니다.</string>
+    <string name="pref_home_screen_summary">어플리케이션 시작 시 보여질 화면을 설정합니다.</string>
+    <string-array name="pref_theme_titles">
+        <item>Light</item>
+        <item>Dark</item>
+    </string-array>
+    <string-array name="pref_theme_values">
+        <item>0</item>
+        <item>1</item>
+    </string-array>
+</resources>

@@ -6,6 +6,7 @@
     android:layout_height="64dp"
     android:clickable="true"
     android:foreground="?android:attr/selectableItemBackground"
+    card_view:cardBackgroundColor="?attr/cardColorDefault"
     card_view:cardCornerRadius="4dp">
 
     <!--Route Information Layout-->

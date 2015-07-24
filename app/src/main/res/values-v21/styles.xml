@@ -2,10 +2,10 @@
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
 
-        <item name="colorPrimary">@color/background_material_dark</item>
+        <item name="colorPrimary">#ff333333</item>
         <item name="colorPrimaryDark">@color/md_grey_900</item>
-        <item name="colorAccent">@color/md_blue_600</item>
-        <item name="colorButtonNormal">@color/md_white_1000</item>
+        <item name="colorAccent">@color/md_blue_700</item>
+        <item name="colorButtonNormal">@color/md_grey_200</item>
         <item name="colorControlHighlight">@color/ripple_material_light</item>
 
         <item name="busColorRedLine">@color/md_red_700</item>
@@ -19,7 +19,7 @@
         <item name="cardColorAccent3">@color/md_green_200</item>
         <item name="cardColorAccent4">@color/md_orange_200</item>
         <item name="cardColorAccent5">@color/md_deep_purple_200</item>
-        <item name="cardColorDefault">@color/cardview_light_background</item>
+        <item name="cardColorDefault">@color/md_grey_200</item>
 
         <item name="cardPrimaryTextColor">@color/primary_text_default_material_light</item>
         <item name="cardSecondaryTextColor">@color/secondary_text_default_material_light</item>

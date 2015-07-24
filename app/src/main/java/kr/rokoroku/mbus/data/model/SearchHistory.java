@@ -10,14 +10,7 @@ import java.io.Serializable;
  */
 public class SearchHistory implements Serializable, Comparable<SearchHistory> {
 
-    public enum Type {
-        ROUTE, STATION
-    }
-
-    private Type type;
     private String title;
-    private String key;
-    private Provider provider;
     private Long timestamp;
 
     public SearchHistory(@NonNull String title) {
@@ -25,24 +18,8 @@ public class SearchHistory implements Serializable, Comparable<SearchHistory> {
         this.timestamp = System.currentTimeMillis();
     }
 
-    public SearchHistory(@NonNull String title, Type type, String key, Provider provider) {
-        this.title = title;
-        this.type = type;
-        this.key = TextUtils.isEmpty(key) ? null : key;
-        this.provider = provider;
-        this.timestamp = System.currentTimeMillis();
-    }
-
     public String getTitle() {
         return title;
-    }
-
-    public Provider getProvider() {
-        return provider;
-    }
-
-    public String getKey() {
-        return key;
     }
 
     public Long getTimestamp() {
@@ -70,14 +47,4 @@ public class SearchHistory implements Serializable, Comparable<SearchHistory> {
         return (int)(another.timestamp - timestamp);
     }
 
-    @Override
-    public String toString() {
-        return "SearchHistory{" +
-                "title='" + title + '\'' +
-                ", key='" + key + '\'' +
-                ", type=" + type +
-                ", provider=" + provider +
-                ", timestamp=" + timestamp +
-                '}';
-    }
 }

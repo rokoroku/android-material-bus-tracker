@@ -455,6 +455,6 @@ public class StationActivity extends AbstractBaseActivity
 
     private void addToFavorite(StationRoute stationRoute) {
         FavoriteFacade.getInstance().addToFavorite(mStationDataProvider.getStation(), stationRoute);
-        Snackbar.make(mCoordinatorLayout, R.string.alert_added_to_favorite, Snackbar.LENGTH_LONG).show();
+        Snackbar.make(mCoordinatorLayout, R.string.alert_favorite_added, Snackbar.LENGTH_LONG).show();
     }
 }

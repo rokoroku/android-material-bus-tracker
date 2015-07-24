@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.graphics.drawable.AnimationDrawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.ImageView;
@@ -29,7 +28,7 @@ public class SplashActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        setTheme(BaseApplication.getInstance().getThemeId());
+        setTheme(BaseApplication.getInstance().getCurrentTheme());
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_splash);

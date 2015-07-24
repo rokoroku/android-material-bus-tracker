@@ -248,7 +248,7 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
     public void onBindChildViewHolder(BusArrivalViewHolder holder, int groupPosition, int childPosition, int viewType) {
 
         mExpandedPosition = groupPosition;
-        mBusArrivalViewHolderReference = new WeakReference<BusArrivalViewHolder>(holder);
+        mBusArrivalViewHolderReference = new WeakReference<>(holder);
 
         holder.clear();
         Context context = holder.itemView.getContext();

@@ -4,26 +4,29 @@
         <item
             android:id="@+id/nav_action_search"
             android:icon="@drawable/abc_ic_search_api_mtrl_alpha"
-            android:title="검색" />
+            android:title="@string/nav_title_search" />
         <item
             android:id="@+id/nav_action_favorite"
             android:icon="@drawable/ic_label_outline_white_24dp"
-            android:title="즐겨찾기" />
+            android:title="@string/nav_title_favorite" />
         <item
             android:id="@+id/nav_action_map"
             android:icon="@drawable/ic_my_location_black_24dp"
-            android:title="주변 정류장" />
+            android:title="@string/nav_title_nearby_station" />
         <item
             android:enabled="false"
             android:title="" />
     </group>
 
     <group android:checkableBehavior="single">
-        <item
-            android:title="기타">
+        <item android:title="기타">
             <menu>
-                <item android:title="환경 설정" />
-                <item android:title="어플리케이션 정보" />
+                <item
+                    android:id="@+id/nav_action_settings"
+                    android:title="환경 설정" />
+                <item
+                    android:id="@+id/nav_action_about"
+                    android:title="어플리케이션 정보" />
             </menu>
         </item>
     </group>
