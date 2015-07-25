@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="kr.rokoroku.mbus" >
+    xmlns:tools="http://schemas.android.com/tools"
+    package="kr.rokoroku.mbus">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.VIBRATE" />
@@ -55,7 +56,8 @@
             android:value="@string/google_maps_key" />
         <meta-data
             android:name="com.google.android.gms.version"
-            android:value="@integer/google_play_services_version" />
+            android:value="@integer/google_play_services_version"
+            tools:replace="android:value"/>
         <meta-data
             android:name="io.fabric.ApiKey"
             android:value="dd94aa1b9c3f5caa95114bce97b1a02d3b66c279" />

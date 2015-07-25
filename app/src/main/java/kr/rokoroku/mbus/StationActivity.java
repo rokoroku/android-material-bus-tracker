@@ -113,6 +113,7 @@ public class StationActivity extends AbstractBaseActivity
         if (mBusStationAdapter != null) {
             mBusStationAdapter.notifyDataSetChanged();
         }
+        showToolbarLayer();
     }
 
     @Override
@@ -258,7 +259,7 @@ public class StationActivity extends AbstractBaseActivity
                                 }
                             });
                         } else {
-                            Toast.makeText(StationActivity.this, "Complete but no stationRoutes", Toast.LENGTH_LONG).show();
+                            Snackbar.make(mCoordinatorLayout, R.string.error_no_station_information, Snackbar.LENGTH_LONG).show();
                             if (mRefreshActionItem != null) {
                                 mRefreshActionItem.setActionView(null);
                             }
@@ -266,18 +267,8 @@ public class StationActivity extends AbstractBaseActivity
                                 mSwipeRefreshLayout.setRefreshing(false);
                                 isRefreshing = false;
                                 if (mRedirectRouteId != null) {
-                                    final String redirectId = mRedirectRouteId;
-                                    int count = mStationDataProvider.getCount();
-                                    for (int i = 0; i < count; i++) {
-                                        StationRoute stationRoute = mStationDataProvider.getItem(i).getStationRoute();
-                                        if (stationRoute != null && redirectId.equals(stationRoute.getRouteId())) {
-                                            int fifthHeight = ViewUtils.getScreenSize(StationActivity.this).y / 5;
-                                            ((LinearLayoutManager) mLayoutManager).scrollToPositionWithOffset(i, fifthHeight);
-                                            mRecyclerViewExpandableItemManager.expandGroup(i);
-                                            mRedirectRouteId = null;
-                                            break;
-                                        }
-                                    }
+                                    redirectTo(mRedirectRouteId);
+                                    mRedirectRouteId = null;
                                 }
                             }, 500);
 //                    scheduleTimer(5000);
@@ -299,9 +290,30 @@ public class StationActivity extends AbstractBaseActivity
             return true;
 
         } else if (!isRefreshing) {
-            mSwipeRefreshLayout.postDelayed(() -> mSwipeRefreshLayout.setRefreshing(false), 500);
+            mSwipeRefreshLayout.postDelayed(() -> {
+                mSwipeRefreshLayout.setRefreshing(false);
+                if(mRedirectRouteId != null) {
+                    redirectTo(mRedirectRouteId);
+                    mRedirectRouteId= null;
+                }
+
+            }, 500);
         }
         return false;
+    }
+
+    private void redirectTo(String routeId) {
+        int count = mStationDataProvider.getCount();
+        for (int i = 0; i < count; i++) {
+            StationRoute stationRoute = mStationDataProvider.getItem(i).getStationRoute();
+            if (stationRoute != null && routeId.equals(stationRoute.getRouteId())) {
+                int fifthHeight = ViewUtils.getScreenSize(StationActivity.this).y / 5;
+                ((LinearLayoutManager) mLayoutManager).scrollToPositionWithOffset(i, fifthHeight);
+                mRecyclerViewExpandableItemManager.expandGroup(i);
+                break;
+            }
+        }
+
     }
 
     private void initRecyclerView(Bundle savedInstanceState) {

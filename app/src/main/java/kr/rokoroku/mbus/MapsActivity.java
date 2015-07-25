@@ -69,7 +69,7 @@ public class MapsActivity extends AppCompatActivity implements MapFragment.OnEve
                 mMapFragment.updateLocation(true);
             }
         });
-
+        mMyLocationButton.requestLayout();
     }
 
     private void initMapFragment(Bundle savedInstanceState) {
@@ -94,6 +94,7 @@ public class MapsActivity extends AppCompatActivity implements MapFragment.OnEve
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 CoordinatorLayout.LayoutParams layoutParams = (CoordinatorLayout.LayoutParams) mToolbar.getLayoutParams();
                 layoutParams.topMargin = ViewUtils.getStatusBarHeight(this);
+                mToolbar.requestLayout();
             }
 
             // init marquee animation to  toolbar title

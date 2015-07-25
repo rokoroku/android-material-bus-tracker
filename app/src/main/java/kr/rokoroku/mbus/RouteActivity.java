@@ -129,6 +129,14 @@ public class RouteActivity extends AbstractBaseActivity
         if (mBusRouteAdapter != null) {
             mBusRouteAdapter.notifyDataSetChanged();
         }
+        if (LocationClient.isLocationEnabled(this)) {
+            mLocationButton.setEnabled(true);
+            mLocationButton.show(true);
+        } else {
+            mLocationButton.setEnabled(false);
+            mLocationButton.hide(true);
+        }
+        showToolbarLayer();
     }
 
     @Override
@@ -258,6 +266,11 @@ public class RouteActivity extends AbstractBaseActivity
             mSwipeRefreshLayout.postDelayed(() -> {
                 mSwipeRefreshLayout.setRefreshing(false);
                 mBusRouteAdapter.notifyDataSetChanged();
+
+                if (mRedirectStationId != null) {
+                    redirectTo(mRedirectStationId);
+                    mRedirectStationId = null;
+                }
             }, 500);
         }
         return false;
@@ -447,7 +460,7 @@ public class RouteActivity extends AbstractBaseActivity
 
                                 } else if (secondClosestStation != null && GeoUtils.calculateDistanceInMeter(
                                         new LatLng(closestStation.getLatitude(), closestStation.getLongitude()),
-                                        new LatLng(secondClosestStation.getLatitude(), secondClosestStation.getLongitude())) < 500) {
+                                        new LatLng(secondClosestStation.getLatitude(), secondClosestStation.getLongitude())) <= 50) {
                                     openChooserDialog(closestStation, secondClosestStation);
 
                                 } else {
@@ -496,17 +509,28 @@ public class RouteActivity extends AbstractBaseActivity
         stationView2.setRoundTop(true);
         stationView2.setRoundBottom(true);
 
-        String destination;
-        String destination2;
-        if (station1.getSequence() < route.getTurnStationSeq()) {
-            destination = route.getTurnStationName();
-            destination2 = route.getRouteStationList().get(route.getRouteStationList().size() - 1).getName();
-        } else {
-            destination = route.getRouteStationList().get(route.getRouteStationList().size() - 1).getName();
-            destination2 = route.getTurnStationName();
+        String destination = null;
+        String destination2 = null;
+        List<RouteStation> routeStationList = route.getRouteStationList();
+        for (RouteStation routeStation : routeStationList) {
+            if (destination != null && destination2 != null) {
+                break;
+
+            } else {
+                if (destination == null) {
+                    if (station1.getSequence() < routeStation.getSequence()) {
+                        destination = routeStation.getName();
+                    }
+                }
+                if (destination2 == null) {
+                    if (station2.getSequence() < routeStation.getSequence()) {
+                        destination2 = routeStation.getName();
+                    }
+                }
+            }
         }
 
-        int lastSeq = route.getRouteStationList().get(route.getRouteStationList().size() - 1).getSequence();
+        int lastSeq = routeStationList.get(routeStationList.size() - 1).getSequence();
         connectorView.setConnectorType(station1.getSequence() == 1 ? ConnectorView.ConnectorType.START
                 : station1.getSequence() == lastSeq ? ConnectorView.ConnectorType.END : ConnectorView.ConnectorType.NODE);
         connectorView2.setConnectorType(station2.getSequence() == 1 ? ConnectorView.ConnectorType.START
@@ -517,6 +541,11 @@ public class RouteActivity extends AbstractBaseActivity
         ((FrameLayout.LayoutParams) connectorView.getLayoutParams()).bottomMargin = margin;
         ((FrameLayout.LayoutParams) connectorView2.getLayoutParams()).topMargin = margin;
         ((FrameLayout.LayoutParams) connectorView2.getLayoutParams()).bottomMargin = margin;
+
+        FavoriteFacade.Color stationColor1 = FavoriteFacade.getInstance().getFavoriteStationColor(station1);
+        FavoriteFacade.Color stationColor2 = FavoriteFacade.getInstance().getFavoriteStationColor(station2);
+        stationView.setCardBackgroundColor(stationColor1.getColor(this));
+        stationView2.setCardBackgroundColor(stationColor2.getColor(this));
 
         stationTitle.setText(station1.getName());
         stationTitle2.setText(station2.getName());

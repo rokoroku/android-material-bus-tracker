@@ -84,7 +84,7 @@ public abstract class AbstractBaseActivity extends AppCompatActivity implements 
     protected void onRestart() {
         super.onRestart();
         int themeId = BaseApplication.getInstance().getCurrentTheme();
-        if(themeId != mThemeId) {
+        if (themeId != mThemeId) {
             mThemeId = themeId;
             setTheme(themeId);
             recreate();
@@ -317,14 +317,22 @@ public abstract class AbstractBaseActivity extends AppCompatActivity implements 
         mDrawerLayout.setDrawerListener(new DrawerLayout.SimpleDrawerListener() {
             @Override
             public void onDrawerOpened(View drawerView) {
-                MenuItem menuItem = mNavigationDrawerView.getMenu().findItem(R.id.nav_action_map);
-                if(menuItem != null) {
-                    menuItem.setEnabled(LocationClient.isLocationEnabled(getApplicationContext()));
-                }
+                checkLocationForDrawerMenu();
             }
         });
         mNavigationDrawerView = (NavigationView) findViewById(R.id.navigation_drawer_view);
         mNavigationDrawerView.setNavigationItemSelectedListener(this::onOptionsItemSelected);
+        checkLocationForDrawerMenu();
+    }
+
+    private void checkLocationForDrawerMenu() {
+        Menu menu = mNavigationDrawerView.getMenu();
+        if(menu != null){
+            MenuItem menuItem = menu.findItem(R.id.nav_action_map);
+            if (menuItem != null) {
+                menuItem.setEnabled(LocationClient.isLocationEnabled(getApplicationContext()));
+            }
+        }
     }
 
     public void openDrawer() {

@@ -398,9 +398,10 @@ public class FloatingActionButton extends ImageButton {
     }
 
     public void setDrawableTint(int color) {
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             getIconDrawable().mutate().setTint(color);
         } else {
+            getIconDrawable().mutate().setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
         }
     }
 

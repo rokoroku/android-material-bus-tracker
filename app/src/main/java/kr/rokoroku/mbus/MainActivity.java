@@ -146,19 +146,35 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
 
     private void alertGpsEnable() {
         if (!LocationClient.isLocationEnabled(this)) {
-            MaterialDialog dialog = new MaterialDialog.Builder(this)
-                    .title(R.string.action_enable_gps)
-                    .content(R.string.hint_enable_gps)
-                    .positiveText(R.string.action_ok)
-                    .negativeText(R.string.action_no)
-                    .callback(new MaterialDialog.ButtonCallback() {
-                        @Override
-                        public void onPositive(MaterialDialog dialog) {
-                            Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-                            startActivityForResult(intent, RESULT_GPS_SETTINGS);
-                        }
-                    }).build();
-            dialog.show();
+            boolean doNotAskGps = BaseApplication.getSharedPreferences()
+                    .getBoolean(BaseApplication.PREFERENCE_DO_NOT_ASK_GPS_AGAIN, false);
+            if (!doNotAskGps) {
+                MaterialDialog dialog = new MaterialDialog.Builder(this)
+                        .title(R.string.action_enable_gps)
+                        .content(R.string.hint_enable_gps)
+                        .items(new String[]{getString(R.string.hint_do_not_ask_again)})
+                        .itemsCallbackMultiChoice(null, (dialog1, which, text) -> true)
+                        .positiveText(R.string.action_ok)
+                        .negativeText(R.string.action_no)
+                        .callback(new MaterialDialog.ButtonCallback() {
+                            @Override
+                            public void onPositive(MaterialDialog dialog) {
+                                Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                                startActivityForResult(intent, RESULT_GPS_SETTINGS);
+                            }
+
+                            @Override
+                            public void onAny(MaterialDialog dialog) {
+                                Integer[] selectedIndices = dialog.getSelectedIndices();
+                                if (selectedIndices != null && selectedIndices.length > 0) {
+                                    BaseApplication.getSharedPreferences().edit()
+                                            .putBoolean(BaseApplication.PREFERENCE_DO_NOT_ASK_GPS_AGAIN, true)
+                                            .apply();
+                                }
+                            }
+                        }).build();
+                dialog.show();
+            }
         }
     }
 
@@ -601,7 +617,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
                 }
             }
 
-            if(!searchHistoryTable.isEmpty()) {
+            if (!searchHistoryTable.isEmpty()) {
                 Drawable historyDrawable = ContextCompat.getDrawable(this, R.drawable.ic_history_grey_600_18dp);
                 int historyColor = ThemeUtils.getResourceColor(this, R.color.md_grey_600);
                 for (SearchHistory searchHistory : searchHistoryTable) {
@@ -979,13 +995,19 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
             }
             return;
 
-        } else if (requestCode == RESULT_GPS_SETTINGS && resultCode == RESULT_OK) {
-            if (LocationClient.isLocationEnabled(this)) {
+        } else if (requestCode == RESULT_GPS_SETTINGS) {
+            boolean locationEnabled = LocationClient.isLocationEnabled(this);
+            if (locationEnabled) {
                 Snackbar.make(mCoordinatorLayout, "GPS 기능이 활성화되었습니다.", Snackbar.LENGTH_LONG).show();
 
             } else {
                 Snackbar.make(mCoordinatorLayout, "GPS 기능이 비활성화되었습니다.", Snackbar.LENGTH_LONG).show();
             }
+            if (wasLocationEnabled != locationEnabled) {
+                mLocationButton.setEnabled(locationEnabled);
+                enableSearchBoxLocationButton(locationEnabled);
+            }
+            wasLocationEnabled = locationEnabled;
             return;
         }
         super.onActivityResult(requestCode, resultCode, data);

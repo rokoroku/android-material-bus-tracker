@@ -22,11 +22,6 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end">
 
-        <View
-            android:layout_width="96dp"
-            android:layout_height="96dp"
-            android:layout_gravity="bottom|end"/>
-
         <com.github.clans.fab.FloatingActionButton
             android:id="@+id/fab_location"
             android:layout_width="wrap_content"
@@ -40,6 +35,7 @@
             app:fab_colorPressed="?attr/colorButtonNormal"
             app:fab_progress_color="?attr/colorAccent"
             app:fab_progress_width="2dp"
+            app:fab_progress="0"
             app:fab_shadowXOffset="0dp"
             app:fab_shadowYOffset="1dp" />
 

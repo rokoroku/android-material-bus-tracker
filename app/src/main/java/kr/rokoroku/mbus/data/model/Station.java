@@ -562,14 +562,13 @@ public class Station implements Parcelable, Serializable {
                             break;
 
                         default:
-                            remoteEntry = new RemoteEntry(Provider.SEOUL, localId);
+                            remoteEntry = new RemoteEntry(Provider.GYEONGGI, localId);
                             break;
                     }
                 }
             }
             return remoteEntry;
         }
-
 
         @Override
         public String toString() {

@@ -163,10 +163,11 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
 
     @Override
     public void onBindGroupViewHolder(BaseViewHolder holder, int groupPosition, int viewType) {
+        Context context = holder.itemView.getContext();
         StationDataProvider.StationListItemData listItemData = mDataProvider.getItem(groupPosition);
         if (holder instanceof SectionViewHolder) {
             SectionViewHolder sectionViewHolder = (SectionViewHolder) holder;
-            sectionViewHolder.setItem(listItemData.getRouteType());
+            sectionViewHolder.setItem(listItemData.getTitle(context));
 
         } else if (holder instanceof RouteViewHolder) {
             RouteViewHolder routeViewHolder = (RouteViewHolder) holder;
@@ -194,7 +195,6 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
                 routeViewHolder.mRemainLayout.setVisibility(View.VISIBLE);
             }
 
-            Context context = holder.itemView.getContext();
             FavoriteFacade.Color cardColor = FavoriteFacade.getInstance().getFavoriteRouteColor(
                     stationRoute.getProvider(), stationRoute.getRouteId());
             routeViewHolder.mCardView.setCardBackgroundColor(cardColor.getColor(context));
@@ -480,9 +480,8 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
             mLabel = (TextView) v.findViewById(R.id.section_label);
         }
 
-        public void setItem(RouteType routeType) {
-            Context context = itemView.getContext();
-            mTitle.setText(routeType.getDescription(context));
+        public void setItem(String title) {
+            mTitle.setText(title);
             mLabel.setVisibility(View.GONE);
         }
 
@@ -657,7 +656,7 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
                     long timeDiff = mItem.getPredictTime().getTime() - System.currentTimeMillis();
                     if (timeDiff >= 0) {
 
-                        String timeString = DateUtils.formatElapsedTime(timeDiff / 1000);
+                        String timeString = Math.round(timeDiff / 1000 / 60 + 0.5) + "분 전";
 
                         mRemainTime.setText(timeString);
                         if (mRemainTime.getVisibility() == View.GONE) {
@@ -734,6 +733,6 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
                     mArrivalViewReferenceSet.removeAll(removedReferences);
                 }
             }
-        }, 0, 1000);
+        }, 0, 10000);
     }
 }

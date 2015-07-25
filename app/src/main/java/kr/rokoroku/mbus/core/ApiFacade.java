@@ -344,15 +344,15 @@ public class ApiFacade {
 
             // retrieve base station data for every entries
             for (Pair<Provider, String> stationLocalIdEntry : localStationIdEntries) {
-                Provider externalProvider = stationLocalIdEntry.first;
-                String externalKey = stationLocalIdEntry.second;
-                ApiWrapperInterface innerClient = getWrappedClient(externalProvider);
+                Provider remoteProvider = stationLocalIdEntry.first;
+                String remoteId = stationLocalIdEntry.second;
+                ApiWrapperInterface innerClient = getWrappedClient(remoteProvider);
 
                 // check local data if exists
-                Station storedExternalStation = DatabaseFacade.getInstance().getStationWithSecondaryKey(externalProvider, externalKey);
+                Station storedExternalStation = DatabaseFacade.getInstance().getStationWithSecondaryKey(remoteProvider, remoteId);
 
                 if (innerClient == null) {
-                    innerProgressRunner.error(new ApiNotAvailableException(externalProvider));
+                    innerProgressRunner.error(new ApiNotAvailableException(remoteProvider));
 
                 } else if (storedExternalStation != null) {
                     if (storedExternalStation.isLocalRouteInfoAvailable()) {
@@ -363,18 +363,18 @@ public class ApiFacade {
                     }
                 } else {
                     // search by given keyword (localId)
-                    if (externalProvider.equals(Provider.SEOUL)) {
-                        getSeoulWebRestClient().getStationBaseInfo(externalKey, stationEntryCallback);
+                    if (remoteProvider.equals(Provider.SEOUL)) {
+                        getSeoulWebRestClient().getStationBaseInfo(remoteId, stationEntryCallback);
 
                     } else {
-                        innerClient.searchStationByKeyword(externalKey, new ApiWrapperInterface.Callback<List<Station>>() {
+                        innerClient.searchStationByKeyword(remoteId, new ApiWrapperInterface.Callback<List<Station>>() {
                             @Override
                             public void onSuccess(List<Station> result) {
                                 DatabaseFacade.getInstance().putStations(innerClient.getProvider(), result);
                                 if (result != null && !result.isEmpty()) {
                                     Station retrievedStation = null;
                                     for (Station resultEntry : result) {
-                                        if (externalKey.equals(resultEntry.getLocalId())) {
+                                        if (remoteId.equals(resultEntry.getLocalId())) {
                                             retrievedStation = resultEntry;
                                             break;
                                         }

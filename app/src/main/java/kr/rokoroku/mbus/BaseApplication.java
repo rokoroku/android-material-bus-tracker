@@ -22,6 +22,7 @@ public class BaseApplication extends Application {
 
     public static final int REFRESH_INTERVAL = 30 * 1000;
     public static final String SHARED_PREFERENCE_KEY = "pref";
+    public static final String PREFERENCE_DO_NOT_ASK_GPS_AGAIN = "do_not_ask_gps";
     public static final String PREFERENCE_DB_VERSION = "pref_db_version";
     public static final String PREFERENCE_HOME_SCREEN = "pref_home_screen";
     public static final String PREFERENCE_THEME = "pref_theme";
@@ -55,7 +56,7 @@ public class BaseApplication extends Application {
 
         if (BuildConfig.DEBUG) {
             Fabric.with(this, new Answers());
-            logLevel = RestAdapter.LogLevel.BASIC;
+            logLevel = RestAdapter.LogLevel.HEADERS;
         } else {
             Fabric.with(this, new Crashlytics());
             logLevel = RestAdapter.LogLevel.NONE;

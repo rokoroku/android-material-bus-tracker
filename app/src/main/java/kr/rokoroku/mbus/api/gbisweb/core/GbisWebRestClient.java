@@ -352,11 +352,12 @@ public class GbisWebRestClient implements ApiWrapperInterface {
                     putStationRouteResultCache(stationId, gbisStationRouteResult);
 
                     Station station = DatabaseFacade.getInstance().getStation(getProvider(), stationId);
+                    if (station == null) station = DatabaseFacade.getInstance().getStation(Provider.INCHEON, stationId);
                     if (station == null) station = new Station(stationId, getProvider());
                     station.setName(gbisStationRouteResult.getResult().getStationNm());
 
                     //TODO: handle case if localId is null
-                    String localId = station.getLocalIdByProvider(provider);
+                    String localId = station.getLocalId();
                     if (localId == null) {
                         searchStationByKeyword(station.getName(), new Callback<List<Station>>() {
                             @Override

@@ -1,5 +1,7 @@
 package kr.rokoroku.mbus.data;
 
+import android.content.Context;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -9,8 +11,14 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import kr.rokoroku.mbus.BaseApplication;
+import kr.rokoroku.mbus.R;
+import kr.rokoroku.mbus.core.FavoriteFacade;
 import kr.rokoroku.mbus.data.model.ArrivalInfo;
+import kr.rokoroku.mbus.data.model.Favorite;
+import kr.rokoroku.mbus.data.model.FavoriteGroup;
 import kr.rokoroku.mbus.data.model.Provider;
+import kr.rokoroku.mbus.data.model.Route;
 import kr.rokoroku.mbus.data.model.RouteType;
 import kr.rokoroku.mbus.data.model.Station;
 import kr.rokoroku.mbus.data.model.StationRoute;
@@ -22,6 +30,7 @@ public class StationDataProvider {
 
     private Station station;
     private List<StationListItemData> adapterItemList;
+    private List<StationRoute> favoritedStationRouteList;
     private SortedMap<RouteType, List<StationRoute>> typedStationRouteTable;
 
     public StationDataProvider(Station station) {
@@ -96,7 +105,7 @@ public class StationDataProvider {
             }
         }
         List<StationRoute> typedTable = typedStationRouteTable.get(routeType);
-        if(typedTable == null) {
+        if (typedTable == null) {
             typedTable = new ArrayList<>();
             typedStationRouteTable.put(routeType, typedTable);
         }
@@ -130,10 +139,37 @@ public class StationDataProvider {
         } else {
             typedStationRouteTable.clear();
         }
+        if (favoritedStationRouteList == null) {
+            favoritedStationRouteList = new ArrayList<>();
+        } else {
+            favoritedStationRouteList.clear();
+        }
+    }
+
+    public boolean checkFavoritedRoute(StationRoute stationRoute) {
+        Favorite favorite = FavoriteFacade.getInstance().getCurrentFavorite();
+        for (FavoriteGroup favoriteGroup : favorite.getFavoriteGroups()) {
+            for (int i = 0; i < favoriteGroup.size(); i++) {
+                FavoriteGroup.FavoriteItem favoriteItem = favoriteGroup.get(i);
+                FavoriteGroup.FavoriteItem.Type type = favoriteItem.getType();
+                if (type == FavoriteGroup.FavoriteItem.Type.ROUTE) {
+                    Route data = favoriteItem.getData(Route.class);
+                    if (data != null && stationRoute.getRouteId().equals(data.getId())) {
+                        return true;
+                    }
+
+                } else if(type == FavoriteGroup.FavoriteItem.Type.STATION) {
+                    StationRoute route = favoriteItem.getExtraData(StationRoute.class);
+                    if(route != null && stationRoute.getRouteId().equals(route.getRouteId())) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     public void organize() {
-
         clear();
 
         // group by route type
@@ -142,17 +178,25 @@ public class StationDataProvider {
                 RouteType routeType = stationRoute.getRouteType();
                 if (routeType == null) routeType = RouteType.UNKNOWN;
 
-                List<StationRoute> typedStationRouteList = getTypedStationRouteList(routeType);
+                List<StationRoute> targetStationRouteList;
+                if (checkFavoritedRoute(stationRoute)) {
+                    targetStationRouteList = getFavoritedStationRouteList();
+                } else {
+                    targetStationRouteList = getTypedStationRouteList(routeType);
+                }
 
                 boolean conflict = false;
-                for (StationRoute route : typedStationRouteList) {
+                for (StationRoute route : targetStationRouteList) {
                     if (route.getRouteName().equals(stationRoute.getRouteName())) {
                         if (!Provider.SEOUL.equals(stationRoute.getProvider())) {
                             conflict = true;
                         }
                     }
                 }
-                if (!conflict) typedStationRouteList.add(stationRoute);
+
+                if (!conflict) {
+                    targetStationRouteList.add(stationRoute);
+                }
             }
         }
 
@@ -162,12 +206,25 @@ public class StationDataProvider {
         }
 
         // put into adapter item list (visible item list)
+        if(favoritedStationRouteList != null && !favoritedStationRouteList.isEmpty()) {
+            Collections.sort(favoritedStationRouteList);
+            String favoriteRoute = BaseApplication.getInstance().getString(R.string.route_type_favorite);
+            adapterItemList.add(new StationListItemData(favoriteRoute));
+            for (StationRoute stationRoute : favoritedStationRouteList) {
+                adapterItemList.add(new StationListItemData(stationRoute));
+            }
+        }
+
         for (Map.Entry<RouteType, List<StationRoute>> entry : typedStationRouteTable.entrySet()) {
             adapterItemList.add(new StationListItemData(entry.getKey()));
             for (StationRoute stationRoute : entry.getValue()) {
                 adapterItemList.add(new StationListItemData(stationRoute));
             }
         }
+    }
+
+    public List<StationRoute> getFavoritedStationRouteList() {
+        return favoritedStationRouteList;
     }
 
     public static class StationListItemData {
@@ -178,6 +235,11 @@ public class StationDataProvider {
 
         private Type type;
         private Object data;
+
+        public StationListItemData(String title) {
+            this.type = Type.SECTION;
+            this.data = title;
+        }
 
         public StationListItemData(StationRoute stationRoute) {
             this.type = Type.ROUTE;
@@ -194,7 +256,7 @@ public class StationDataProvider {
         }
 
         public StationRoute getStationRoute() {
-            if (type.equals(Type.ROUTE)) {
+            if (data instanceof StationRoute) {
                 return (StationRoute) data;
             } else {
                 return null;
@@ -202,7 +264,7 @@ public class StationDataProvider {
         }
 
         public RouteType getRouteType() {
-            if (type.equals(Type.SECTION)) {
+            if (data instanceof RouteType) {
                 return (RouteType) data;
             } else {
                 return null;
@@ -212,8 +274,21 @@ public class StationDataProvider {
         public int getId() {
             if (type.equals(Type.ROUTE)) {
                 return getStationRoute().getRouteId().hashCode();
-            } else {
+            } else if (data instanceof RouteType) {
                 return getRouteType().ordinal();
+            } else {
+                return data.hashCode();
+            }
+        }
+
+        public String getTitle(Context context) {
+            RouteType routeType = getRouteType();
+            if (routeType != null) {
+                return routeType.getDescription(context);
+            } else if (data instanceof String) {
+                return (String) data;
+            } else {
+                return null;
             }
         }
     }
