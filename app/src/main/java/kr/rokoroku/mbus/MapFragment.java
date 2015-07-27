@@ -370,6 +370,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         if (mListener != null && getActivity() != null) {
             mListener.onLocationUpdate(location);
         }
+        LocationClient.setLastKnownLocation(location);
     }
 
     @Override

@@ -81,16 +81,17 @@ public class AnswerWrapper {
                 if (error != null) try {
                     Throwable errorCause = error.getCause();
                     RetrofitError.Kind errorKind = error.getKind();
-                    if (errorKind != null) {
-                        failReason = errorKind.name();
+                    if (errorCause != null) {
+                        failReason = errorCause.getMessage();
                     }
-                    if (errorCause == null) {
-                        failReason += ":" + errorCause.getClass().getName();
+                    if (failReason == null && errorKind != null) {
+                        failReason = errorKind.name();
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                Answers.getInstance().logCustom(createCustomEvent(tag, method, failReason));
+                CustomEvent customEvent = createCustomEvent(tag, method, failReason);
+                Answers.getInstance().logCustom(customEvent);
             }
         };
     }

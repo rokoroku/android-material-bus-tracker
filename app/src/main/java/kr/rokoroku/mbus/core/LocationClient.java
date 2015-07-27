@@ -411,6 +411,10 @@ public class LocationClient implements GoogleApiClient.ConnectionCallbacks,
         return mLastKnownLocation;
     }
 
+    public static void setLastKnownLocation(Location location) {
+        LocationClient.mLastKnownLocation = location;
+    }
+
     public static boolean isLocationEnabled(Context context) {
         LocationManager lm = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         boolean gps_enabled = false;

@@ -10,6 +10,7 @@ import kr.rokoroku.mbus.api.gbis.model.GbisBusArrivalList;
 import kr.rokoroku.mbus.api.gbis.model.GbisBusLocation;
 import kr.rokoroku.mbus.api.gbis.model.GbisBusLocationList;
 import kr.rokoroku.mbus.api.ApiWrapperInterface;
+import kr.rokoroku.mbus.api.gbisweb.core.GbisWebRestClient;
 import kr.rokoroku.mbus.core.ApiFacade;
 import kr.rokoroku.mbus.core.DatabaseFacade;
 import kr.rokoroku.mbus.data.model.ArrivalInfo;
@@ -36,6 +37,8 @@ public class GbisRestClient implements ApiWrapperInterface {
     private String apiKey;
     private Provider provider;
     private GbisRestInterface adapter;
+    private boolean isStationArrivalInfoFlooded = false;
+    private boolean isStationRouteArrivalInfoFlooded = false;
 
     public GbisRestClient(Client client, String apiKey) {
         this.client = client;
@@ -63,6 +66,10 @@ public class GbisRestClient implements ApiWrapperInterface {
         return adapter;
     }
 
+    private GbisWebRestClient getGbisWebRestClient() {
+        return ApiFacade.getInstance().getGbisWebRestClient();
+    }
+
     @Override
     public Provider getProvider() {
         return provider;
@@ -70,22 +77,22 @@ public class GbisRestClient implements ApiWrapperInterface {
 
     @Override
     public void searchRouteByKeyword(String keyword, Callback<List<Route>> callback) {
-        ApiFacade.getInstance().getGbisWebRestClient().searchRouteByKeyword(keyword, callback);
+        getGbisWebRestClient().searchRouteByKeyword(keyword, callback);
     }
 
     @Override
     public void searchStationByKeyword(String keyword, Callback<List<Station>> callback) {
-        ApiFacade.getInstance().getGbisWebRestClient().searchStationByKeyword(keyword, callback);
+        getGbisWebRestClient().searchStationByKeyword(keyword, callback);
     }
 
     @Override
     public void searchStationByLocation(double latitude, double longitude, int radius, Callback<List<Station>> callback) {
-        ApiFacade.getInstance().getGbisWebRestClient().searchStationByLocation(latitude, longitude, 1000, callback);
+        getGbisWebRestClient().searchStationByLocation(latitude, longitude, 1000, callback);
     }
 
     @Override
     public void getRouteBaseInfo(String routeId, Callback<Route> callback) {
-        ApiFacade.getInstance().getGbisWebRestClient().getRouteBaseInfo(routeId, callback);
+        getGbisWebRestClient().getRouteBaseInfo(routeId, callback);
     }
 
     @Override
@@ -118,56 +125,101 @@ public class GbisRestClient implements ApiWrapperInterface {
 
     @Override
     public void getRouteMaplineInfo(String routeId, Callback<List<MapLine>> callback) {
-        ApiFacade.getInstance().getGbisWebRestClient().getRouteMaplineInfo(routeId, callback);
+        getGbisWebRestClient().getRouteMaplineInfo(routeId, callback);
     }
 
     @Override
     public void getStationBaseInfo(String stationId, Callback<Station> callback) {
-        ApiFacade.getInstance().getGbisWebRestClient().getStationBaseInfo(stationId, callback);
+        getGbisWebRestClient().getStationBaseInfo(stationId, callback);
     }
 
     @Override
     public void getStationArrivalInfo(String stationId, Callback<List<ArrivalInfo>> callback) {
-        getAdapter().getBusArrivalList(stationId, new retrofit.Callback<GbisBusArrivalList>() {
-            @Override
-            public void success(GbisBusArrivalList gbisBusArrivalList, Response response) {
-                ArrayList<ArrivalInfo> arrivalInfoList = null;
-                if (gbisBusArrivalList != null) {
-                    arrivalInfoList = new ArrayList<>();
-                    for (GbisBusArrival gbisBusArrival : gbisBusArrivalList.getItems()) {
-                        ArrivalInfo arrivalInfo = new ArrivalInfo(gbisBusArrival);
-                        arrivalInfoList.add(arrivalInfo);
+        if(isStationArrivalInfoFlooded) {
+            getGbisWebRestClient().getStationArrivalInfo(stationId, callback);
+        } else {
+            getAdapter().getBusArrivalList(stationId, new retrofit.Callback<GbisBusArrivalList>() {
+                @Override
+                public void success(GbisBusArrivalList gbisBusArrivalList, Response response) {
+                    ArrayList<ArrivalInfo> arrivalInfoList = null;
+                    if (gbisBusArrivalList != null) {
+                        arrivalInfoList = new ArrayList<>();
+                        for (GbisBusArrival gbisBusArrival : gbisBusArrivalList.getItems()) {
+                            ArrivalInfo arrivalInfo = new ArrivalInfo(gbisBusArrival);
+                            arrivalInfoList.add(arrivalInfo);
+                        }
                     }
+                    callback.onSuccess(arrivalInfoList);
                 }
-                callback.onSuccess(arrivalInfoList);
-            }
 
-            @Override
-            public void failure(RetrofitError error) {
-                callback.onFailure(error);
-            }
-        });
+                @Override
+                public void failure(RetrofitError error) {
+                    Throwable cause = error.getCause();
+                    if (cause instanceof GbisException) {
+                        GbisException gbisException = (GbisException) cause;
+                        if (!isStationArrivalInfoFlooded && gbisException.getErrorCode() == GbisException.ERROR_SERVICE_ACCESS_FLOODED) {
+                            isStationArrivalInfoFlooded = true;
+                            getStationArrivalInfo(stationId, callback);
+                            return;
+                        }
+                    }
+                    callback.onFailure(error);
+                }
+            });
+        }
     }
 
     @Override
     public void getStationArrivalInfo(String stationId, String routeId, Callback<ArrivalInfo> callback) {
-        getAdapter().getBusArrivalList(stationId, routeId, new retrofit.Callback<GbisBusArrivalList>() {
-            @Override
-            public void success(GbisBusArrivalList gbisBusArrivalList, Response response) {
-                ArrivalInfo arrivalInfo = null;
-                if (gbisBusArrivalList != null && gbisBusArrivalList.getItems() != null) {
-                    List<GbisBusArrival> busArrivalList = gbisBusArrivalList.getItems();
-                    if(!busArrivalList.isEmpty()) {
-                        arrivalInfo = new ArrivalInfo(busArrivalList.get(0));
+        if(isStationRouteArrivalInfoFlooded) {
+            getStationArrivalInfo(stationId, new Callback<List<ArrivalInfo>>() {
+                @Override
+                public void onSuccess(List<ArrivalInfo> result) {
+                    ArrivalInfo arrivalInfo = null;
+                    if (result != null) {
+                        for (ArrivalInfo entry : result) {
+                            if (routeId.equals(entry.getRouteId())) {
+                                arrivalInfo = entry;
+                                break;
+                            }
+                        }
                     }
+                    callback.onSuccess(arrivalInfo);
                 }
-                callback.onSuccess(arrivalInfo);
-            }
 
-            @Override
-            public void failure(RetrofitError error) {
-                callback.onFailure(error);
-            }
-        });
+                @Override
+                public void onFailure(Throwable t) {
+                    callback.onFailure(t);
+                }
+            });
+        } else {
+            getAdapter().getBusArrivalList(stationId, routeId, new retrofit.Callback<GbisBusArrivalList>() {
+                @Override
+                public void success(GbisBusArrivalList gbisBusArrivalList, Response response) {
+                    ArrivalInfo arrivalInfo = null;
+                    if (gbisBusArrivalList != null && gbisBusArrivalList.getItems() != null) {
+                        List<GbisBusArrival> busArrivalList = gbisBusArrivalList.getItems();
+                        if (!busArrivalList.isEmpty()) {
+                            arrivalInfo = new ArrivalInfo(busArrivalList.get(0));
+                        }
+                    }
+                    callback.onSuccess(arrivalInfo);
+                }
+
+                @Override
+                public void failure(RetrofitError error) {
+                    Throwable cause = error.getCause();
+                    if (cause instanceof GbisException) {
+                        GbisException gbisException = (GbisException) cause;
+                        if (!isStationRouteArrivalInfoFlooded && gbisException.getErrorCode() == GbisException.ERROR_SERVICE_ACCESS_FLOODED) {
+                            isStationRouteArrivalInfoFlooded = true;
+                            getStationArrivalInfo(stationId, routeId, callback);
+                            return;
+                        }
+                    }
+                    callback.onFailure(error);
+                }
+            });
+        }
     }
 }

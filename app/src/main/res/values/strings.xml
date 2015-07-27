@@ -67,6 +67,7 @@
 
     <string name="favorite_default_group">기본 폴더</string>
     <string name="alert_favorite_added">즐겨찾기에 추가되었습니다.</string>
+    <string name="alert_favorite_added_with">%1$s 위치로 즐겨찾기에 추가되었습니다.</string>
     <string name="alert_favorite_removed">즐겨찾기가 제거되었습니다.</string>
     <string name="alert_favorite_group_added">새 폴더가 생성되었습니다.</string>
     <string name="alert_favorite_group_removed">폴더가 제거되었습니다.</string>

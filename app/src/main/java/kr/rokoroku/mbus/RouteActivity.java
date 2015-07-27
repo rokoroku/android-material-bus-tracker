@@ -453,26 +453,41 @@ public class RouteActivity extends AbstractBaseActivity
                                     }
                                 }
 
-                                if (closestStation == null || GeoUtils.calculateDistanceInMeter(
-                                        new LatLng(location.getLatitude(), location.getLongitude()),
-                                        new LatLng(closestStation.getLatitude(), closestStation.getLongitude())) > 3000) {
-                                    Snackbar.make(mCoordinatorLayout, R.string.error_failed_to_retrieve_near_station, Snackbar.LENGTH_LONG).show();
+                                if (closestStation != null) {
+                                    int distance1 = GeoUtils.calculateDistanceInMeter(
+                                            new LatLng(location.getLatitude(), location.getLongitude()),
+                                            new LatLng(closestStation.getLatitude(), closestStation.getLongitude()));
 
-                                } else if (secondClosestStation != null && GeoUtils.calculateDistanceInMeter(
-                                        new LatLng(closestStation.getLatitude(), closestStation.getLongitude()),
-                                        new LatLng(secondClosestStation.getLatitude(), secondClosestStation.getLongitude())) <= 50) {
-                                    openChooserDialog(closestStation, secondClosestStation);
+                                    if (distance1 > 3000) {
+                                        Snackbar.make(mCoordinatorLayout, R.string.error_failed_to_retrieve_near_station, Snackbar.LENGTH_LONG).show();
 
-                                } else {
-                                    redirectTo(closestStation.getLocalId());
+                                    } else if (secondClosestStation != null) {
+                                        int distance2 = GeoUtils.calculateDistanceInMeter(
+                                                new LatLng(location.getLatitude(), location.getLongitude()),
+                                                new LatLng(secondClosestStation.getLatitude(), secondClosestStation.getLongitude()));
+
+                                        if (Math.abs(distance1 - distance2) <= 30) {
+                                            openChooserDialog(closestStation, secondClosestStation);
+
+                                        } else {
+                                            redirectTo(closestStation.getLocalId());
+                                        }
+                                    } else {
+                                        redirectTo(closestStation.getLocalId());
+                                    }
+
                                 }
                             }
 
-                            mLocationButton.postDelayed(() -> {
+                            mLocationButton.postDelayed(() ->
+
+                            {
                                 mLocationButton.setDrawableTint(Color.BLACK);
                                 mLocationButton.setIndeterminate(false);
                                 mLocationButton.setProgress(0, false);
-                            }, 600);
+                            }
+
+                                    , 600);
                         }
 
                         @Override
@@ -625,7 +640,13 @@ public class RouteActivity extends AbstractBaseActivity
 
     private void addToFavorite(RouteStation routeStation) {
         FavoriteFacade.getInstance().addToFavorite(mRouteDataProvider.getRoute(), routeStation);
-        Snackbar.make(mCoordinatorLayout, R.string.alert_favorite_added, Snackbar.LENGTH_LONG).show();
+        String alertString;
+        if (routeStation != null) {
+            alertString = getString(R.string.alert_favorite_added_with, routeStation.getName());
+        } else {
+            alertString = getString(R.string.alert_favorite_added);
+        }
+        Snackbar.make(mCoordinatorLayout, alertString, Snackbar.LENGTH_LONG).show();
     }
 
 }

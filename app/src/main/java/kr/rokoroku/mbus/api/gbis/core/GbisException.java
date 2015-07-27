@@ -32,9 +32,8 @@ public class GbisException extends ConversionException {
     public static final int ERROR_INVALID_PARAMETER = 3;
     public static final int ERROR_NO_RESULT = 4;
     public static final int ERROR_NO_SERVICE_KEY = 5;
-    public static final int ERROR_INVALID_SERVICE_KEY = 6;
-    public static final int ERROR_HALTED_SERVICE_KEY = 7;
-    public static final int ERROR_SERVICE_ACCESS_FLOODED = 8;
+    public static final int ERROR_SERVICE_ACCESS_FLOODED = 22;
+    public static final int ERROR_INVALID_SERVICE_KEY = 30;
     public static final int ERROR_INVALID_GPS_POSITION = 20;
     public static final int ERROR_REFER_COM_MSG_HEADER = 50;
 
