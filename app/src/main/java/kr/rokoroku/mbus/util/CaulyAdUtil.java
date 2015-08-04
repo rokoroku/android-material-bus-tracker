@@ -24,11 +24,13 @@ public class CaulyAdUtil {
     private static CaulyNativeAdView getNativeAdView(String tag) {
         if (sAdViewMap != null) {
             SoftReference<CaulyNativeAdView> reference = sAdViewMap.get(tag);
-            CaulyNativeAdView adView = reference.get();
-            if (adView != null) {
-                return adView;
-            } else {
-                sAdViewMap.remove(tag);
+            if(reference != null) {
+                CaulyNativeAdView adView = reference.get();
+                if (adView != null) {
+                    return adView;
+                } else {
+                    sAdViewMap.remove(tag);
+                }
             }
         }
         return null;
@@ -53,9 +55,7 @@ public class CaulyAdUtil {
             listener.onReceiveNativeAd(nativeAdView, true);
 
         } else {
-            String appCode = "vBf3zFtR";
-//            String appCode = "tM3clVv8";
-//            String appCode = context.getString(R.string.cauly_app_key);
+            String appCode = context.getString(R.string.cauly_app_key);
             CaulyAdInfo adInfo = new CaulyNativeAdInfoBuilder(appCode)
                     .layoutID(R.layout.row_ad_view)
                     .iconImageID(R.id.icon)

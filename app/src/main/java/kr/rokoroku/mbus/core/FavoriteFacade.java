@@ -105,7 +105,7 @@ public class FavoriteFacade {
     }
 
     public Favorite getCurrentFavorite() {
-        if(currentFavorite == null) {
+        if (currentFavorite == null) {
             Favorite storedFavorite = DatabaseFacade.getInstance().getBookmark(DatabaseFacade.DEFAULT_FAVORITE_ID);
             currentFavorite = new Favorite(storedFavorite);
         }
@@ -117,7 +117,7 @@ public class FavoriteFacade {
         List<FavoriteGroup> favoriteGroups = getCurrentFavorite().getFavoriteGroups();
         String defaultGroupName = BaseApplication.getInstance().getString(R.string.favorite_default_group);
         for (FavoriteGroup favoriteGroup : favoriteGroups) {
-            if(defaultGroupName.equals(favoriteGroup.getName())) {
+            if (defaultGroupName.equals(favoriteGroup.getName())) {
                 defaultGroup = favoriteGroup;
                 break;
             }
@@ -129,8 +129,8 @@ public class FavoriteFacade {
         return defaultGroup;
     }
 
-    public FavoriteGroup addToFavorite(Route route, RouteStation routeStation) {
-        FavoriteGroup favoriteGroup = getDefaultFavoriteGroup();
+    public FavoriteGroup addToFavorite(FavoriteGroup favoriteGroup, Route route, RouteStation routeStation) {
+        if (favoriteGroup == null) favoriteGroup = getDefaultFavoriteGroup();
         FavoriteGroup.FavoriteItem item = new FavoriteGroup.FavoriteItem(route);
         if (routeStation != null) item.setExtraData(routeStation);
 
@@ -140,8 +140,8 @@ public class FavoriteFacade {
     }
 
 
-    public FavoriteGroup addToFavorite(Station station, StationRoute stationRoute) {
-        FavoriteGroup favoriteGroup = getDefaultFavoriteGroup();
+    public FavoriteGroup addToFavorite(FavoriteGroup favoriteGroup, Station station, StationRoute stationRoute) {
+        if (favoriteGroup == null) favoriteGroup = getDefaultFavoriteGroup();
         FavoriteGroup.FavoriteItem item = new FavoriteGroup.FavoriteItem(station);
         if (stationRoute != null) item.setExtraData(stationRoute);
 

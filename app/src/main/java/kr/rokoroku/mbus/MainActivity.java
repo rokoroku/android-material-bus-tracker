@@ -34,6 +34,7 @@ import android.widget.TextView;
 
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.balysv.materialmenu.MaterialMenuDrawable;
+import com.fsn.cauly.CaulyNativeAdView;
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
 import com.google.android.gms.maps.GoogleMap;
@@ -63,6 +64,7 @@ import kr.rokoroku.mbus.data.model.Favorite;
 import kr.rokoroku.mbus.data.model.FavoriteGroup;
 import kr.rokoroku.mbus.data.model.SearchHistory;
 import kr.rokoroku.mbus.ui.adapter.SearchAdapter;
+import kr.rokoroku.mbus.util.CaulyAdUtil;
 import kr.rokoroku.mbus.util.RevealUtils;
 import kr.rokoroku.mbus.util.SimpleProgressCallback;
 import kr.rokoroku.mbus.util.ThemeUtils;
@@ -125,10 +127,10 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
         alertGpsEnable();
         SharedPreferences sharedPreferences = getSharedPreferences(BaseApplication.SHARED_PREFERENCE_KEY, MODE_PRIVATE);
         String homeScreen = sharedPreferences.getString(BaseApplication.PREFERENCE_HOME_SCREEN, "1");
-        boolean locationEnabled = LocationClient.isLocationEnabled(this);
+        boolean locationEnabled = LocationClient.isLocationProviderAvailable(this);
         switch (homeScreen) {
             case "0":
-                showSearch(false);
+                showNewSearch(false);
                 break;
             default:
             case "1":
@@ -145,7 +147,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
     }
 
     private void alertGpsEnable() {
-        if (!LocationClient.isLocationEnabled(this)) {
+        if (!LocationClient.isLocationProviderAvailable(this)) {
             boolean doNotAskGps = BaseApplication.getSharedPreferences()
                     .getBoolean(BaseApplication.PREFERENCE_DO_NOT_ASK_GPS_AGAIN, false);
             if (!doNotAskGps) {
@@ -192,10 +194,25 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
     @Override
     protected void onResume() {
         super.onResume();
-        boolean locationEnabled = LocationClient.isLocationEnabled(this);
+        boolean locationEnabled = LocationClient.isLocationProviderAvailable(this);
         if (wasLocationEnabled != locationEnabled) {
             mLocationButton.setEnabled(locationEnabled);
             enableSearchBoxLocationButton(locationEnabled);
+        }
+        if (mFavoriteAdapter != null && mFavoriteAdapter.getAdTag() != null) {
+            if(mFavoriteAdapter.getAdPosition() == -1) {
+                String adTag = mFavoriteAdapter.getAdTag();
+                CaulyAdUtil.removeAd(adTag);
+                String newTag = String.valueOf(adTag.hashCode());
+                getHandler().postDelayed(() -> CaulyAdUtil.requestAd(MainActivity.this, newTag, new CaulyAdUtil.SimpleCaulyNativeAdListener() {
+                    @Override
+                    public void onReceiveNativeAd(CaulyNativeAdView caulyNativeAdView, boolean b) {
+                        mFavoriteAdapter.setAdTag(newTag);
+                        mFavoriteAdapter.setAdPosition(0);
+                        ViewUtils.runOnUiThread(mFavoriteAdapter::notifyDataSetChanged, 100);
+                    }
+                }), 200);
+            }
         }
         wasLocationEnabled = locationEnabled;
     }
@@ -234,10 +251,9 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
                 }
             }
             showMap();
-            mSearchBox.setSideButtonOnClickListener(null);
-            mSearchBox.setSideButtonDrawable(null);
+            enableSearchBoxLocationButton(false);
         });
-        mSearchBox.setUserSideButtonFunctionEnabled(LocationClient.isLocationEnabled(this));
+        mSearchBox.setUserSideButtonFunctionEnabled(LocationClient.isLocationProviderAvailable(this));
 
         reloadSearchSuggestion();
     }
@@ -250,7 +266,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
         mSearchButton = (FloatingActionButton) findViewById(R.id.fab_search);
 
         mAddNewFavoriteButton.setOnClickListener(v -> {
-            showSearch(true);
+            showNewSearch(true);
             if (!mSearchBox.isSearchOpen()) {
                 mSearchBox.toggleSearch();
             }
@@ -269,13 +285,16 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
 
                             mFavoriteDataProvider.addGroupItem(groupPosition, favoriteGroup);
                             mFavoriteAdapter.notifyDataSetChanged();
+
                             int adPosition = mFavoriteAdapter.getAdPosition();
                             if (adPosition != -1 && adPosition >= groupPosition) {
-                                mFavoriteAdapter.setAdPosition(adPosition + 1);
-                                ViewUtils.runOnUiThread(mFavoriteAdapter::notifyDataSetChanged, 50);
+                                if (adPosition != 0) {
+                                    mFavoriteAdapter.setAdPosition(adPosition + 1);
+                                    ViewUtils.runOnUiThread(mFavoriteAdapter::notifyDataSetChanged, 50);
+                                }
                             }
 
-                            getHandler().postDelayed(() -> {
+                            ViewUtils.runOnUiThread(() -> {
                                 if (mFavoriteFragment != null) {
                                     mFavoriteFragment.getRecyclerView().smoothScrollToPosition(groupPosition);
                                 }
@@ -343,7 +362,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
         switch (item.getItemId()) {
             case R.id.nav_action_search:
                 hideMap();
-                showSearch(true);
+                showPreviousSearch(true);
                 closeDrawer();
                 return true;
 
@@ -467,7 +486,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
         while (searchHistoryTable.remove(searchHistory)) ;
         searchHistoryTable.add(searchHistory);
 
-        showSearch(true);
+        showNewSearch(true);
         mSearchFragment.setRefreshEnabled(true);
         mSearchFragment.setRefreshing(true);
         mSearchFragment.setOverlayView(null, true);
@@ -531,6 +550,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
                     .callback(new MaterialDialog.ButtonCallback() {
                         @Override
                         public void onPositive(MaterialDialog dialog) {
+                            moveTaskToBack(true);
                             MainActivity.super.onBackPressed();
                         }
                     })
@@ -552,6 +572,12 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
         } else {
             openDrawer();
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        CaulyAdUtil.removeAd(TAG_FRAGMENT_SEARCH);
     }
 
     @Override
@@ -729,31 +755,28 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
             }
             mSearchBox.setLogoText(previousSearchQuery != null ? previousSearchQuery : getString(R.string.hint_search));
             RevealUtils.unrevealView(mMapFrame, RevealUtils.Position.CENTER, 600, null);
-            enableSearchBoxLocationButton(LocationClient.isLocationEnabled(this));
+            enableSearchBoxLocationButton(LocationClient.isLocationProviderAvailable(this));
         }
     }
 
-    private void showSearch(boolean animate) {
+    private void showNewSearch(boolean animate) {
+        showSearch(animate, true);
+    }
+
+    private void showPreviousSearch(boolean animate) {
+        showSearch(animate, false);
+    }
+
+    private void showSearch(boolean animate, boolean clear) {
         if (mSearchFrame.getVisibility() != View.VISIBLE) {
             attachOrShowFragment(mSearchFrame, mSearchFragment, TAG_FRAGMENT_SEARCH);
-            mSearchDataProvider.clear();
-            mSearchAdapter.notifyDataSetChanged();
+            if(clear) {
+                mSearchDataProvider.clear();
+                mSearchAdapter.notifyDataSetChanged();
+            }
 
             if (animate) {
                 RevealUtils.revealView(mSearchFrame, RevealUtils.Position.CENTER, 600, new SupportAnimator.SimpleAnimatorListener() {
-                    @Override
-                    public void onAnimationStart() {
-                        View placeholder = View.inflate(MainActivity.this, R.layout.empty_placeholer, null);
-                        TextView text = (TextView) placeholder.findViewById(R.id.text);
-                        text.setText(R.string.placeholder_search_start);
-                        ImageView image = (ImageView) placeholder.findViewById(R.id.image);
-                        image.setImageResource(R.drawable.ic_search_black_48dp);
-                        image.setVisibility(View.VISIBLE);
-                        image.setColorFilter(ThemeUtils.getThemeColor(MainActivity.this, android.R.attr.textColorSecondary));
-
-                        mSearchFragment.setOverlayView(placeholder, false);
-                    }
-
                     @Override
                     public void onAnimationEnd() {
                         mMapFrame.setVisibility(View.GONE);
@@ -770,6 +793,18 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
                 if (mFavoriteFragment != null) detachFragment(mFavoriteFragment);
                 if (mMapFragment != null) detachFragment(mMapFragment);
             }
+
+            if(clear || mSearchDataProvider.getCount() == 0) {
+                View placeholder = View.inflate(MainActivity.this, R.layout.empty_placeholer, null);
+                TextView text = (TextView) placeholder.findViewById(R.id.text);
+                text.setText(R.string.placeholder_search_start);
+                ImageView image = (ImageView) placeholder.findViewById(R.id.image);
+                image.setImageResource(R.drawable.ic_search_black_48dp);
+                image.setVisibility(View.VISIBLE);
+                image.setColorFilter(ThemeUtils.getThemeColor(MainActivity.this, android.R.attr.textColorSecondary));
+                mSearchFragment.setOverlayView(placeholder, false);
+            }
+
             mSearchBox.setMaterialIconState(MaterialMenuDrawable.IconState.ARROW);
             mSearchBox.setMaterialIconMorphAnimationEnable(false);
             mPlusButton.hideMenuButton(animate);
@@ -866,22 +901,52 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
                 if (object != null) {
                     switch (menuItem.getItemId()) {
                         case R.id.action_add_to_favorite:
-                            FavoriteGroup favoriteGroup = null;
-                            if (object instanceof Route) {
-                                favoriteGroup = FavoriteFacade.getInstance().addToFavorite((Route) object, null);
-                            } else if (object instanceof Station) {
-                                favoriteGroup = FavoriteFacade.getInstance().addToFavorite((Station) object, null);
-                            }
-                            Snackbar.make(mCoordinatorLayout, R.string.alert_favorite_added, Snackbar.LENGTH_LONG).show();
+                            FavoriteFacade favoriteFacade = FavoriteFacade.getInstance();
+                            List<FavoriteGroup> favoriteGroups = favoriteFacade.getCurrentFavorite().getFavoriteGroups();
+                            if (favoriteGroups.size() < 2) {
+                                FavoriteGroup favoriteGroup = favoriteFacade.getDefaultFavoriteGroup();
+                                addFavoriteItem(favoriteGroup, object);
 
-                            mFavoriteAdapter.notifyDataSetChanged();
-                            for (int i = 0; i < mFavoriteDataProvider.getGroupCount(); i++) {
-                                if (mFavoriteDataProvider.getGroupItem(i).equals(favoriteGroup)) {
-                                    mFavoriteAdapter.getExpandableItemManager().expandGroup(i);
-                                    break;
+                            } else {
+                                String[] items = new String[favoriteGroups.size()];
+                                for (int i = 0; i < favoriteGroups.size(); i++) {
+                                    items[i] = favoriteGroups.get(i).getName();
                                 }
-                            }
+                                new MaterialDialog.Builder(this)
+                                        .title(R.string.hint_choose_favorite_group)
+                                        .items(items)
+                                        .itemsCallbackMultiChoice(null, (materialDialog, integers, charSequences) -> true)
+                                        .positiveText(android.R.string.ok)
+                                        .negativeText(android.R.string.cancel)
+                                        .callback(new MaterialDialog.ButtonCallback() {
+                                            @Override
+                                            public void onPositive(MaterialDialog dialog) {
+                                                Integer[] selectedIndices = dialog.getSelectedIndices();
+                                                if (selectedIndices != null && selectedIndices.length > 0) {
+                                                    for (Integer index : selectedIndices) {
+                                                        FavoriteGroup favoriteGroup = favoriteGroups.get(index);
+                                                        if (object instanceof Route) {
+                                                            favoriteFacade.addToFavorite(favoriteGroup, (Route) object, null);
+                                                        } else if (object instanceof Station) {
+                                                            favoriteFacade.addToFavorite(favoriteGroup, (Station) object, null);
+                                                        }
+                                                    }
 
+                                                    Snackbar.make(mCoordinatorLayout, R.string.alert_favorite_added, Snackbar.LENGTH_LONG).show();
+                                                    mFavoriteAdapter.notifyDataSetChanged();
+
+                                                    for (Integer index : selectedIndices) {
+                                                        int adPosition = mFavoriteAdapter.getAdPosition();
+                                                        if (adPosition != -1 && index >= adPosition)
+                                                            index++;
+                                                        mFavoriteAdapter.getExpandableItemManager().expandGroup(index);
+                                                    }
+                                                }
+                                            }
+                                        })
+                                        .cancelable(true)
+                                        .show();
+                            }
                             break;
 
                         case R.id.action_map:
@@ -970,8 +1035,16 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
                     }
                 }
             });
-            mFavoriteAdapter.setAdPosition(mFavoriteDataProvider.getGroupCount());
-            mFavoriteAdapter.setAdTag("FAVORITE_AD");
+            if(mFavoriteDataProvider.getGroupCount() > 0) {
+                CaulyAdUtil.requestAd(this, TAG_FRAGMENT_SEARCH, new CaulyAdUtil.SimpleCaulyNativeAdListener() {
+                    @Override
+                    public void onReceiveNativeAd(CaulyNativeAdView caulyNativeAdView, boolean b) {
+                        mFavoriteAdapter.setAdPosition(0);
+                        mFavoriteAdapter.setAdTag(TAG_FRAGMENT_SEARCH);
+                        ViewUtils.runOnUiThread(mFavoriteAdapter::notifyDataSetChanged, 100);
+                    }
+                });
+            }
         }
         if (mFavoriteFragment != null && mFavoriteAdapter != null) {
             mFavoriteFragment.setAdapter(mFavoriteAdapter);
@@ -999,6 +1072,25 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
         }
     }
 
+    private void addFavoriteItem(FavoriteGroup favoriteGroup, Object object) {
+
+        FavoriteFacade favoriteFacade = FavoriteFacade.getInstance();
+        if (object instanceof Route) {
+            favoriteFacade.addToFavorite(favoriteGroup, (Route) object, null);
+        } else if (object instanceof Station) {
+            favoriteFacade.addToFavorite(favoriteGroup, (Station) object, null);
+        }
+        Snackbar.make(mCoordinatorLayout, R.string.alert_favorite_added, Snackbar.LENGTH_LONG).show();
+
+        mFavoriteAdapter.notifyDataSetChanged();
+        for (int i = 0; i < mFavoriteDataProvider.getGroupCount(); i++) {
+            if (mFavoriteDataProvider.getGroupItem(i).equals(favoriteGroup)) {
+                mFavoriteAdapter.getExpandableItemManager().expandGroup(i);
+                break;
+            }
+        }
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == SearchBox.VOICE_RECOGNITION_CODE && resultCode == RESULT_OK) {
@@ -1010,7 +1102,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
             return;
 
         } else if (requestCode == RESULT_GPS_SETTINGS) {
-            boolean locationEnabled = LocationClient.isLocationEnabled(this);
+            boolean locationEnabled = LocationClient.isLocationProviderAvailable(this);
             if (locationEnabled) {
                 Snackbar.make(mCoordinatorLayout, "GPS 기능이 활성화되었습니다.", Snackbar.LENGTH_LONG).show();
 

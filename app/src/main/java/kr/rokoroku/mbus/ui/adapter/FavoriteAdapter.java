@@ -568,24 +568,28 @@ public class FavoriteAdapter
      */
 
     @Override
-    public int onGetGroupItemSwipeReactionType(GroupViewHolder sectionViewHolder,
+    public int onGetGroupItemSwipeReactionType(GroupViewHolder holder,
                                                int groupPosition, int x, int y) {
         int adPosition = getAdPosition();
+        int realGroupPosition = groupPosition;
         if (adPosition != groupPosition) {
             if (adPosition != -1 && groupPosition > adPosition) {
-                groupPosition--;
+                realGroupPosition--;
             }
-            if (groupPosition == mProvider.getGroupCount() || onCheckGroupCanStartDrag(sectionViewHolder, groupPosition, x, y)) {
+            if (realGroupPosition == mProvider.getGroupCount() || onCheckGroupCanStartDrag(holder, groupPosition, x, y)) {
                 return RecyclerViewSwipeManager.REACTION_CAN_NOT_SWIPE_BOTH;
 
-            } else if (mProvider.getChildCount(groupPosition) != 0) {
-                return RecyclerViewSwipeManager.REACTION_CAN_NOT_SWIPE_BOTH;
-
+            } else if (mProvider.getChildCount(realGroupPosition) != 0) {
+                if(mExpandableItemManager.isGroupExpanded(groupPosition)) {
+                    return RecyclerViewSwipeManager.REACTION_CAN_NOT_SWIPE_BOTH;
+                } else {
+                    return RecyclerViewSwipeManager.REACTION_CAN_NOT_SWIPE_BOTH_WITH_RUBBER_BAND_EFFECT;
+                }
             } else {
                 return RecyclerViewSwipeManager.REACTION_CAN_SWIPE_BOTH;
             }
         } else {
-            return RecyclerViewSwipeManager.REACTION_CAN_NOT_SWIPE_BOTH_WITH_RUBBER_BAND_EFFECT;
+            return RecyclerViewSwipeManager.REACTION_CAN_SWIPE_BOTH;
         }
     }
 
@@ -669,11 +673,16 @@ public class FavoriteAdapter
             if(adPosition != groupPosition) {
                 mProvider.removeGroupItem(realGroupPosition);
                 notifyDataSetChanged();
+
+                if (mEventListener != null) {
+                    mEventListener.onGroupItemRemoved(realGroupPosition);
+                }
+
+            } else {
+                mAdPosition = -1;
+                notifyDataSetChanged();
             }
 
-            if (mEventListener != null) {
-                mEventListener.onGroupItemRemoved(realGroupPosition);
-            }
         }
     }
 
@@ -1088,7 +1097,7 @@ public class FavoriteAdapter
 
     public class AdViewHolder extends GroupViewHolder implements CaulyNativeAdViewListener {
 
-        public String mAdTag;
+        private String mTag;
         private CaulyNativeAdView mAdView;
 
         public AdViewHolder(View v) {
@@ -1097,11 +1106,10 @@ public class FavoriteAdapter
         }
 
         public void requestAd(String tag) {
-            if (mAdTag != tag) {
-                mAdTag = tag;
+            if (mAdView == null || mTag != tag) {
+                mTag = tag;
                 Context context = mContainer.getContext();
                 CaulyAdUtil.requestAd(context, tag, this);
-                mContainer.setAlpha(0f);
             }
         }
 
@@ -1115,7 +1123,6 @@ public class FavoriteAdapter
                     }
                     mAdView.attachToView((ViewGroup) mContainer);
                     mContainer.requestLayout();
-                    mContainer.animate().alpha(1f).setDuration(500).start();
                 });
             } else {
                 onFailedToReceiveNativeAd(null, -1, null);
@@ -1124,10 +1131,10 @@ public class FavoriteAdapter
 
         @Override
         public void onFailedToReceiveNativeAd(CaulyNativeAdView caulyNativeAdView, int i, String s) {
-            CaulyAdUtil.removeAd(mAdTag);
+            CaulyAdUtil.removeAd(mTag);
             mAdPosition = -1;
             mAdView = null;
-            mAdTag = null;
+            mTag = null;
             ViewUtils.runOnUiThread(FavoriteAdapter.this::notifyDataSetChanged, 100);
         }
 

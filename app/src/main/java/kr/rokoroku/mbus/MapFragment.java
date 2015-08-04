@@ -254,12 +254,14 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
             @Override
             public void onComplete(boolean success, List<Station> value) {
                 List<Station> validStations = new ArrayList<>();
-                for (Station station : value) {
-                    if(!TextUtils.isEmpty(station.getLocalId())) {
-                        validStations.add(station);
+                if(value != null) {
+                    for (Station station : value) {
+                        if (!TextUtils.isEmpty(station.getLocalId())) {
+                            validStations.add(station);
+                        }
                     }
+                    drawStations(validStations);
                 }
-                drawStations(validStations);
             }
 
             @Override

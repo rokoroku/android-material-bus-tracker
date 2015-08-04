@@ -134,7 +134,7 @@ public enum RouteType {
             case 4:
                 return ThemeUtils.getThemeColor(context, R.attr.busColorPurpleLine);
             case 5:
-                return ThemeUtils.getThemeColor(context, R.attr.busColorRedLine);
+                return ThemeUtils.getThemeColor(context, R.attr.busColorPurpleLine);
             default:
                 return ThemeUtils.getThemeColor(context, android.R.attr.textColorPrimary);
         }

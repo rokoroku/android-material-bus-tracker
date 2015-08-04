@@ -194,7 +194,8 @@ public class SearchBox extends RelativeLayout {
                     voiceRecognitionListener.onClick();
                 } else if (!isSideButtonEnable) {
                     setSearchString("", true);
-                } else if (mSideButtonOnClickListener != null) {
+                } else if (isUserrSideButtonEnabled
+                        && mSideButtonOnClickListener != null) {
                     mSideButtonOnClickListener.onClick(v);
                     if (isSearchOpen()) {
                         closeSearch();
@@ -407,6 +408,10 @@ public class SearchBox extends RelativeLayout {
 
     public void setUserSideButtonFunctionEnabled(boolean enable) {
         this.isUserrSideButtonEnabled = enable;
+
+        Drawable drawable = (enable && sideButtonDrawable != null) ? sideButtonDrawable :
+                context.getResources().getDrawable(R.drawable.ic_action_mic);
+        sideButton.setImageDrawable(drawable);
     }
 
     public void setSideButtonOnClickListener(OnClickListener onClickListener) {

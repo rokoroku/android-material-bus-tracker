@@ -17,6 +17,7 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.afollestad.materialdialogs.MaterialDialog;
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
 import com.h6ah4i.android.widget.advrecyclerview.animator.RefactoredDefaultItemAnimator;
@@ -30,6 +31,7 @@ import java.util.TimerTask;
 import kr.rokoroku.mbus.api.ApiWrapperInterface;
 import kr.rokoroku.mbus.core.DatabaseFacade;
 import kr.rokoroku.mbus.data.model.ArrivalInfo;
+import kr.rokoroku.mbus.data.model.FavoriteGroup;
 import kr.rokoroku.mbus.data.model.Provider;
 import kr.rokoroku.mbus.ui.adapter.StationAdapter;
 import kr.rokoroku.mbus.data.StationDataProvider;
@@ -467,13 +469,53 @@ public class StationActivity extends AbstractBaseActivity
     }
 
     private void addToFavorite(StationRoute stationRoute) {
-        FavoriteFacade.getInstance().addToFavorite(mStationDataProvider.getStation(), stationRoute);
-        String alertString;
-        if (stationRoute != null) {
-            alertString = getString(R.string.alert_favorite_added_with, stationRoute.getRouteName());
+        FavoriteFacade favoriteFacade = FavoriteFacade.getInstance();
+        List<FavoriteGroup> favoriteGroups = favoriteFacade.getCurrentFavorite().getFavoriteGroups();
+        if(favoriteGroups.size() < 2) {
+            FavoriteGroup favoriteGroup = favoriteFacade.getDefaultFavoriteGroup();
+            favoriteFacade.addToFavorite(favoriteGroup, mStationDataProvider.getStation(), stationRoute);
+
+            String alertString;
+            if (stationRoute != null) {
+                alertString = getString(R.string.alert_favorite_added_with, stationRoute.getRouteName());
+            } else {
+                alertString = getString(R.string.alert_favorite_added);
+            }
+            Snackbar.make(mCoordinatorLayout, alertString, Snackbar.LENGTH_LONG).show();
+
         } else {
-            alertString = getString(R.string.alert_favorite_added);
+            String[] items = new String[favoriteGroups.size()];
+            for (int i = 0; i < favoriteGroups.size(); i++) {
+                items[i] = favoriteGroups.get(i).getName();
+            }
+            new MaterialDialog.Builder(this)
+                    .title(R.string.hint_choose_favorite_group)
+                    .items(items)
+                    .itemsCallbackMultiChoice(null, (materialDialog, integers, charSequences) -> true)
+                    .positiveText(android.R.string.ok)
+                    .negativeText(android.R.string.cancel)
+                    .callback(new MaterialDialog.ButtonCallback() {
+                        @Override
+                        public void onPositive(MaterialDialog dialog) {
+                            Integer[] selectedIndices = dialog.getSelectedIndices();
+                            if(selectedIndices != null && selectedIndices.length > 0) {
+                                for (Integer index : selectedIndices) {
+                                    FavoriteGroup favoriteGroup = favoriteGroups.get(index);
+                                    favoriteFacade.addToFavorite(favoriteGroup, mStationDataProvider.getStation(), stationRoute);
+                                }
+
+                                String alertString;
+                                if (stationRoute != null) {
+                                    alertString = getString(R.string.alert_favorite_added_with, stationRoute.getRouteName());
+                                } else {
+                                    alertString = getString(R.string.alert_favorite_added);
+                                }
+                                Snackbar.make(mCoordinatorLayout, alertString, Snackbar.LENGTH_LONG).show();
+                            }
+                        }
+                    })
+                    .cancelable(true)
+                    .show();
         }
-        Snackbar.make(mCoordinatorLayout, alertString, Snackbar.LENGTH_LONG).show();
     }
 }

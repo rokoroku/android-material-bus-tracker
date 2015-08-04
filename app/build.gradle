@@ -27,8 +27,8 @@ android {
         applicationId "kr.rokoroku.mbus"
         minSdkVersion 14
         targetSdkVersion 22
-        versionCode 8
-        versionName "0.8"
+        versionCode 9
+        versionName "0.85"
     }
     buildTypes {
         release {
@@ -83,5 +83,8 @@ dependencies {
     compile 'com.github.markushi:circlebutton:1.1'
     compile 'com.afollestad:material-dialogs:0.7.6.0'
     compile 'com.joooonho:selectableroundedimageview:1.0.1'
+    compile ('io.nlopez.smartlocation:library:3.0.11') {
+        transitive = false
+    }
     compile files('libs/CaulySDK-3.3.21.jar')
 }
