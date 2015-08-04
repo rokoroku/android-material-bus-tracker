@@ -269,6 +269,11 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
 
                             mFavoriteDataProvider.addGroupItem(groupPosition, favoriteGroup);
                             mFavoriteAdapter.notifyDataSetChanged();
+                            int adPosition = mFavoriteAdapter.getAdPosition();
+                            if (adPosition != -1 && adPosition >= groupPosition) {
+                                mFavoriteAdapter.setAdPosition(adPosition + 1);
+                                ViewUtils.runOnUiThread(mFavoriteAdapter::notifyDataSetChanged, 50);
+                            }
 
                             getHandler().postDelayed(() -> {
                                 if (mFavoriteFragment != null) {
@@ -581,6 +586,12 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
         int[] position = mFavoriteDataProvider.undoLastRemoval();
         RecyclerView recyclerView = mFavoriteFragment.getRecyclerView();
         if (position[0] >= 0 && position[1] == -1) {
+            //undo group removal
+            int adPosition = mFavoriteAdapter.getAdPosition();
+            if (adPosition != -1 && adPosition >= position[0]) {
+                mFavoriteAdapter.setAdPosition(adPosition + 1);
+            }
+
             long expandablePosition = RecyclerViewExpandableItemManager.getPackedPositionForGroup(position[0]);
             int flatPosition = mFavoriteItemManager.getFlatPosition(expandablePosition);
 
@@ -589,6 +600,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
             mFavoriteItemManager.expandGroup(position[0]);
 
         } else if (position[0] >= 0 && position[1] >= 0) {
+            //undo child removal
             long expandablePosition = RecyclerViewExpandableItemManager.getPackedPositionForChild(position[0], position[1]);
             int flatPosition = mFavoriteItemManager.getFlatPosition(expandablePosition);
 
@@ -958,6 +970,8 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
                     }
                 }
             });
+            mFavoriteAdapter.setAdPosition(mFavoriteDataProvider.getGroupCount());
+            mFavoriteAdapter.setAdTag("FAVORITE_AD");
         }
         if (mFavoriteFragment != null && mFavoriteAdapter != null) {
             mFavoriteFragment.setAdapter(mFavoriteAdapter);

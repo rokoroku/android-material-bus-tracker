@@ -66,6 +66,7 @@ public class FavoriteDataProvider {
         FavoriteGroup group = favoriteGroups.remove(from);
         if (group != null) {
             if(to > favoriteGroups.size()) to = favoriteGroups.size();
+            else if(to < 0) to = 0;
             favoriteGroups.add(to, group);
         }
     }

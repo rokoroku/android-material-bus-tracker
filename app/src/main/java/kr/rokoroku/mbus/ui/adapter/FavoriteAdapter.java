@@ -7,15 +7,11 @@ package kr.rokoroku.mbus.ui.adapter;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
-import android.graphics.PorterDuffColorFilter;
 import android.graphics.Typeface;
-import android.os.Handler;
-import android.os.Looper;
 import android.os.Parcelable;
 import android.support.v4.view.ViewCompat;
 import android.support.v7.internal.view.menu.MenuBuilder;
 import android.support.v7.widget.CardView;
-import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.TypedValue;
@@ -24,11 +20,14 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.afollestad.materialdialogs.MaterialDialog;
+import com.fsn.cauly.CaulyNativeAdView;
+import com.fsn.cauly.CaulyNativeAdViewListener;
 import com.h6ah4i.android.widget.advrecyclerview.draggable.ItemDraggableRange;
 import com.h6ah4i.android.widget.advrecyclerview.draggable.RecyclerViewDragDropManager;
 import com.h6ah4i.android.widget.advrecyclerview.expandable.ExpandableDraggableItemAdapter;
@@ -48,6 +47,7 @@ import java.util.Set;
 import kr.rokoroku.mbus.R;
 import kr.rokoroku.mbus.RouteActivity;
 import kr.rokoroku.mbus.StationActivity;
+import kr.rokoroku.mbus.util.CaulyAdUtil;
 import kr.rokoroku.mbus.data.FavoriteDataProvider;
 import kr.rokoroku.mbus.data.model.FavoriteGroup;
 import kr.rokoroku.mbus.data.model.Provider;
@@ -62,34 +62,35 @@ import kr.rokoroku.mbus.util.ViewUtils;
 
 
 public class FavoriteAdapter
-        extends AbstractExpandableItemAdapter<FavoriteAdapter.SectionViewHolder, FavoriteAdapter.ItemViewHolder>
-        implements ExpandableDraggableItemAdapter<FavoriteAdapter.SectionViewHolder, FavoriteAdapter.ItemViewHolder>,
-        ExpandableSwipeableItemAdapter<FavoriteAdapter.SectionViewHolder, FavoriteAdapter.ItemViewHolder> {
+        extends AbstractExpandableItemAdapter<FavoriteAdapter.GroupViewHolder, FavoriteAdapter.ItemViewHolder>
+        implements ExpandableDraggableItemAdapter<FavoriteAdapter.GroupViewHolder, FavoriteAdapter.ItemViewHolder>,
+        ExpandableSwipeableItemAdapter<FavoriteAdapter.GroupViewHolder, FavoriteAdapter.ItemViewHolder> {
 
     private static final String TAG = "FavoriteAdapter";
 
     private static final int ITEM_SECTION = 1;
     private static final int ITEM_BUS = 2;
-    private static final int ITEM_FOOTER = 3;
+    private static final int ITEM_AD = 3;
+    private static final int ITEM_FOOTER = 4;
 
     private final RecyclerViewExpandableItemManager mExpandableItemManager;
     private final FavoriteDataProvider mProvider;
     private EventListener mEventListener;
-    private Handler mHandler;
+    private int mAdPosition = -1;
 
     private int mSwipedGroupPosition = -1;
     private int mSwipedChildPosition = -1;
-    private int mDraggedGroupPosition = -1;
+    private int mTemporariliyCollapsedGroupPosition = -1;
     private int mInPlaceDroppedGroupPosition = -1;
     private int mInPlaceDroppedChildPosition = -1;
 
     private Set<Long> mGeneratedIdSet = new HashSet<>();
+    private String mAdTag;
 
     public FavoriteAdapter(RecyclerViewExpandableItemManager recyclerViewExpandableItemManager,
                            FavoriteDataProvider dataProvider) {
         mExpandableItemManager = recyclerViewExpandableItemManager;
         mProvider = dataProvider;
-        mHandler = new Handler(Looper.getMainLooper());
 
         // ExpandableItemAdapter, ExpandableDraggableItemAdapter and ExpandableSwipeableItemAdapter
         // require stable ID, and also have to implement the getGroupItemId()/getChildItemId() methods appropriately.
@@ -100,34 +101,72 @@ public class FavoriteAdapter
         return mExpandableItemManager;
     }
 
+    public int getAdPosition() {
+        int groupCount = mProvider.getGroupCount();
+        if (groupCount == 0) return -1;
+        else return mAdPosition;
+    }
+
+    public void setAdPosition(int position) {
+        this.mAdPosition = position;
+    }
+
+    public String getAdTag() {
+        return mAdTag;
+    }
+
+    public void setAdTag(String tag) {
+        this.mAdTag = tag;
+    }
+
     @Override
     public int getGroupCount() {
         int groupCount = mProvider.getGroupCount();
-        return groupCount > 0 ? groupCount + 1 : 0;
+        int result = groupCount > 0 ? groupCount + 1 : 0;
+        if (getAdPosition() != -1) result++;
+        return result;
     }
 
     @Override
     public int getChildCount(int groupPosition) {
-        if (groupPosition < getGroupCount()) {
-            return mProvider.getChildCount(groupPosition);
-        } else {
+        int adPosition = getAdPosition();
+        if (groupPosition == adPosition) {
             return 0;
+        } else {
+            int realGroupPosition = groupPosition;
+            if (adPosition != -1 && groupPosition > adPosition) {
+                realGroupPosition--;
+            }
+            return mProvider.getChildCount(realGroupPosition);
         }
     }
 
     @Override
     public long getGroupId(int groupPosition) {
-        FavoriteGroup groupItem = mProvider.getGroupItem(groupPosition);
-        if (groupItem != null) {
-            return groupItem.getId();
+        int adPosition = getAdPosition();
+        if (groupPosition == adPosition) {
+            return mAdTag.hashCode();
         } else {
-            return generateRandomId();
+            int realGroupPosition = groupPosition;
+            if (adPosition != -1 && groupPosition > adPosition) {
+                realGroupPosition--;
+            }
+            FavoriteGroup groupItem = mProvider.getGroupItem(realGroupPosition);
+            if (groupItem != null) {
+                return groupItem.getId();
+            }
         }
+        return generateRandomId();
     }
 
     @Override
     public long getChildId(int groupPosition, int childPosition) {
-        FavoriteGroup.FavoriteItem childItem = mProvider.getChildItem(groupPosition, childPosition);
+        int adPosition = getAdPosition();
+        int realGroupPosition = groupPosition;
+        if (adPosition != -1 && groupPosition > adPosition) {
+            realGroupPosition--;
+        }
+        FavoriteGroup.FavoriteItem childItem = mProvider.getChildItem(realGroupPosition, childPosition);
         if (childItem != null) {
             return childItem.getId();
         } else {
@@ -144,11 +183,20 @@ public class FavoriteAdapter
     }
 
     @Override
-    public int getGroupItemViewType(int groupPoisition) {
-        if (groupPoisition < mProvider.getGroupCount()) {
-            return ITEM_SECTION;
+    public int getGroupItemViewType(int groupPosition) {
+        int adPosition = getAdPosition();
+        if (groupPosition == adPosition) {
+            return ITEM_AD;
         } else {
-            return ITEM_FOOTER;
+            int realGroupPosition = groupPosition;
+            if (adPosition != -1 && groupPosition > adPosition) {
+                realGroupPosition--;
+            }
+            if (realGroupPosition < mProvider.getGroupCount()) {
+                return ITEM_SECTION;
+            } else {
+                return ITEM_FOOTER;
+            }
         }
     }
 
@@ -158,51 +206,73 @@ public class FavoriteAdapter
     }
 
     @Override
-    public void onBindGroupViewHolder(SectionViewHolder holder, int groupPosition, int viewType) {
-        if (viewType == ITEM_SECTION) {
-            holder.setItem(mProvider.getGroupItem(groupPosition));
-        } else {
-            holder.setItem(null);
-            return;
-        }
-
-        holder.itemView.setEnabled(true);
-        holder.itemView.setClickable(true);
-
-        final int dragState = holder.getDragStateFlags();
-        final int expandState = holder.getExpandStateFlags();
-        final int swipeState = holder.getSwipeStateFlags();
-
-        if (((dragState & RecyclerViewDragDropManager.STATE_FLAG_IS_UPDATED) != 0) ||
-                ((expandState & RecyclerViewExpandableItemManager.STATE_FLAG_IS_UPDATED) != 0) ||
-                ((swipeState & RecyclerViewSwipeManager.STATE_FLAG_IS_UPDATED) != 0)) {
-
+    public void onBindGroupViewHolder(GroupViewHolder holder, int groupPosition, int viewType) {
+        int adPosition = getAdPosition();
+        if (adPosition != -1 && groupPosition > adPosition) groupPosition--;
+        if (viewType == ITEM_AD) {
+            String adTag = getAdTag();
+            if (adTag != null) {
+                AdViewHolder adViewHolder = (AdViewHolder) holder;
+                adViewHolder.requestAd(adTag);
+            }
+            final int dragState = holder.getDragStateFlags();
             if ((dragState & RecyclerViewDragDropManager.STATE_FLAG_IS_ACTIVE) != 0) {
-
-            } else if ((dragState & RecyclerViewDragDropManager.STATE_FLAG_DRAGGING) != 0) {
-                mHandler.post(() -> ViewCompat.animate(holder.mContainer).scaleX(0.95f).scaleY(0.95f).setDuration(200));
-
-            } else {
-                mHandler.post(() -> ViewCompat.animate(holder.mContainer).scaleX(1f).scaleY(1f).setDuration(200));
+                CardView cardView = (CardView) holder.itemView.findViewById(R.id.card_view);
+                if (cardView != null) {
+                    ViewUtils.clearDrawableState(cardView.getForeground());
+                }
             }
+        } else if (viewType == ITEM_SECTION) {
+            SectionViewHolder sectionViewHolder = (SectionViewHolder) holder;
+            sectionViewHolder.setItem(mProvider.getGroupItem(groupPosition));
 
-            MorphButton.MorphState state;
-            if ((expandState & RecyclerViewExpandableItemManager.STATE_FLAG_IS_EXPANDED) != 0) {
-                holder.mOverflowButton.setVisibility(View.VISIBLE);
-                state = MorphButton.MorphState.END;
-            } else {
-                holder.mOverflowButton.setVisibility(View.GONE);
-                state = MorphButton.MorphState.START;
-            }
-            if (holder.mIndicator.getState() != state) {
-                holder.mIndicator.setState(state, true);
+            sectionViewHolder.itemView.setEnabled(true);
+            sectionViewHolder.itemView.setClickable(true);
+
+            final int dragState = sectionViewHolder.getDragStateFlags();
+            final int expandState = sectionViewHolder.getExpandStateFlags();
+            final int swipeState = sectionViewHolder.getSwipeStateFlags();
+
+            if (((dragState & RecyclerViewDragDropManager.STATE_FLAG_IS_UPDATED) != 0) ||
+                    ((expandState & RecyclerViewExpandableItemManager.STATE_FLAG_IS_UPDATED) != 0) ||
+                    ((swipeState & RecyclerViewSwipeManager.STATE_FLAG_IS_UPDATED) != 0)) {
+
+                if ((dragState & RecyclerViewDragDropManager.STATE_FLAG_IS_ACTIVE) != 0) {
+
+                } else if ((dragState & RecyclerViewDragDropManager.STATE_FLAG_DRAGGING) != 0) {
+                    ViewUtils.runOnUiThread(() -> ViewCompat.animate(sectionViewHolder.mContainer)
+                            .scaleX(0.95f)
+                            .scaleY(0.95f)
+                            .setDuration(200));
+
+                } else {
+                    ViewUtils.runOnUiThread(() -> ViewCompat.animate(sectionViewHolder.mContainer)
+                            .scaleX(1f)
+                            .scaleY(1f)
+                            .setDuration(200));
+                }
+
+                MorphButton.MorphState state;
+                if ((expandState & RecyclerViewExpandableItemManager.STATE_FLAG_IS_EXPANDED) != 0) {
+                    sectionViewHolder.mOverflowButton.setVisibility(View.VISIBLE);
+                    state = MorphButton.MorphState.END;
+                } else {
+                    sectionViewHolder.mOverflowButton.setVisibility(View.GONE);
+                    state = MorphButton.MorphState.START;
+                }
+                if (sectionViewHolder.mIndicator.getState() != state) {
+                    sectionViewHolder.mIndicator.setState(state, true);
+                }
             }
         }
     }
 
     @Override
-    public void onBindChildViewHolder(ItemViewHolder holder, int groupPosition, int childPosition, int viewType) {
+    public void onBindChildViewHolder(ItemViewHolder holder, int groupPosition,
+                                      int childPosition, int viewType) {
         // group item
+        int adPosition = getAdPosition();
+        if (adPosition != -1 && groupPosition > adPosition) groupPosition--;
         final FavoriteGroup.FavoriteItem item = mProvider.getChildItem(groupPosition, childPosition);
         holder.itemView.setEnabled(true);
         holder.itemView.setClickable(true);
@@ -228,21 +298,30 @@ public class FavoriteAdapter
                 ViewUtils.clearDrawableState(holder.mCardView.getForeground());
 
             } else if ((dragState & RecyclerViewDragDropManager.STATE_FLAG_DRAGGING) != 0) {
-                mHandler.post(() -> ViewCompat.animate(holder.mCardView).scaleX(0.95f).scaleY(0.95f).setDuration(200));
+                ViewUtils.runOnUiThread(() -> ViewCompat.animate(holder.mCardView)
+                        .scaleX(0.95f)
+                        .scaleY(0.95f)
+                        .setDuration(200));
             } else {
-                mHandler.post(() -> ViewCompat.animate(holder.mCardView).scaleX(1f).scaleY(1f).setDuration(200));
+                ViewUtils.runOnUiThread(() -> ViewCompat.animate(holder.mCardView)
+                        .scaleX(1f)
+                        .scaleY(1f)
+                        .setDuration(200));
             }
         }
     }
 
     @Override
-    public SectionViewHolder onCreateGroupViewHolder(ViewGroup parent, int viewType) {
+    public GroupViewHolder onCreateGroupViewHolder(ViewGroup parent, int viewType) {
         final LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-        if (viewType == ITEM_FOOTER) {
-            return new FooterViewHolder(inflater.inflate(R.layout.row_favorite_group, parent, false));
-        } else {
+        if (viewType == ITEM_SECTION) {
             return new SectionViewHolder(inflater.inflate(R.layout.row_favorite_group, parent, false));
+        } else if (viewType == ITEM_FOOTER) {
+            return new FooterViewHolder(inflater.inflate(R.layout.row_footer_layout, parent, false));
+        } else if (viewType == ITEM_AD) {
+            return new AdViewHolder(inflater.inflate(R.layout.row_footer_layout, parent, false));
         }
+        return null;
     }
 
     @Override
@@ -252,44 +331,49 @@ public class FavoriteAdapter
     }
 
     @Override
-    public boolean onCheckCanExpandOrCollapseGroup(SectionViewHolder holder, int groupPosition, int x, int y, boolean expand) {
-        if (groupPosition == getGroupCount()) {
+    public boolean onCheckCanExpandOrCollapseGroup(GroupViewHolder holder,
+                                                   int groupPosition, int x, int y, boolean expand) {
+        if (holder instanceof SectionViewHolder) {
+            SectionViewHolder sectionViewHolder = (SectionViewHolder) holder;
+            if (getAdPosition() != -1 && groupPosition > getAdPosition()) {
+                groupPosition--;
+            }
+
+            if (groupPosition == getGroupCount()) {
+                return false;
+            }
+
+            if (mSwipedGroupPosition == groupPosition) {
+                return false;
+            }
+
+            // check is enabled
+            if (!(sectionViewHolder.itemView.isEnabled() && sectionViewHolder.itemView.isClickable())) {
+                return false;
+            }
+
+            final View containerView = sectionViewHolder.mContainer;
+            final View dragHandleView = sectionViewHolder.itemView;
+
+            final int offsetX = containerView.getLeft() + (int) (ViewCompat.getTranslationX(containerView) + 0.5f);
+            final int offsetY = containerView.getTop() + (int) (ViewCompat.getTranslationY(containerView) + 0.5f);
+
+            return !ViewUtils.hitTest(dragHandleView, x - offsetX, y - offsetY);
+
+        } else {
             return false;
         }
-
-        if (mSwipedGroupPosition == groupPosition) {
-            return false;
-        }
-
-        // check is enabled
-        if (!(holder.itemView.isEnabled() && holder.itemView.isClickable())) {
-            return false;
-        }
-
-        final View containerView = holder.mContainer;
-        final View dragHandleView = holder.itemView;
-
-        final int offsetX = containerView.getLeft() + (int) (ViewCompat.getTranslationX(containerView) + 0.5f);
-        final int offsetY = containerView.getTop() + (int) (ViewCompat.getTranslationY(containerView) + 0.5f);
-
-        return !ViewUtils.hitTest(dragHandleView, x - offsetX, y - offsetY);
     }
 
     /**
      * Draggable Interface
      */
+    private int preX, preY;
 
     @Override
-    public boolean onCheckGroupCanStartDrag(SectionViewHolder holder, int groupPosition, int x, int y) {
+    public boolean onCheckGroupCanStartDrag(GroupViewHolder holder,
+                                            int groupPosition, int x, int y) {
         Log.d("FavoriteAdapter", "onCheckCanDrag");
-
-        if (groupPosition == mProvider.getGroupCount()) {
-            return false;
-        }
-
-        if (holder.mTitle.getTranslationX() != 0) {
-            return false;
-        }
 
         if (mSwipedGroupPosition == groupPosition) {
             mSwipedGroupPosition = -1;
@@ -298,26 +382,38 @@ public class FavoriteAdapter
 
         // x, y --- relative from the itemView's top-left
         final View containerView = holder.mContainer;
-        final View dragHandleView = holder.mTitle;
+        final View dragHandleView = holder.getDragHandleView();
+        final View swipeableContainerView = holder.getSwipeableContainerView();
 
-        final int offsetX = containerView.getLeft() + (int) (ViewCompat.getTranslationX(containerView) + 0.5f);
-        final int offsetY = containerView.getTop() + (int) (ViewCompat.getTranslationY(containerView) + 0.5f);
-
-        if (preX != x && preY != y) {
-            preX = x;
-            preY = y;
+        if (swipeableContainerView != null && swipeableContainerView.getTranslationX() != 0) {
             return false;
         }
-        preX = x;
-        preY = y;
 
-        return ViewUtils.hitTest(dragHandleView, x - offsetX, y - offsetY);
+        if (containerView != null && dragHandleView != null) {
+            if (dragHandleView.equals(containerView)) {
+                return true;
+            }
+
+            final int offsetX = containerView.getLeft() + (int) (ViewCompat.getTranslationX(containerView) + 0.5f);
+            final int offsetY = containerView.getTop() + (int) (ViewCompat.getTranslationY(containerView) + 0.5f);
+
+            if (preX != x && preY != y) {
+                preX = x;
+                preY = y;
+                return false;
+            }
+            preX = x;
+            preY = y;
+            return ViewUtils.hitTest(dragHandleView, x - offsetX, y - offsetY);
+
+        } else {
+            return false;
+        }
     }
 
-    private int preX, preY;
-
     @Override
-    public boolean onCheckChildCanStartDrag(ItemViewHolder holder, int groupPosition, int childPosition, int x, int y) {
+    public boolean onCheckChildCanStartDrag(ItemViewHolder holder, int groupPosition,
+                                            int childPosition, int x, int y) {
         Log.d("FavoriteAdapter", "onCheckCanDragChild");
         // x, y --- relative from the itemView's top-left
         final View containerView = holder.mCardView;
@@ -335,7 +431,6 @@ public class FavoriteAdapter
 
         final int offsetX = containerView.getLeft() + (int) (ViewCompat.getTranslationX(containerView) + 0.5f);
         final int offsetY = containerView.getTop() + (int) (ViewCompat.getTranslationY(containerView) + 0.5f);
-        Log.d("FavoriteAdapter", containerView.getTop() + ", " + ViewCompat.getTranslationY(containerView));
 
         if (preX != x && preY != y) {
             preX = x;
@@ -350,38 +445,92 @@ public class FavoriteAdapter
 
 
     @Override
-    public ItemDraggableRange onGetGroupItemDraggableRange(SectionViewHolder holder, int groupPosition) {
+    public ItemDraggableRange onGetGroupItemDraggableRange(GroupViewHolder sectionViewHolder,
+                                                           int groupPosition) {
         if (mExpandableItemManager.isGroupExpanded(groupPosition)) {
             mExpandableItemManager.collapseGroup(groupPosition);
-            mDraggedGroupPosition = groupPosition;
+            mTemporariliyCollapsedGroupPosition = groupPosition;
         } else {
-            mDraggedGroupPosition = -1;
+            mTemporariliyCollapsedGroupPosition = -1;
         }
-        return new GroupPositionItemDraggableRange(0, mProvider.getGroupCount() - 1);
+        int draggableStartRange = 0;
+        int draggableEndRange = getGroupCount() - 1;
+        if (getAdPosition() >= 0) {
+            draggableEndRange--;
+//            if(getAdPosition() == 0) {
+//                draggableStartRange++;
+//            } else if(getAdPosition() == draggableEndRange) {
+//                draggableEndRange--;
+//            }
+        }
+        return new GroupPositionItemDraggableRange(draggableStartRange, draggableEndRange);
     }
 
     @Override
-    public ItemDraggableRange onGetChildItemDraggableRange(ItemViewHolder holder, int groupPosition, int childPosition) {
-        return new GroupPositionItemDraggableRange(0, mProvider.getGroupCount() - 1);
+    public ItemDraggableRange onGetChildItemDraggableRange(ItemViewHolder sectionViewHolder,
+                                                           int groupPosition, int childPosition) {
+        int draggableStartRange = 0;
+        int draggableEndRange = getGroupCount() - 1;
+        if (getAdPosition() >= 0) {
+            draggableEndRange--;
+            if (getAdPosition() == 0) {
+                draggableStartRange++;
+            } else if (getAdPosition() == draggableEndRange) {
+                draggableEndRange--;
+            }
+        }
+        return new GroupPositionItemDraggableRange(draggableStartRange, draggableEndRange);
     }
 
 
     @Override
     public void onMoveGroupItem(int fromGroupPosition, int toGroupPosition) {
-        Log.d("onMoveGroupItem", fromGroupPosition + "->" + toGroupPosition + " (prev:" + mDraggedGroupPosition + ")");
-        if (mEventListener != null) {
-            mEventListener.onGroupItemMoved(fromGroupPosition, toGroupPosition);
+        Log.d("onMoveGroupItem", fromGroupPosition + "->" + toGroupPosition + " (prev:" + mTemporariliyCollapsedGroupPosition + ")");
+        if (fromGroupPosition == getAdPosition()) {
+            mAdPosition = toGroupPosition;
+            ViewUtils.runOnUiThread(this::notifyDataSetChanged, 100);
+
+        } else {
+            if (mEventListener != null) {
+                mEventListener.onGroupItemMoved(fromGroupPosition, toGroupPosition);
+            }
+            if (fromGroupPosition != toGroupPosition) {
+                int realFromGroupPosition = fromGroupPosition;
+                int realToGroupPosition = toGroupPosition;
+                int adPosition = getAdPosition();
+                if (adPosition != -1) {
+                    if (fromGroupPosition > adPosition) {
+                        realFromGroupPosition--;
+                    }
+                    if (toGroupPosition > adPosition) {
+                        realToGroupPosition--;
+                    }
+
+                    if (fromGroupPosition < adPosition && adPosition <= toGroupPosition) {
+                        if (mAdPosition > 0) {
+                            mAdPosition--;
+                        }
+                    } else if (fromGroupPosition > adPosition && adPosition >= toGroupPosition) {
+                        if (mAdPosition <= mProvider.getGroupCount()) {
+                            mAdPosition++;
+                        }
+                    }
+
+                }
+                if (realFromGroupPosition != realToGroupPosition) {
+                    mProvider.moveGroupItem(realFromGroupPosition, realToGroupPosition);
+                } else {
+                    ViewUtils.runOnUiThread(this::notifyDataSetChanged, 100);
+                }
+            }
         }
-        if (fromGroupPosition != toGroupPosition) {
-            mProvider.moveGroupItem(fromGroupPosition, toGroupPosition);
-        }
-        if (mDraggedGroupPosition == fromGroupPosition) {
+        if (mTemporariliyCollapsedGroupPosition == fromGroupPosition) {
             mInPlaceDroppedGroupPosition = fromGroupPosition;
             mInPlaceDroppedChildPosition = -1;
-            mHandler.postDelayed(() -> {
+            ViewUtils.runOnUiThread(() -> {
                 mExpandableItemManager.notifyGroupAndChildrenItemsChanged(toGroupPosition);
                 mExpandableItemManager.expandGroup(toGroupPosition);
-                mDraggedGroupPosition = -1;
+                mTemporariliyCollapsedGroupPosition = -1;
             }, 100);
         } else {
             mInPlaceDroppedGroupPosition = -1;
@@ -390,16 +539,24 @@ public class FavoriteAdapter
     }
 
     @Override
-    public void onMoveChildItem(int fromGroupPosition, int fromChildPosition, int toGroupPosition, int toChildPosition) {
+    public void onMoveChildItem(int fromGroupPosition, int fromChildPosition,
+                                int toGroupPosition, int toChildPosition) {
         Log.d("FavoriteAdapter", String.format("onMoveChildItem, (%d, %d) -> (%d, %d)", fromGroupPosition, fromChildPosition, toGroupPosition, toChildPosition));
+        int realFromGroupPosition = fromGroupPosition;
+        int realToGroupPosition = toGroupPosition;
+        int adPosition = getAdPosition();
+        if (adPosition != -1) {
+            if (toGroupPosition > adPosition && toGroupPosition > 0) realToGroupPosition--;
+            if (fromGroupPosition > adPosition && fromGroupPosition > 0) realFromGroupPosition--;
+        }
         if (mEventListener != null) {
-            mEventListener.onChildItemMoved(fromGroupPosition, fromChildPosition, toGroupPosition, toChildPosition);
+            mEventListener.onChildItemMoved(realFromGroupPosition, fromChildPosition, realToGroupPosition, toChildPosition);
         }
         if (fromGroupPosition == toGroupPosition && fromChildPosition == toChildPosition) {
             mInPlaceDroppedGroupPosition = fromGroupPosition;
             mInPlaceDroppedChildPosition = fromChildPosition;
         } else {
-            mProvider.moveChildItem(fromGroupPosition, fromChildPosition, toGroupPosition, toChildPosition);
+            mProvider.moveChildItem(realFromGroupPosition, fromChildPosition, realToGroupPosition, toChildPosition);
             mExpandableItemManager.expandGroup(toGroupPosition);
             mInPlaceDroppedGroupPosition = -1;
             mInPlaceDroppedChildPosition = -1;
@@ -411,21 +568,31 @@ public class FavoriteAdapter
      */
 
     @Override
-    public int onGetGroupItemSwipeReactionType(SectionViewHolder holder, int groupPosition, int x, int y) {
-        if (groupPosition == mProvider.getGroupCount() || onCheckGroupCanStartDrag(holder, groupPosition, x, y)) {
-            return RecyclerViewSwipeManager.REACTION_CAN_NOT_SWIPE_BOTH;
+    public int onGetGroupItemSwipeReactionType(GroupViewHolder sectionViewHolder,
+                                               int groupPosition, int x, int y) {
+        int adPosition = getAdPosition();
+        if (adPosition != groupPosition) {
+            if (adPosition != -1 && groupPosition > adPosition) {
+                groupPosition--;
+            }
+            if (groupPosition == mProvider.getGroupCount() || onCheckGroupCanStartDrag(sectionViewHolder, groupPosition, x, y)) {
+                return RecyclerViewSwipeManager.REACTION_CAN_NOT_SWIPE_BOTH;
 
-        } else if (mProvider.getChildCount(groupPosition) != 0) {
-            return RecyclerViewSwipeManager.REACTION_CAN_NOT_SWIPE_BOTH_WITH_RUBBER_BAND_EFFECT;
+            } else if (mProvider.getChildCount(groupPosition) != 0) {
+                return RecyclerViewSwipeManager.REACTION_CAN_NOT_SWIPE_BOTH;
 
+            } else {
+                return RecyclerViewSwipeManager.REACTION_CAN_SWIPE_BOTH;
+            }
         } else {
-            return RecyclerViewSwipeManager.REACTION_CAN_SWIPE_BOTH;
+            return RecyclerViewSwipeManager.REACTION_CAN_NOT_SWIPE_BOTH_WITH_RUBBER_BAND_EFFECT;
         }
     }
 
     @Override
-    public int onGetChildItemSwipeReactionType(ItemViewHolder holder, int groupPosition, int childPosition, int x, int y) {
-        if (onCheckChildCanStartDrag(holder, groupPosition, childPosition, x, y)) {
+    public int onGetChildItemSwipeReactionType(ItemViewHolder sectionViewHolder,
+                                               int groupPosition, int childPosition, int x, int y) {
+        if (onCheckChildCanStartDrag(sectionViewHolder, groupPosition, childPosition, x, y)) {
             return RecyclerViewSwipeManager.REACTION_CAN_NOT_SWIPE_BOTH;
         }
 
@@ -433,17 +600,20 @@ public class FavoriteAdapter
     }
 
     @Override
-    public void onSetGroupItemSwipeBackground(SectionViewHolder holder, int groupPosition, int type) {
+    public void onSetGroupItemSwipeBackground(GroupViewHolder holder,
+                                              int groupPosition, int type) {
 
     }
 
     @Override
-    public void onSetChildItemSwipeBackground(ItemViewHolder holder, int groupPosition, int childPosition, int type) {
+    public void onSetChildItemSwipeBackground(ItemViewHolder sectionViewHolder,
+                                              int groupPosition, int childPosition, int type) {
 
     }
 
     @Override
-    public int onSwipeGroupItem(SectionViewHolder holder, int groupPosition, int result) {
+    public int onSwipeGroupItem(GroupViewHolder holder, int groupPosition,
+                                int result) {
         Log.d(TAG, "onSwipeGroupItem(groupPosition = " + groupPosition + ", result = " + result + ")");
 
         switch (result) {
@@ -460,7 +630,8 @@ public class FavoriteAdapter
     }
 
     @Override
-    public int onSwipeChildItem(ItemViewHolder holder, int groupPosition, int childPosition, int result) {
+    public int onSwipeChildItem(ItemViewHolder sectionViewHolder, int groupPosition,
+                                int childPosition, int result) {
         Log.d(TAG, "onSwipeChildItem(groupPosition = " + groupPosition + ", childPosition = " + childPosition + ", result = " + result + ")");
 
         switch (result) {
@@ -477,24 +648,38 @@ public class FavoriteAdapter
     }
 
     @Override
-    public void onPerformAfterSwipeGroupReaction(SectionViewHolder holder, int groupPosition, int result, int reaction) {
+    public void onPerformAfterSwipeGroupReaction(GroupViewHolder holder,
+                                                 int groupPosition, int result, int reaction) {
         Log.d(TAG, "onPerformAfterSwipeGroupReaction(groupPosition = " + groupPosition + ", result = " + result + ", reaction = " + reaction + ")");
         final long expandablePosition = RecyclerViewExpandableItemManager.getPackedPositionForGroup(groupPosition);
         final int flatPosition = mExpandableItemManager.getFlatPosition(expandablePosition);
 
         if (flatPosition == -1) return;
         if (reaction == RecyclerViewSwipeManager.AFTER_SWIPE_REACTION_REMOVE_ITEM) {
-            mProvider.removeGroupItem(groupPosition);
-            notifyDataSetChanged();
+            int adPosition = getAdPosition();
+            int realGroupPosition = groupPosition;
+            if (adPosition != -1) {
+                if (groupPosition > adPosition) {
+                    realGroupPosition--;
+                } else if (groupPosition < adPosition) {
+                    setAdPosition(adPosition - 1);
+                }
+            }
+
+            if(adPosition != groupPosition) {
+                mProvider.removeGroupItem(realGroupPosition);
+                notifyDataSetChanged();
+            }
 
             if (mEventListener != null) {
-                mEventListener.onGroupItemRemoved(groupPosition);
+                mEventListener.onGroupItemRemoved(realGroupPosition);
             }
         }
     }
 
     @Override
-    public void onPerformAfterSwipeChildReaction(ItemViewHolder holder, int groupPosition, int childPosition, int result, int reaction) {
+    public void onPerformAfterSwipeChildReaction(ItemViewHolder sectionViewHolder,
+                                                 int groupPosition, int childPosition, int result, int reaction) {
         Log.d(TAG, "onPerformAfterSwipeGroupReaction(groupPosition = " + groupPosition + ", childPosition = " + childPosition +
                 ", result = " + result + ", reaction = " + reaction + ")");
         final long expandablePosition = RecyclerViewExpandableItemManager.getPackedPositionForChild(groupPosition, childPosition);
@@ -502,8 +687,21 @@ public class FavoriteAdapter
 
         if (flatPosition == -1) return;
         if (reaction == RecyclerViewSwipeManager.AFTER_SWIPE_REACTION_REMOVE_ITEM) {
+            int adPosition = getAdPosition();
+            int realGroupPosition = groupPosition;
+            if (adPosition != -1) {
+                if (groupPosition > adPosition) {
+                    realGroupPosition--;
+                }
+            }
+            boolean groupRemoved = mProvider.getChildCount(realGroupPosition) == 1;
+            if(groupRemoved && adPosition != -1) {
+                if (groupPosition < adPosition) {
+                    setAdPosition(adPosition - 1);
+                }
+            }
 
-            mProvider.removeChildItem(groupPosition, childPosition);
+            mProvider.removeChildItem(realGroupPosition, childPosition);
             notifyDataSetChanged();
 
             if (mEventListener != null) {
@@ -603,7 +801,7 @@ public class FavoriteAdapter
 
                 Provider routeProvider = route.getProvider();
                 if (!Provider.SEOUL.equals(routeProvider)) {
-                    if(RouteType.checkIncheonRoute(route.getType())) {
+                    if (RouteType.checkIncheonRoute(route.getType())) {
                         mItemLabel.setText(Provider.INCHEON.getCityName(context));
                     } else {
                         mItemLabel.setText(routeProvider.getCityName(context));
@@ -751,9 +949,24 @@ public class FavoriteAdapter
         }
     }
 
-    public class SectionViewHolder extends BaseViewHolder implements View.OnClickListener, View.OnTouchListener {
+    public abstract class GroupViewHolder extends BaseViewHolder {
+        public GroupViewHolder(View v) {
+            super(v);
+            mContainer = v.findViewById(R.id.container);
+        }
 
         public View mContainer;
+
+        @Override
+        public View getSwipeableContainerView() {
+            return itemView;
+        }
+
+        public abstract View getDragHandleView();
+    }
+
+    public class SectionViewHolder extends GroupViewHolder implements View.OnClickListener, View.OnTouchListener {
+
         public TextView mTitle;
         public MorphButton mIndicator;
         public ImageButton mOverflowButton;
@@ -761,7 +974,6 @@ public class FavoriteAdapter
 
         public SectionViewHolder(View v) {
             super(v);
-            mContainer = v.findViewById(R.id.container);
             mTitle = (TextView) v.findViewById(R.id.section_title);
             mIndicator = (MorphButton) v.findViewById(R.id.indicator);
             mOverflowButton = (ImageButton) v.findViewById(R.id.overflow_button);
@@ -780,6 +992,11 @@ public class FavoriteAdapter
         @Override
         public View getSwipeableContainerView() {
             return mContainer;
+        }
+
+        @Override
+        public View getDragHandleView() {
+            return mTitle;
         }
 
         @Override
@@ -854,14 +1071,76 @@ public class FavoriteAdapter
 
     }
 
-    public class FooterViewHolder extends SectionViewHolder {
+    public class FooterViewHolder extends GroupViewHolder {
+
+        public TextView mFooterText;
 
         public FooterViewHolder(View v) {
             super(v);
-            mTitle.setVisibility(View.GONE);
-            mIndicator.setVisibility(View.GONE);
-            mOverflowButton.setVisibility(View.GONE);
+            mFooterText = (TextView) v.findViewById(R.id.footer_text);
         }
+
+        @Override
+        public View getDragHandleView() {
+            return null;
+        }
+    }
+
+    public class AdViewHolder extends GroupViewHolder implements CaulyNativeAdViewListener {
+
+        public String mAdTag;
+        private CaulyNativeAdView mAdView;
+
+        public AdViewHolder(View v) {
+            super(v);
+            mContainer.setVisibility(View.VISIBLE);
+        }
+
+        public void requestAd(String tag) {
+            if (mAdTag != tag) {
+                mAdTag = tag;
+                Context context = mContainer.getContext();
+                CaulyAdUtil.requestAd(context, tag, this);
+                mContainer.setAlpha(0f);
+            }
+        }
+
+        @Override
+        public void onReceiveNativeAd(CaulyNativeAdView caulyNativeAdView, boolean b) {
+            if (caulyNativeAdView != null) {
+                mAdView = caulyNativeAdView;
+                ViewUtils.runOnUiThread(() -> {
+                    if (caulyNativeAdView.getParent() != null) {
+                        ((FrameLayout) caulyNativeAdView.getParent()).removeView(caulyNativeAdView);
+                    }
+                    mAdView.attachToView((ViewGroup) mContainer);
+                    mContainer.requestLayout();
+                    mContainer.animate().alpha(1f).setDuration(500).start();
+                });
+            } else {
+                onFailedToReceiveNativeAd(null, -1, null);
+            }
+        }
+
+        @Override
+        public void onFailedToReceiveNativeAd(CaulyNativeAdView caulyNativeAdView, int i, String s) {
+            CaulyAdUtil.removeAd(mAdTag);
+            mAdPosition = -1;
+            mAdView = null;
+            mAdTag = null;
+            ViewUtils.runOnUiThread(FavoriteAdapter.this::notifyDataSetChanged, 100);
+        }
+
+        @Override
+        public View getSwipeableContainerView() {
+            return mContainer;
+        }
+
+        @Override
+        public View getDragHandleView() {
+            return mContainer;
+        }
+
     }
 
     public interface EventListener {

@@ -24,6 +24,7 @@ import java.lang.reflect.Field;
 import kr.rokoroku.mbus.core.DatabaseFacade;
 import kr.rokoroku.mbus.core.LocationClient;
 import kr.rokoroku.mbus.util.ThemeUtils;
+import kr.rokoroku.mbus.util.ViewUtils;
 
 /**
  * Created by rok on 2015. 5. 29..
@@ -223,7 +224,8 @@ public abstract class AbstractBaseActivity extends AppCompatActivity implements 
     public RecyclerView.ItemDecoration getAppBarHeaderSpacingItemDecoration() {
         if (mItemDecoration == null) {
             mItemDecoration = new RecyclerView.ItemDecoration() {
-                int actionBarSize = ThemeUtils.getDimension(AbstractBaseActivity.this, R.attr.actionBarSize);
+                int actionBarSize = (int) (ThemeUtils.getDimension(AbstractBaseActivity.this, R.attr.actionBarSize)
+                                        + ViewUtils.dpToPixel(4f, getResources()));
 
                 @Override
                 public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
