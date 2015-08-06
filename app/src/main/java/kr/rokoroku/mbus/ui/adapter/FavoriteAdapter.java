@@ -86,6 +86,7 @@ public class FavoriteAdapter
 
     private Set<Long> mGeneratedIdSet = new HashSet<>();
     private String mAdTag;
+    private boolean isAdRemoveTriggered = false;
 
     public FavoriteAdapter(RecyclerViewExpandableItemManager recyclerViewExpandableItemManager,
                            FavoriteDataProvider dataProvider) {
@@ -572,7 +573,17 @@ public class FavoriteAdapter
                                                int groupPosition, int x, int y) {
         int adPosition = getAdPosition();
         int realGroupPosition = groupPosition;
-        if (adPosition != groupPosition) {
+        if (adPosition == groupPosition) {
+            // ad
+            if(isAdRemoveTriggered) {
+                return RecyclerViewSwipeManager.REACTION_CAN_SWIPE_BOTH;
+            } else {
+                isAdRemoveTriggered = true;
+                return RecyclerViewSwipeManager.REACTION_CAN_NOT_SWIPE_BOTH_WITH_RUBBER_BAND_EFFECT;
+            }
+        } else {
+            // normal group
+            isAdRemoveTriggered = false;
             if (adPosition != -1 && groupPosition > adPosition) {
                 realGroupPosition--;
             }
@@ -588,8 +599,6 @@ public class FavoriteAdapter
             } else {
                 return RecyclerViewSwipeManager.REACTION_CAN_SWIPE_BOTH;
             }
-        } else {
-            return RecyclerViewSwipeManager.REACTION_CAN_SWIPE_BOTH;
         }
     }
 
@@ -869,7 +878,6 @@ public class FavoriteAdapter
                 if (mItem != null) {
                     Context context = v.getContext();
                     FavoriteGroup.FavoriteItem.Type type = mItem.getType();
-                    Log.d("startActivity", mItem.toString());
 
                     if (type == FavoriteGroup.FavoriteItem.Type.ROUTE) {
                         Route route = mItem.getData(Route.class);

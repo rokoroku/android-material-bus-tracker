@@ -486,7 +486,9 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         GoogleMap map = getMap();
         if (stations != null && map != null) {
             for (Station station : stations) {
-                addStationMarker(station);
+                if(station.getLocalId() != null) {
+                    addStationMarker(station);
+                }
             }
         }
     }

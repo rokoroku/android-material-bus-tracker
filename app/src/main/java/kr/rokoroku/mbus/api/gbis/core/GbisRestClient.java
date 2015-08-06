@@ -118,7 +118,7 @@ public class GbisRestClient implements ApiWrapperInterface {
 
             @Override
             public void failure(RetrofitError error) {
-                callback.onFailure(error);
+                getGbisWebRestClient().getRouteRealtimeInfo(routeId, callback);
             }
         });
     }
@@ -163,7 +163,7 @@ public class GbisRestClient implements ApiWrapperInterface {
                             return;
                         }
                     }
-                    callback.onFailure(error);
+                    getGbisWebRestClient().getStationArrivalInfo(stationId, callback);
                 }
             });
         }
@@ -189,7 +189,7 @@ public class GbisRestClient implements ApiWrapperInterface {
 
                 @Override
                 public void onFailure(Throwable t) {
-                    callback.onFailure(t);
+                    getGbisWebRestClient().getStationArrivalInfo(stationId, routeId, callback);
                 }
             });
         } else {
@@ -217,7 +217,7 @@ public class GbisRestClient implements ApiWrapperInterface {
                             return;
                         }
                     }
-                    callback.onFailure(error);
+                    getGbisWebRestClient().getStationArrivalInfo(stationId, routeId, callback);
                 }
             });
         }

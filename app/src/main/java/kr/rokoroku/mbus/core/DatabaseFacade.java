@@ -1,8 +1,12 @@
 package kr.rokoroku.mbus.core;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.util.Log;
+
+import com.crashlytics.android.Crashlytics;
 
 import org.mapdb.BTreeKeySerializer;
 import org.mapdb.BTreeMap;
@@ -73,44 +77,61 @@ public class DatabaseFacade {
 
     private Map<String, Station> temporalStationCache = new HashMap<>();
 
+    @SuppressLint("CommitPrefEdits")
     private DatabaseFacade() {
 
-        int dbVersion = BaseApplication.getSharedPreferences()
-                .getInt(BaseApplication.PREFERENCE_DB_VERSION, -1);
+        SharedPreferences preferences = BaseApplication.getSharedPreferences();
+        int dbVersion = preferences.getInt(BaseApplication.PREFERENCE_DB_VERSION, -1);
 
         if (dbVersion == -1 || dbVersion == DATABASE_VERSION) try {
             //open (or create) database
             createOrLoadFile();
             createOrLoadTables();
 
-            BaseApplication.getSharedPreferences().edit()
+            preferences.edit()
                     .putInt(BaseApplication.PREFERENCE_DB_VERSION, DATABASE_VERSION)
                     .apply();
             //printAll();
-            return;
+
         } catch (Exception e) {
             Log.e(TAG, "Exception in DatabaseFacade", e);
-        }
+            Crashlytics.logException(e);
 
-        {
-            Context context = contextWeakReference.get();
-            if (context == null) context = BaseApplication.getInstance();
-            File userfile = new File(context.getCacheDir().getAbsolutePath(), DATABASE_FILENAME_USER);
-            File datafile = new File(context.getCacheDir().getAbsolutePath(), DATABASE_FILENAME_STATIC);
+            boolean crashedBefore = preferences.getBoolean(BaseApplication.PREFERENCE_DB_CRASHED_BEFORE, false);
+            if (crashedBefore) {
+                recreateFile();
+                preferences.edit()
+                        .putBoolean(BaseApplication.PREFERENCE_DB_CRASHED_BEFORE, false)
+                        .commit();
 
-            if (userfile.exists()) {
-                userfile.delete();
+            } else {
+                preferences.edit()
+                        .putBoolean(BaseApplication.PREFERENCE_DB_CRASHED_BEFORE, true)
+                        .commit();
+
+                android.os.Process.killProcess(android.os.Process.myPid());
             }
-            if (datafile.exists()) {
-                datafile.delete();
-            }
-            createOrLoadFile();
-            createOrLoadTables();
-
-            BaseApplication.getSharedPreferences().edit()
-                    .putInt(BaseApplication.PREFERENCE_DB_VERSION, DATABASE_VERSION)
-                    .apply();
         }
+    }
+
+    private synchronized void recreateFile() {
+        Context context = contextWeakReference.get();
+        if (context == null) context = BaseApplication.getInstance();
+        File userfile = new File(context.getCacheDir().getAbsolutePath(), DATABASE_FILENAME_USER);
+        File datafile = new File(context.getCacheDir().getAbsolutePath(), DATABASE_FILENAME_STATIC);
+
+        if (userfile.exists()) {
+            userfile.delete();
+        }
+        if (datafile.exists()) {
+            datafile.delete();
+        }
+        createOrLoadFile();
+        createOrLoadTables();
+
+        BaseApplication.getSharedPreferences().edit()
+                .putInt(BaseApplication.PREFERENCE_DB_VERSION, DATABASE_VERSION)
+                .apply();
     }
 
     private synchronized void createOrLoadFile() {

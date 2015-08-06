@@ -200,18 +200,18 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
             enableSearchBoxLocationButton(locationEnabled);
         }
         if (mFavoriteAdapter != null && mFavoriteAdapter.getAdTag() != null) {
-            if(mFavoriteAdapter.getAdPosition() == -1) {
+            if (mFavoriteAdapter.getAdPosition() == -1) {
                 String adTag = mFavoriteAdapter.getAdTag();
                 CaulyAdUtil.removeAd(adTag);
                 String newTag = String.valueOf(adTag.hashCode());
-                getHandler().postDelayed(() -> CaulyAdUtil.requestAd(MainActivity.this, newTag, new CaulyAdUtil.SimpleCaulyNativeAdListener() {
+                CaulyAdUtil.requestAd(MainActivity.this, newTag, new CaulyAdUtil.SimpleCaulyNativeAdListener() {
                     @Override
                     public void onReceiveNativeAd(CaulyNativeAdView caulyNativeAdView, boolean b) {
                         mFavoriteAdapter.setAdTag(newTag);
                         mFavoriteAdapter.setAdPosition(0);
-                        ViewUtils.runOnUiThread(mFavoriteAdapter::notifyDataSetChanged, 100);
+                        ViewUtils.runOnUiThread(mFavoriteAdapter::notifyDataSetChanged);
                     }
-                }), 200);
+                });
             }
         }
         wasLocationEnabled = locationEnabled;
@@ -550,8 +550,10 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
                     .callback(new MaterialDialog.ButtonCallback() {
                         @Override
                         public void onPositive(MaterialDialog dialog) {
-                            moveTaskToBack(true);
-                            MainActivity.super.onBackPressed();
+                            runOnUiThread(() -> {
+                                moveTaskToBack(true);
+                                finish();
+                            });
                         }
                     })
                     .show();
@@ -577,7 +579,10 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        CaulyAdUtil.removeAd(TAG_FRAGMENT_SEARCH);
+        if (mFavoriteAdapter != null) {
+            mFavoriteAdapter.setAdPosition(-1);
+            CaulyAdUtil.removeAd(mFavoriteAdapter.getAdTag());
+        }
     }
 
     @Override
@@ -614,8 +619,14 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
         if (position[0] >= 0 && position[1] == -1) {
             //undo group removal
             int adPosition = mFavoriteAdapter.getAdPosition();
-            if (adPosition != -1 && adPosition >= position[0]) {
-                mFavoriteAdapter.setAdPosition(adPosition + 1);
+            if (adPosition != -1) {
+                if (adPosition >= position[0]) {
+                    if (adPosition != 0) adPosition++;
+                    else position[0]++;
+                    mFavoriteAdapter.setAdPosition(adPosition);
+                } else {
+                    position[0]++;
+                }
             }
 
             long expandablePosition = RecyclerViewExpandableItemManager.getPackedPositionForGroup(position[0]);
@@ -770,7 +781,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
     private void showSearch(boolean animate, boolean clear) {
         if (mSearchFrame.getVisibility() != View.VISIBLE) {
             attachOrShowFragment(mSearchFrame, mSearchFragment, TAG_FRAGMENT_SEARCH);
-            if(clear) {
+            if (clear) {
                 mSearchDataProvider.clear();
                 mSearchAdapter.notifyDataSetChanged();
             }
@@ -794,7 +805,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
                 if (mMapFragment != null) detachFragment(mMapFragment);
             }
 
-            if(clear || mSearchDataProvider.getCount() == 0) {
+            if (clear || mSearchDataProvider.getCount() == 0) {
                 View placeholder = View.inflate(MainActivity.this, R.layout.empty_placeholer, null);
                 TextView text = (TextView) placeholder.findViewById(R.id.text);
                 text.setText(R.string.placeholder_search_start);
@@ -1035,13 +1046,31 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
                     }
                 }
             });
-            if(mFavoriteDataProvider.getGroupCount() > 0) {
+            if (mFavoriteDataProvider.getGroupCount() > 0) {
+                mFavoriteFrame.setAlpha(0);
                 CaulyAdUtil.requestAd(this, TAG_FRAGMENT_SEARCH, new CaulyAdUtil.SimpleCaulyNativeAdListener() {
                     @Override
                     public void onReceiveNativeAd(CaulyNativeAdView caulyNativeAdView, boolean b) {
                         mFavoriteAdapter.setAdPosition(0);
                         mFavoriteAdapter.setAdTag(TAG_FRAGMENT_SEARCH);
-                        ViewUtils.runOnUiThread(mFavoriteAdapter::notifyDataSetChanged, 100);
+                        showFavoriteFrame();
+                    }
+
+                    @Override
+                    public void onFailedToReceiveNativeAd(CaulyNativeAdView caulyNativeAdView, int i, String s) {
+                        mFavoriteAdapter.setAdPosition(-1);
+                        showFavoriteFrame();
+                    }
+
+                    private void showFavoriteFrame() {
+                        ViewUtils.runOnUiThread(() -> {
+                            mFavoriteAdapter.notifyDataSetChanged();
+                            mFavoriteFrame.animate()
+                                    .alpha(1.0f)
+                                    .setStartDelay(100)
+                                    .setDuration(300)
+                                    .start();
+                        });
                     }
                 });
             }

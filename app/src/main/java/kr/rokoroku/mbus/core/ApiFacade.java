@@ -627,15 +627,15 @@ public class ApiFacade {
                                     Station minDistStation = null;
                                     LatLng latLng = new LatLng(station.getLatitude(), station.getLongitude());
                                     for (Station seoulStation : seoulStationMap.values()) {
-                                        LatLng anotherlatLng = new LatLng(seoulStation.getLatitude(), seoulStation.getLongitude());
-                                        int distance = GeoUtils.calculateDistanceInMeter(latLng, anotherlatLng);
+                                        LatLng anotherLatLng = new LatLng(seoulStation.getLatitude(), seoulStation.getLongitude());
+                                        int distance = GeoUtils.calculateDistanceInMeter(latLng, anotherLatLng);
                                         if (distance < minDistance) {
                                             minDistance = distance;
                                             minDistStation = seoulStation;
                                         }
                                     }
 
-                                    if (minDistance <= 40) {
+                                    if (minDistStation != null && minDistance <= 30) {
                                         minDistStation.addRemoteEntry(new Station.RemoteEntry(station.getProvider(), station.getLocalId()));
                                         station.addRemoteEntry(new Station.RemoteEntry(minDistStation.getProvider(), minDistStation.getLocalId()));
                                     } else {

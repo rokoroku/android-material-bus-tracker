@@ -721,7 +721,8 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
                     long timeDiff = mItem.getPredictTime().getTime() - System.currentTimeMillis();
                     if (timeDiff >= 0) {
 
-                        String timeString = Math.round(timeDiff / 1000 / 60 + 0.5) + "분 전";
+                        String timeString = context.getString(R.string.bus_arrival_behind_time_in_minute,
+                                (int) Math.floor(timeDiff / 1000 / 60));
 
                         mRemainTime.setText(timeString);
                         if (mRemainTime.getVisibility() == View.GONE) {

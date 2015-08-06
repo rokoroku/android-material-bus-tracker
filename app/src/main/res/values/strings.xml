@@ -83,5 +83,6 @@
     <string name="placeholder_search_start">검색할 키워드를 입력하세요.\n(노선, 정류장 이름 혹은 ID로 검색할 수 있어요.)</string>
     <string name="placeholder_search_empty">검색 결과가 없어요!\n다른 검색어를 입력해보시겠어요?</string>
     <string name="placeholder_favorite_empty">즐겨찾기가 비어있어요.\n아래 버튼을 눌러 새 즐겨찾기를 추가 해 보세요.</string>
+    <string name="bus_arrival_behind_time_in_minute">%1$d분 전</string>
 
 </resources>

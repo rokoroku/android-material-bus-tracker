@@ -1,6 +1,8 @@
 package kr.rokoroku.mbus.util;
 
 import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 
 import com.fsn.cauly.CaulyAdInfo;
 import com.fsn.cauly.CaulyNativeAdHelper;
@@ -24,7 +26,7 @@ public class CaulyAdUtil {
     private static CaulyNativeAdView getNativeAdView(String tag) {
         if (sAdViewMap != null) {
             SoftReference<CaulyNativeAdView> reference = sAdViewMap.get(tag);
-            if(reference != null) {
+            if (reference != null) {
                 CaulyNativeAdView adView = reference.get();
                 if (adView != null) {
                     return adView;
@@ -54,7 +56,7 @@ public class CaulyAdUtil {
         if (nativeAdView != null) {
             listener.onReceiveNativeAd(nativeAdView, true);
 
-        } else {
+        } else if (isNetworkAvailable(context)) {
             String appCode = context.getString(R.string.cauly_app_key);
             CaulyAdInfo adInfo = new CaulyNativeAdInfoBuilder(appCode)
                     .layoutID(R.layout.row_ad_view)
@@ -71,6 +73,9 @@ public class CaulyAdUtil {
             nativeAd.setAdViewListener(listener);
             nativeAd.request();
             putNativeAdView(tag, nativeAd);
+
+        } else {
+            listener.onFailedToReceiveNativeAd(null, -1, "NETWORK_UNAVAILABLE");
         }
     }
 
@@ -82,6 +87,23 @@ public class CaulyAdUtil {
             }
             sAdViewMap.remove(tag);
         }
+    }
+
+    public static boolean isNetworkAvailable(Context context) {
+        ConnectivityManager connectivity = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        if (connectivity == null) {
+            return false;
+
+        } else {
+            NetworkInfo[] info = connectivity.getAllNetworkInfo();
+            if (info != null) for (NetworkInfo anInfo : info) {
+                if (anInfo.getState() == NetworkInfo.State.CONNECTED) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public static abstract class SimpleCaulyNativeAdListener implements CaulyNativeAdViewListener {

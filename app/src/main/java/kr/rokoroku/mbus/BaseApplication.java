@@ -24,6 +24,7 @@ public class BaseApplication extends Application {
     public static final String SHARED_PREFERENCE_KEY = "pref";
     public static final String PREFERENCE_DO_NOT_ASK_GPS_AGAIN = "do_not_ask_gps";
     public static final String PREFERENCE_DB_VERSION = "pref_db_version";
+    public static final String PREFERENCE_DB_CRASHED_BEFORE = "pref_db_crashed";
     public static final String PREFERENCE_HOME_SCREEN = "pref_home_screen";
     public static final String PREFERENCE_THEME = "pref_theme";
 
@@ -47,12 +48,13 @@ public class BaseApplication extends Application {
         ApiFacade.init(this);
 
         analytics = GoogleAnalytics.getInstance(this);
-        analytics.setLocalDispatchPeriod(1800);
+        if(analytics != null) {
+            analytics.setLocalDispatchPeriod(1800);
 
-        tracker = analytics.newTracker("UA-XXXXX-Y"); // Replace with actual tracker/property Id
-        tracker.enableExceptionReporting(true);
-        tracker.enableAdvertisingIdCollection(true);
-        tracker.enableAutoActivityTracking(true);
+            tracker = analytics.newTracker(getString(R.string.google_analytics_key));
+            tracker.enableExceptionReporting(true);
+            tracker.enableAutoActivityTracking(true);
+        }
 
         if (BuildConfig.DEBUG) {
             Fabric.with(this, new Answers());
