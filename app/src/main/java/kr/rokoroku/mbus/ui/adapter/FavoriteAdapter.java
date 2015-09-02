@@ -47,6 +47,7 @@ import java.util.Set;
 import kr.rokoroku.mbus.R;
 import kr.rokoroku.mbus.RouteActivity;
 import kr.rokoroku.mbus.StationActivity;
+import kr.rokoroku.mbus.data.model.FavoriteItem;
 import kr.rokoroku.mbus.util.CaulyAdUtil;
 import kr.rokoroku.mbus.data.FavoriteDataProvider;
 import kr.rokoroku.mbus.data.model.FavoriteGroup;
@@ -167,7 +168,7 @@ public class FavoriteAdapter
         if (adPosition != -1 && groupPosition > adPosition) {
             realGroupPosition--;
         }
-        FavoriteGroup.FavoriteItem childItem = mProvider.getChildItem(realGroupPosition, childPosition);
+        FavoriteItem childItem = mProvider.getChildItem(realGroupPosition, childPosition);
         if (childItem != null) {
             return childItem.getId();
         } else {
@@ -274,7 +275,7 @@ public class FavoriteAdapter
         // group item
         int adPosition = getAdPosition();
         if (adPosition != -1 && groupPosition > adPosition) groupPosition--;
-        final FavoriteGroup.FavoriteItem item = mProvider.getChildItem(groupPosition, childPosition);
+        final FavoriteItem item = mProvider.getChildItem(groupPosition, childPosition);
         holder.itemView.setEnabled(true);
         holder.itemView.setClickable(true);
 
@@ -768,7 +769,7 @@ public class FavoriteAdapter
         protected TextView mItemDescription;
         protected ImageButton mOverflowButton;
         protected View mSeparator;
-        protected FavoriteGroup.FavoriteItem mItem;
+        protected FavoriteItem mItem;
         protected View mLinkItemLayout;
         protected FavoriteLinkItemViewHolder mLinkItemViewHolder;
 
@@ -790,11 +791,11 @@ public class FavoriteAdapter
             //mOverflowButton.setOnClickListener(this);
         }
 
-        public void setItem(FavoriteGroup.FavoriteItem item) {
+        public void setItem(FavoriteItem item) {
             this.mItem = item;
             Context context = itemView.getContext();
-            FavoriteGroup.FavoriteItem.Type itemType = item.getType();
-            if (itemType == FavoriteGroup.FavoriteItem.Type.ROUTE) {
+            FavoriteItem.Type itemType = item.getType();
+            if (itemType == FavoriteItem.Type.ROUTE) {
                 Route route = item.getData(Route.class);
                 if (route == null) return;
 
@@ -838,7 +839,7 @@ public class FavoriteAdapter
                     mLinkItemViewHolder.setItem(route, routeStation);
                 }
 
-            } else if (itemType == FavoriteGroup.FavoriteItem.Type.STATION) {
+            } else if (itemType == FavoriteItem.Type.STATION) {
                 Station station = item.getData(Station.class);
                 int color = Color.BLACK;
 
@@ -877,9 +878,9 @@ public class FavoriteAdapter
             if (v.equals(mCardView)) {
                 if (mItem != null) {
                     Context context = v.getContext();
-                    FavoriteGroup.FavoriteItem.Type type = mItem.getType();
+                    FavoriteItem.Type type = mItem.getType();
 
-                    if (type == FavoriteGroup.FavoriteItem.Type.ROUTE) {
+                    if (type == FavoriteItem.Type.ROUTE) {
                         Route route = mItem.getData(Route.class);
                         RouteStation routeStation = mItem.getExtraData(RouteStation.class);
 
@@ -889,7 +890,7 @@ public class FavoriteAdapter
                         intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_NEW_TASK);
                         context.startActivity(intent);
 
-                    } else if (type == FavoriteGroup.FavoriteItem.Type.STATION) {
+                    } else if (type == FavoriteItem.Type.STATION) {
                         Station station = mItem.getData(Station.class);
                         StationRoute stationRoute = mItem.getExtraData(StationRoute.class);
 

@@ -1,8 +1,6 @@
 package kr.rokoroku.mbus.core;
 
 import android.content.Context;
-import android.os.Handler;
-import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
@@ -21,6 +19,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
 import kr.rokoroku.mbus.BaseApplication;
@@ -31,18 +30,16 @@ import kr.rokoroku.mbus.api.gbis.core.GbisRestClient;
 import kr.rokoroku.mbus.api.gbis.core.GbisRestInterface;
 import kr.rokoroku.mbus.api.gbisweb.core.GbisWebRestClient;
 import kr.rokoroku.mbus.api.gbisweb.core.GbisWebRestInterface;
-import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchMapLineResult;
+import kr.rokoroku.mbus.api.incheon.core.IncheonWebRestClient;
 import kr.rokoroku.mbus.api.seoul.core.SeoulBusRestClient;
 import kr.rokoroku.mbus.api.seoul.core.SeoulBusRestInterface;
 import kr.rokoroku.mbus.api.seoulweb.core.SeoulWebRestClient;
 import kr.rokoroku.mbus.api.seoulweb.core.SeoulWebRestInterface;
-import kr.rokoroku.mbus.api.seoulweb.model.TopisMapLineResult;
 import kr.rokoroku.mbus.data.RouteDataProvider;
 import kr.rokoroku.mbus.data.SearchDataProvider;
 import kr.rokoroku.mbus.data.StationDataProvider;
 import kr.rokoroku.mbus.data.model.ArrivalInfo;
 import kr.rokoroku.mbus.data.model.BusLocation;
-import kr.rokoroku.mbus.data.model.Direction;
 import kr.rokoroku.mbus.data.model.MapLine;
 import kr.rokoroku.mbus.data.model.Provider;
 import kr.rokoroku.mbus.data.model.Route;
@@ -52,12 +49,9 @@ import kr.rokoroku.mbus.data.model.StationRoute;
 import kr.rokoroku.mbus.util.GeoUtils;
 import kr.rokoroku.mbus.util.ProgressCallback;
 import kr.rokoroku.mbus.util.SimpleProgressCallback;
-import retrofit.Callback;
-import retrofit.RetrofitError;
 import retrofit.android.AndroidApacheClient;
 import retrofit.client.Client;
 import retrofit.client.OkClient;
-import retrofit.client.Response;
 
 import static kr.rokoroku.mbus.util.ViewUtils.runOnUiThread;
 
@@ -95,33 +89,41 @@ public class ApiFacade {
         return instance;
     }
 
-    private Handler handler;
     private GbisRestClient gbisRestClient;
     private GbisWebRestClient gbisWebRestClient;
     private SeoulBusRestClient seoulBusRestClient;
     private SeoulWebRestClient seoulWebRestClient;
+    private IncheonWebRestClient incheonWebRestClient;
 
     private ApiFacade(String apiKey) {
         if (client == null) client = new AndroidApacheClient();
 
         this.apiKey = apiKey;
-        this.handler = new Handler(Looper.getMainLooper());
         this.gbisRestClient = new GbisRestClient(client, apiKey);
         this.gbisWebRestClient = new GbisWebRestClient(client);
         this.seoulBusRestClient = new SeoulBusRestClient(client, apiKey);
         this.seoulWebRestClient = new SeoulWebRestClient(client);
+        this.incheonWebRestClient = new IncheonWebRestClient(client);
     }
 
-    public ApiWrapperInterface getWrappedClient(Provider provider) {
+    public ApiWrapperInterface getApiClient(Provider provider) {
         switch (provider) {
             case SEOUL:
                 return seoulBusRestClient;
             case GYEONGGI:
                 return gbisRestClient;
             case INCHEON:
-                return gbisWebRestClient;
+                return incheonWebRestClient;
         }
         return null;
+    }
+
+    public List<ApiWrapperInterface> getApiClients() {
+        List<ApiWrapperInterface> clients = new ArrayList<>();
+        clients.add(getSeoulBusRestClient());
+        clients.add(getGbisRestClient());
+        clients.add(getIncheonWebRestClient());
+        return clients;
     }
 
     public GbisRestClient getGbisRestClient() {
@@ -138,6 +140,10 @@ public class ApiFacade {
 
     public SeoulWebRestClient getSeoulWebRestClient() {
         return seoulWebRestClient;
+    }
+
+    public IncheonWebRestClient getIncheonWebRestClient() {
+        return incheonWebRestClient;
     }
 
     public SeoulBusRestInterface getSeoulBusRestAdapter() {
@@ -188,7 +194,7 @@ public class ApiFacade {
 
         final RouteDataProvider resultDataProvider = tempRouteDataProvider;
         final Route route = resultDataProvider.getRoute();
-        final ApiWrapperInterface wrappedClient = getWrappedClient(provider);
+        final ApiWrapperInterface wrappedClient = getApiClient(provider);
         final ProgressCallback.ProgressRunner<Route> progressRunner
                 = new ProgressCallback.ProgressRunner<>(progressCallback, 1);
 
@@ -346,7 +352,7 @@ public class ApiFacade {
             for (Pair<Provider, String> stationLocalIdEntry : localStationIdEntries) {
                 Provider remoteProvider = stationLocalIdEntry.first;
                 String remoteId = stationLocalIdEntry.second;
-                ApiWrapperInterface innerClient = getWrappedClient(remoteProvider);
+                ApiWrapperInterface innerClient = getApiClient(remoteProvider);
 
                 // check local data if exists
                 Station storedExternalStation = DatabaseFacade.getInstance().getStationWithSecondaryKey(remoteProvider, remoteId);
@@ -436,7 +442,7 @@ public class ApiFacade {
                 // 2. retrieve realtime info only when having station infomations
                 Route route = resultDataProvider.getRoute();
                 if (route.isRouteStationInfoAvailable()) {
-                    ApiWrapperInterface wrappedClient = getWrappedClient(route.getProvider());
+                    ApiWrapperInterface wrappedClient = getApiClient(route.getProvider());
                     wrappedClient.getRouteRealtimeInfo(routeId, new ApiWrapperInterface.Callback<List<BusLocation>>() {
                         @Override
                         public void onSuccess(List<BusLocation> result) {
@@ -466,6 +472,7 @@ public class ApiFacade {
         return resultDataProvider;
     }
 
+    @SuppressWarnings("unchecked")
     public SearchDataProvider searchByKeyword(@NonNull String keyword,
                                               @Nullable SearchDataProvider searchDataProvider,
                                               @Nullable ProgressCallback callback) {
@@ -474,77 +481,60 @@ public class ApiFacade {
         if (searchDataProvider == null) searchDataProvider = new SearchDataProvider();
         Answers.getInstance().logSearch(new SearchEvent().putQuery(finalKeyword));
 
+        final List<ApiWrapperInterface> apiClients = getApiClients();
         final SearchDataProvider resultDataProvider = searchDataProvider;
-        final ProgressCallback.ProgressRunner progressRunner = new ProgressCallback.ProgressRunner(callback, 4);
+        final ProgressCallback.ProgressRunner progressRunner = new ProgressCallback.ProgressRunner(callback, apiClients.size() * 2);
 
-        // search route
-        getGbisRestClient().searchRouteByKeyword(finalKeyword, new ApiWrapperInterface.Callback<List<Route>>() {
-            @Override
-            public void onSuccess(List<Route> result) {
-                if (result != null) {
-                    resultDataProvider.addRouteData(result);
-                    DatabaseFacade.getInstance().putRoutes(Provider.GYEONGGI, result);
+        if(!apiClients.isEmpty()) {
+            // search route
+            final int[] apiIndices = {0, 0};
+            ApiWrapperInterface routeApiClient = apiClients.get(apiIndices[0]);
+            routeApiClient.searchRouteByKeyword(finalKeyword, new ApiWrapperInterface.Callback<List<Route>>() {
+
+                @Override
+                public void onSuccess(List<Route> result) {
+                    if (result != null) {
+                        resultDataProvider.addRouteData(result);
+                        Provider provider = apiClients.get(apiIndices[0]).getProvider();
+                        DatabaseFacade.getInstance().putRoutes(provider, result);
+                    }
+                    progressRunner.progress();
+                    next();
                 }
-                progressRunner.progress();
-                searchNextProvider();
-            }
 
-            @Override
-            public void onFailure(Throwable t) {
-                progressRunner.error(t);
-                searchNextProvider();
-            }
+                @Override
+                public void onFailure(Throwable t) {
+                    progressRunner.error(t);
+                    next();
+                }
 
-            public void searchNextProvider() {
-                getSeoulBusRestClient().searchRouteByKeyword(finalKeyword, new ApiWrapperInterface.Callback<List<Route>>() {
-                    @Override
-                    public void onSuccess(List<Route> result) {
-                        if (result != null) {
-                            resultDataProvider.addRouteData(result);
-                            DatabaseFacade.getInstance().putRoutes(Provider.SEOUL, result);
-                        }
-                        progressRunner.progress();
-                    }
-
-                    @Override
-                    public void onFailure(Throwable t) {
-                        progressRunner.error(t);
-                    }
-                });
-            }
-        });
-
-        // search station
-        getSeoulBusRestClient().searchStationByKeyword(finalKeyword, new ApiWrapperInterface.Callback<List<Station>>() {
-            final Map<String, Station> seoulStationMap = new HashMap<>();
-            final Set<Station> resultSet = new HashSet<>();
-
-            @Override
-            public void onSuccess(List<Station> result) {
-                if (result != null) {
-                    for (Station station : result) {
-                        if (!TextUtils.isEmpty(station.getLocalId())) {
-                            seoulStationMap.put(station.getLocalId(), station);
-                            resultSet.add(station);
-                        }
+                public void next() {
+                    apiIndices[0]++;
+                    if (apiIndices[0] < apiClients.size()) {
+                        ApiWrapperInterface nextClient = apiClients.get(apiIndices[0]);
+                        nextClient.searchRouteByKeyword(finalKeyword, this);
                     }
                 }
-                resultDataProvider.addStationData(resultSet);
-                progressRunner.progress();
-                searchNextProvider();
-            }
+            });
 
-            @Override
-            public void onFailure(Throwable t) {
-                progressRunner.error(t);
-                searchNextProvider();
-            }
+            // search station
+            ApiWrapperInterface stationApiClient = apiClients.get(apiIndices[1]);
+            stationApiClient.searchStationByKeyword(finalKeyword, new ApiWrapperInterface.Callback<List<Station>>() {
+                final Map<String, Station> seoulStationMap = new HashMap<>();
+                final Set<Station> resultSet = new HashSet<>();
 
-            public void searchNextProvider() {
-                getGbisRestClient().searchStationByKeyword(finalKeyword, new ApiWrapperInterface.Callback<List<Station>>() {
-                    @Override
-                    public void onSuccess(List<Station> result) {
-                        if (result != null) {
+                @Override
+                public void onSuccess(List<Station> result) {
+                    if (result != null) {
+                        Provider provider = apiClients.get(apiIndices[1]).getProvider();
+                        if (provider.equals(Provider.SEOUL)) {
+                            for (Station station : result) {
+                                if (!TextUtils.isEmpty(station.getLocalId())) {
+                                    seoulStationMap.put(station.getLocalId(), station);
+                                    resultSet.add(station);
+                                }
+                            }
+                        } else {
                             for (Station station : result) {
                                 String seoulId = station.getLocalIdByProvider(Provider.SEOUL);
                                 if (seoulId != null && seoulStationMap.containsKey(seoulId)) {
@@ -556,18 +546,29 @@ public class ApiFacade {
                                 }
                             }
                         }
-                        resultDataProvider.addStationData(resultSet);
-                        DatabaseFacade.getInstance().putStationsForEachProvider(resultSet);
-                        progressRunner.progress();
                     }
+                    resultDataProvider.addStationData(resultSet);
+                    progressRunner.progress();
+                    next();
+                }
 
-                    @Override
-                    public void onFailure(Throwable t) {
-                        progressRunner.error(t);
+                @Override
+                public void onFailure(Throwable t) {
+                    progressRunner.error(t);
+                    next();
+                }
+
+                public void next() {
+                    apiIndices[1]++;
+                    if (apiIndices[1] < apiClients.size()) {
+                        ApiWrapperInterface nextClient = apiClients.get(apiIndices[1]);
+                        nextClient.searchStationByKeyword(finalKeyword, this);
+                    } else {
+                        DatabaseFacade.getInstance().putStationsForEachProvider(resultSet);
                     }
-                });
-            }
-        });
+                }
+            });
+        }
 
         // return result data provider
         return resultDataProvider;
@@ -579,86 +580,88 @@ public class ApiFacade {
         String query = String.format("(%.3f, %.3f)", longitude, latitude);
         Answers.getInstance().logSearch(new SearchEvent().putCustomAttribute("Position", query));
 
-        final List<Station> resultList = new ArrayList<>();
-        final ProgressCallback.ProgressRunner<List<Station>> progressRunner = new ProgressCallback.ProgressRunner<>(callback, 2);
         if (radius < 0) radius = 1000;
-
         final int finalRadius = radius;
-        getSeoulWebRestClient().searchStationByLocation(latitude, longitude, radius, new ApiWrapperInterface.Callback<List<Station>>() {
-            final Map<String, Station> seoulStationMap = new HashMap<>();
-            Throwable throwable = null;
 
-            @Override
-            public void onSuccess(List<Station> result) {
-                if (result != null) synchronized (resultList) {
-                    DatabaseFacade.getInstance().putStationsToTemporalCache(result);
-                    for (Station station : result) {
-                        String localId = station.getLocalId();
-                        if (!TextUtils.isEmpty(localId)) {
-                            if (!seoulStationMap.containsKey(localId)) {
-                                seoulStationMap.put(localId, station);
-                                resultList.addAll(result);
-                            }
-                        }
-                    }
-                    progressRunner.setResult(resultList);
-                }
-                progressRunner.progress();
-                getGbisStations();
-            }
+        final List<Station> resultList = new ArrayList<>();
+        final List<ApiWrapperInterface> apiClients = getApiClients();
+        final ProgressCallback.ProgressRunner<List<Station>> progressRunner = new ProgressCallback.ProgressRunner<>(callback, apiClients.size());
 
-            @Override
-            public void onFailure(Throwable t) {
-                this.throwable = t;
-                progressRunner.progress();
-                getGbisStations();
-            }
+        if(!apiClients.isEmpty()) {
+            final int[] apiIndex = {0};
+            ApiWrapperInterface firstApiClient = apiClients.get(apiIndex[0]);
+            firstApiClient.searchStationByLocation(latitude, longitude, radius, new ApiWrapperInterface.Callback<List<Station>>() {
 
-            public void getGbisStations() {
-                getGbisWebRestClient().searchStationByLocation(latitude, longitude, finalRadius, new ApiWrapperInterface.Callback<List<Station>>() {
-                    @Override
-                    public void onSuccess(List<Station> result) {
-                        if (result != null) synchronized (resultList) {
-                            DatabaseFacade.getInstance().putStationsToTemporalCache(result);
-                            for (Station station : result) {
-                                if (!TextUtils.isEmpty(station.getLocalId())) {
+                final Map<Provider, Map<String, Station>> prevStationTable = new TreeMap<>();
 
-                                    int minDistance = Integer.MAX_VALUE;
-                                    Station minDistStation = null;
-                                    LatLng latLng = new LatLng(station.getLatitude(), station.getLongitude());
-                                    for (Station seoulStation : seoulStationMap.values()) {
-                                        LatLng anotherLatLng = new LatLng(seoulStation.getLatitude(), seoulStation.getLongitude());
-                                        int distance = GeoUtils.calculateDistanceInMeter(latLng, anotherLatLng);
-                                        if (distance < minDistance) {
-                                            minDistance = distance;
-                                            minDistStation = seoulStation;
+                @Override
+                public void onSuccess(List<Station> result) {
+                    if (result != null) synchronized (resultList) {
+                        DatabaseFacade.getInstance().putStationsToTemporalCache(result);
+                        Provider provider = apiClients.get(apiIndex[0]).getProvider();
+
+                        for (Station station : result) {
+                            String localId = station.getLocalId();
+                            if (!TextUtils.isEmpty(localId)) {
+                                Map<String, Station> prevStationMap = prevStationTable.get(provider);
+                                if(prevStationMap == null) {
+                                    prevStationMap = new HashMap<>();
+                                    prevStationTable.put(provider, prevStationMap);
+                                }
+
+                                if (!prevStationMap.containsKey(localId)) {
+                                    prevStationMap.put(localId, station);
+                                    resultList.addAll(result);
+                                }
+
+                                for (Map.Entry<Provider, Map<String, Station>> entry : prevStationTable.entrySet()) {
+                                    if(!entry.getKey().equals(provider)) {
+                                        int minDistance = Integer.MAX_VALUE;
+                                        Station minDistStation = null;
+                                        LatLng latLng = new LatLng(station.getLatitude(), station.getLongitude());
+                                        Map<String, Station> anotherProviderStationMap = entry.getValue();
+
+                                        for (Station anotherProviderStation : anotherProviderStationMap.values()) {
+                                            LatLng anotherLatLng = new LatLng(anotherProviderStation.getLatitude(), anotherProviderStation.getLongitude());
+                                            int distance = GeoUtils.calculateDistanceInMeter(latLng, anotherLatLng);
+                                            if (distance < minDistance) {
+                                                minDistance = distance;
+                                                minDistStation = anotherProviderStation;
+                                            }
                                         }
-                                    }
 
-                                    if (minDistStation != null && minDistance <= 30) {
-                                        minDistStation.addRemoteEntry(new Station.RemoteEntry(station.getProvider(), station.getLocalId()));
-                                        station.addRemoteEntry(new Station.RemoteEntry(minDistStation.getProvider(), minDistStation.getLocalId()));
-                                    } else {
-                                        resultList.add(station);
+                                        if (minDistStation != null && minDistance <= 30) {
+                                            minDistStation.addRemoteEntry(new Station.RemoteEntry(station.getProvider(), station.getLocalId()));
+                                            station.addRemoteEntry(new Station.RemoteEntry(minDistStation.getProvider(), minDistStation.getLocalId()));
+
+                                        } else {
+                                            resultList.add(station);
+                                        }
                                     }
                                 }
                             }
-                            progressRunner.setResult(resultList);
                         }
-                        progressRunner.progress();
+                        progressRunner.setResult(resultList);
                     }
+                    progressRunner.progress();
+                    next();
+                }
 
-                    @Override
-                    public void onFailure(Throwable t) {
-                        if (throwable != null) {
-                            progressRunner.error(t);
-                        } else {
-                            progressRunner.progress();
-                        }
+                @Override
+                public void onFailure(Throwable t) {
+                    progressRunner.error(t);
+                    next();
+                }
+
+                public void next() {
+                    apiIndex[0]++;
+                    if(apiIndex[0] < apiClients.size()) {
+                        ApiWrapperInterface nextClient = apiClients.get(apiIndex[0]);
+                        nextClient.searchStationByLocation(latitude, longitude, finalRadius, this);
                     }
-                });
-            }
-        });
+                }
+            });
+        }
     }
 
     public void getArrivalInfo(@NonNull Station station,
@@ -680,7 +683,7 @@ public class ApiFacade {
                 final Provider provider = remoteEntry.getProvider();
                 final String localId = remoteEntry.getKey();
                 final Station externalStation = DatabaseFacade.getInstance().getStationWithSecondaryKey(provider, localId);
-                final ApiWrapperInterface wrappedClient = getWrappedClient(provider);
+                final ApiWrapperInterface wrappedClient = getApiClient(provider);
                 if (externalStation != null) {
                     if (wrappedClient != null) {
                         wrappedClient.getStationArrivalInfo(externalStation.getId(), new ApiWrapperInterface.Callback<List<ArrivalInfo>>() {
@@ -726,7 +729,7 @@ public class ApiFacade {
             // retrieve specific route's arrival info
             final Provider provider = stationRoute.getProvider();
             final String routeId = stationRoute.getRouteId();
-            final ApiWrapperInterface wrappedClient = getWrappedClient(provider);
+            final ApiWrapperInterface wrappedClient = getApiClient(provider);
             final ProgressCallback.ProgressRunner<List<ArrivalInfo>> progressRunner
                     = new ProgressCallback.ProgressRunner<>(progressCallback, 1);
 
@@ -754,130 +757,133 @@ public class ApiFacade {
 
     }
 
-    public void getRouteMapLine(Route route, Callback<List<MapLine>> callback) {
+    public void getRouteMapLine(Route route, ProgressCallback<List<MapLine>> callback) {
+        final Provider provider = route.getProvider();
+        final ApiWrapperInterface wrappedClient = getApiClient(provider);
+        final ProgressCallback.ProgressRunner<List<MapLine>> progressRunner = new ProgressCallback.ProgressRunner<>(callback, 1);
+
+        wrappedClient.getRouteMaplineInfo(route.getId(), new ApiWrapperInterface.Callback<List<MapLine>>() {
+            @Override
+            public void onSuccess(List<MapLine> result) {
+                progressRunner.end(true, result);
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+                progressRunner.error(t);
+            }
+        });
+
 //        Provider provider = route.getProvider();
-//        ApiWrapperInterface wrappedClient = getWrappedClient(provider);
-//        wrappedClient.getRouteMaplineInfo(route.getId(), new ApiWrapperInterface.Callback<List<MapLine>>() {
-//            @Override
-//            public void onSuccess(List<MapLine> result) {
-//                callback.success(result, null);
-//            }
+//        switch (provider) {
+//            case GYEONGGI:
+//            case INCHEON:
+//                getGbisWebRestAdapter().getRouteMapLine(route.getId(), new Callback<GbisSearchMapLineResult>() {
+//                    @Override
+//                    public void success(GbisSearchMapLineResult gbisSearchMapLineResult, Response response) {
+//                        List<MapLine> mapLineList = null;
+//                        if (gbisSearchMapLineResult != null && gbisSearchMapLineResult.isSuccess()) {
+//                            GbisSearchMapLineResult.ResultEntity.GgEntity resultEntity = gbisSearchMapLineResult.getResult().getGg();
 //
-//            @Override
-//            public void onFailure(Throwable t) {
-//                callback.success(null, null);
-//            }
-//        });
-        Provider provider = route.getProvider();
-        switch (provider) {
-            case GYEONGGI:
-            case INCHEON:
-                getGbisWebRestAdapter().getRouteMapLine(route.getId(), new Callback<GbisSearchMapLineResult>() {
-                    @Override
-                    public void success(GbisSearchMapLineResult gbisSearchMapLineResult, Response response) {
-                        List<MapLine> mapLineList = null;
-                        if (gbisSearchMapLineResult != null && gbisSearchMapLineResult.isSuccess()) {
-                            GbisSearchMapLineResult.ResultEntity.GgEntity resultEntity = gbisSearchMapLineResult.getResult().getGg();
-
-                            mapLineList = new ArrayList<MapLine>();
-                            for (GbisSearchMapLineResult.ResultEntity.GgEntity.UpLineEntity.ListEntity listEntity : resultEntity.getUpLine().getList()) {
-                                if (TextUtils.isEmpty(listEntity.getLinkId())) {
-                                    MapLine mapLine = new MapLine();
-                                    mapLine.setDirection(Direction.UP);
-                                    double latitude = Double.parseDouble(listEntity.getLat());
-                                    double longitude = Double.parseDouble(listEntity.getLon());
-                                    LatLng latLng = GeoUtils.convertEPSG3857(latitude, longitude);
-                                    mapLine.setLatitude(latLng.latitude);
-                                    mapLine.setLongitude(latLng.longitude);
-
-                                    mapLineList.add(mapLine);
-                                }
-                            }
-
-                            for (GbisSearchMapLineResult.ResultEntity.GgEntity.DownLineEntity.ListEntity listEntity : resultEntity.getDownLine().getList()) {
-                                if (TextUtils.isEmpty(listEntity.getLinkId())) {
-                                    MapLine mapLine = new MapLine();
-                                    mapLine.setDirection(Direction.DOWN);
-                                    double latitude = Double.parseDouble(listEntity.getLat());
-                                    double longitude = Double.parseDouble(listEntity.getLon());
-                                    LatLng latLng = GeoUtils.convertEPSG3857(latitude, longitude);
-                                    mapLine.setLatitude(latLng.latitude);
-                                    mapLine.setLongitude(latLng.longitude);
-
-                                    mapLineList.add(mapLine);
-                                }
-                            }
-                        }
-                        if (mapLineList != null) {
-                            route.setMapLineList(mapLineList);
-                        }
-                        if (callback != null) {
-                            final List<MapLine> finalMapLineList = mapLineList;
-                            handler.post(() -> callback.success(finalMapLineList, response));
-                        }
-                    }
-
-                    @Override
-                    public void failure(RetrofitError error) {
-                        handler.post(() -> callback.failure(error));
-                    }
-                });
-                break;
-
-            case SEOUL:
-                getSeoulWebRestAdapter().getTopisRouteMapLine(route.getId(), new Callback<TopisMapLineResult>() {
-                    @Override
-                    public void success(TopisMapLineResult topisMapLineResult, Response response) {
-                        List<MapLine> mapLineList = null;
-                        if (topisMapLineResult != null && topisMapLineResult.result != null) {
-                            mapLineList = new ArrayList<>();
-
-                            //get turn station
-                            List<RouteStation> routeStationList = route.getRouteStationList();
-                            RouteStation turnStation = null;
-                            if (routeStationList != null && route.getTurnStationSeq() != -1) {
-                                for (RouteStation routeStation : routeStationList) {
-                                    if (route.getTurnStationSeq() == routeStation.getSequence()) {
-                                        turnStation = routeStation;
-                                        break;
-                                    }
-                                }
-                            }
-
-                            Direction direction = Direction.UP;
-                            for (TopisMapLineResult.ResultEntity resultEntity : topisMapLineResult.result) {
-                                MapLine mapLine = new MapLine();
-                                LatLng latLng = GeoUtils.convertTm(resultEntity.x, resultEntity.y);
-                                mapLine.setLatitude(latLng.latitude);
-                                mapLine.setLongitude(latLng.longitude);
-
-                                if (turnStation != null) {
-                                    LatLng turnLatLng = new LatLng(turnStation.getLatitude(), turnStation.getLongitude());
-                                    if (GeoUtils.calculateDistanceInMeter(turnLatLng, latLng) < 100) {
-                                        direction = Direction.DOWN;
-                                        turnStation = null;
-                                    }
-                                }
-                                mapLine.setDirection(direction);
-                                mapLineList.add(mapLine);
-                            }
-                        }
-                        if (mapLineList != null) {
-                            route.setMapLineList(mapLineList);
-                        }
-                        if (callback != null) {
-                            final List<MapLine> finalMapLineList = mapLineList;
-                            handler.post(() -> callback.success(finalMapLineList, response));
-                        }
-                    }
-
-                    @Override
-                    public void failure(RetrofitError error) {
-                        handler.post(() -> callback.failure(error));
-                    }
-                });
-                break;
-        }
+//                            mapLineList = new ArrayList<MapLine>();
+//                            for (GbisSearchMapLineResult.ResultEntity.GgEntity.UpLineEntity.ListEntity listEntity : resultEntity.getUpLine().getList()) {
+//                                if (TextUtils.isEmpty(listEntity.getLinkId())) {
+//                                    MapLine mapLine = new MapLine();
+//                                    mapLine.setDirection(Direction.UP);
+//                                    double latitude = Double.parseDouble(listEntity.getLat());
+//                                    double longitude = Double.parseDouble(listEntity.getLon());
+//                                    LatLng latLng = GeoUtils.convertEPSG3857(latitude, longitude);
+//                                    mapLine.setLatitude(latLng.latitude);
+//                                    mapLine.setLongitude(latLng.longitude);
+//
+//                                    mapLineList.add(mapLine);
+//                                }
+//                            }
+//
+//                            for (GbisSearchMapLineResult.ResultEntity.GgEntity.DownLineEntity.ListEntity listEntity : resultEntity.getDownLine().getList()) {
+//                                if (TextUtils.isEmpty(listEntity.getLinkId())) {
+//                                    MapLine mapLine = new MapLine();
+//                                    mapLine.setDirection(Direction.DOWN);
+//                                    double latitude = Double.parseDouble(listEntity.getLat());
+//                                    double longitude = Double.parseDouble(listEntity.getLon());
+//                                    LatLng latLng = GeoUtils.convertEPSG3857(latitude, longitude);
+//                                    mapLine.setLatitude(latLng.latitude);
+//                                    mapLine.setLongitude(latLng.longitude);
+//
+//                                    mapLineList.add(mapLine);
+//                                }
+//                            }
+//                        }
+//                        if (mapLineList != null) {
+//                            route.setMapLineList(mapLineList);
+//                        }
+//                        if (callback != null) {
+//                            final List<MapLine> finalMapLineList = mapLineList;
+//                            handler.post(() -> callback.success(finalMapLineList, response));
+//                        }
+//                    }
+//
+//                    @Override
+//                    public void failure(RetrofitError error) {
+//                        handler.post(() -> callback.failure(error));
+//                    }
+//                });
+//                break;
+//
+//            case SEOUL:
+//                getSeoulWebRestAdapter().getTopisRouteMapLine(route.getId(), new Callback<TopisMapLineResult>() {
+//                    @Override
+//                    public void success(TopisMapLineResult topisMapLineResult, Response response) {
+//                        List<MapLine> mapLineList = null;
+//                        if (topisMapLineResult != null && topisMapLineResult.result != null) {
+//                            mapLineList = new ArrayList<>();
+//
+//                            //get turn station
+//                            List<RouteStation> routeStationList = route.getRouteStationList();
+//                            RouteStation turnStation = null;
+//                            if (routeStationList != null && route.getTurnStationSeq() != -1) {
+//                                for (RouteStation routeStation : routeStationList) {
+//                                    if (route.getTurnStationSeq() == routeStation.getSequence()) {
+//                                        turnStation = routeStation;
+//                                        break;
+//                                    }
+//                                }
+//                            }
+//
+//                            Direction direction = Direction.UP;
+//                            for (TopisMapLineResult.ResultEntity resultEntity : topisMapLineResult.result) {
+//                                MapLine mapLine = new MapLine();
+//                                LatLng latLng = GeoUtils.convertTm(resultEntity.x, resultEntity.y);
+//                                mapLine.setLatitude(latLng.latitude);
+//                                mapLine.setLongitude(latLng.longitude);
+//
+//                                if (turnStation != null) {
+//                                    LatLng turnLatLng = new LatLng(turnStation.getLatitude(), turnStation.getLongitude());
+//                                    if (GeoUtils.calculateDistanceInMeter(turnLatLng, latLng) < 100) {
+//                                        direction = Direction.DOWN;
+//                                        turnStation = null;
+//                                    }
+//                                }
+//                                mapLine.setDirection(direction);
+//                                mapLineList.add(mapLine);
+//                            }
+//                        }
+//                        if (mapLineList != null) {
+//                            route.setMapLineList(mapLineList);
+//                        }
+//                        if (callback != null) {
+//                            final List<MapLine> finalMapLineList = mapLineList;
+//                            handler.post(() -> callback.success(finalMapLineList, response));
+//                        }
+//                    }
+//
+//                    @Override
+//                    public void failure(RetrofitError error) {
+//                        handler.post(() -> callback.failure(error));
+//                    }
+//                });
+//                break;
+//        }
     }
 
 }

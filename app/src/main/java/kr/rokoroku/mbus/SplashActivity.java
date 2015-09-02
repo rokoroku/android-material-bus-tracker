@@ -12,6 +12,7 @@ import io.codetail.animation.SupportAnimator;
 import kr.rokoroku.mbus.core.FavoriteFacade;
 import kr.rokoroku.mbus.data.model.Favorite;
 import kr.rokoroku.mbus.data.model.FavoriteGroup;
+import kr.rokoroku.mbus.data.model.FavoriteItem;
 import kr.rokoroku.mbus.data.model.Route;
 import kr.rokoroku.mbus.data.model.RouteStation;
 import kr.rokoroku.mbus.data.model.Station;
@@ -54,8 +55,8 @@ public class SplashActivity extends AppCompatActivity {
                 Favorite currentFavorite = FavoriteFacade.getInstance().getCurrentFavorite();
                 for (FavoriteGroup favoriteGroup : currentFavorite.getFavoriteGroups()) {
                     for (int i = 0; i < favoriteGroup.size(); i++) {
-                        FavoriteGroup.FavoriteItem favoriteItem = favoriteGroup.get(i);
-                        FavoriteGroup.FavoriteItem.Type type = favoriteItem.getType();
+                        FavoriteItem favoriteItem = favoriteGroup.get(i);
+                        FavoriteItem.Type type = favoriteItem.getType();
                         switch (type) {
                             case ROUTE:
                                 favoriteItem.getData(Route.class);

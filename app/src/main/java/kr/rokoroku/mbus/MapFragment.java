@@ -179,19 +179,19 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
 
                 ApiFacade.getInstance().getRouteData(route, null, new SimpleProgressCallback<Route>() {
                     @Override
-                    public void onComplete(boolean success, Route value) {
-                        mRouteExtra = value;
-                        List<MapLine> mapLineList = value.getMapLineList();
+                    public void onComplete(boolean success, Route route) {
+                        mRouteExtra = route;
+                        List<MapLine> mapLineList = route.getMapLineList();
                         if (mapLineList == null) {
-                            ApiFacade.getInstance().getRouteMapLine(value, new Callback<List<MapLine>>() {
+                            ApiFacade.getInstance().getRouteMapLine(route, new SimpleProgressCallback<List<MapLine>>() {
                                 @Override
-                                public void success(List<MapLine> mapLines, Response response) {
-                                    value.setMapLineList(mapLines);
-                                    drawRoute(value);
+                                public void onComplete(boolean success, List<MapLine> result) {
+                                    mRouteExtra.setMapLineList(result);
+                                    drawRoute(mRouteExtra);
                                 }
 
                                 @Override
-                                public void failure(RetrofitError error) {
+                                public void onError(int progress, Throwable t) {
                                     if (mListener != null && getActivity() != null) {
                                         mListener.onErrorMessage(getString(R.string.error_failed_to_retrieve_map_line));
                                     }
@@ -199,7 +199,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
 
                             });
                         } else {
-                            new Handler().postDelayed(() -> drawRoute(route), 1000);
+                            ViewUtils.runOnUiThread(() -> drawRoute(route), 1000);
                         }
 
                     }

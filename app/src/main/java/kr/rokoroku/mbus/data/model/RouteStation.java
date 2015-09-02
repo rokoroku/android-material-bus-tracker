@@ -8,15 +8,23 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.TextUtils;
 
+import org.mapdb.Serializer;
+
 import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchAllResult;
 import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchRouteResult;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusRouteStation;
 import kr.rokoroku.mbus.api.seoul.model.SeoulStationInfo;
 import kr.rokoroku.mbus.api.seoulweb.model.RouteStationResult;
+import kr.rokoroku.mbus.util.SerializeUtil;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.io.Serializable;
 
 public class RouteStation extends Station implements Parcelable, Serializable {
+
+    static final long serialVersionUID = 1L;
 
     private int sequence;
     private String routeId;
@@ -25,6 +33,13 @@ public class RouteStation extends Station implements Parcelable, Serializable {
 
     public RouteStation() {
 
+    }
+
+    public RouteStation(Station station, String routeId, int sequence, District district) {
+        super(station);
+        this.routeId = routeId;
+        this.sequence = sequence;
+        this.district = district;
     }
 
     public RouteStation(GbisSearchRouteResult.ResultEntity.GgEntity.StationEntity entity, String routeId, int sequence) {
@@ -143,6 +158,57 @@ public class RouteStation extends Station implements Parcelable, Serializable {
 
         public RouteStation[] newArray(int size) {
             return new RouteStation[size];
+        }
+    };
+
+    public static final Serializer<RouteStation> SERIALIZER = new Serializer<RouteStation>() {
+        @Override
+        public void serialize(DataOutput out, RouteStation value) throws IOException {
+
+            //Serialize Station Properties
+            SerializeUtil.writeString(out, value.getId());
+            SerializeUtil.writeString(out, value.getName());
+            SerializeUtil.writeString(out, value.getCity());
+            SerializeUtil.writeString(out, value.getLocalId());
+            SerializeUtil.writeDouble(out, value.getLatitude());
+            SerializeUtil.writeDouble(out, value.getLongitude());
+            Provider.SERIALIZER.serialize(out, value.getProvider());
+
+            //Serialize RouteStation Properties
+            SerializeUtil.writeInt(out, value.sequence);
+            SerializeUtil.writeString(out, value.routeId);
+            District.SERIALIZER.serialize(out, value.district);
+            Direction.SERIALIZER.serialize(out, value.direction);
+        }
+
+        @Override
+        public RouteStation deserialize(DataInput in, int available) throws IOException {
+
+            //Deserialize Station Properties
+            String id = SerializeUtil.readString(in);
+            String name = SerializeUtil.readString(in);
+            String city = SerializeUtil.readString(in);
+            String localId = SerializeUtil.readString(in);
+            Double latitude = SerializeUtil.readDouble(in);
+            Double longitude = SerializeUtil.readDouble(in);
+            Provider provider = Provider.SERIALIZER.deserialize(in, available);
+
+            RouteStation routeStation = new RouteStation();
+            routeStation.setId(id);
+            routeStation.setName(name);
+            routeStation.setCity(city);
+            routeStation.setLocalId(localId);
+            routeStation.setLatitude(latitude);
+            routeStation.setLongitude(longitude);
+            routeStation.setProvider(provider);
+
+            //Deserialize RouteStation Properties
+            routeStation.sequence = SerializeUtil.readInt(in);
+            routeStation.routeId = SerializeUtil.readString(in);
+            routeStation.district = District.SERIALIZER.deserialize(in, available);
+            routeStation.direction = Direction.SERIALIZER.deserialize(in, available);
+
+            return routeStation;
         }
     };
 }

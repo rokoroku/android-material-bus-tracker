@@ -6,8 +6,6 @@ import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.util.Log;
 
-import com.crashlytics.android.Crashlytics;
-
 import org.mapdb.BTreeKeySerializer;
 import org.mapdb.BTreeMap;
 import org.mapdb.Bind;
@@ -27,6 +25,7 @@ import java.util.Set;
 import kr.rokoroku.mbus.BaseApplication;
 import kr.rokoroku.mbus.data.model.Favorite;
 import kr.rokoroku.mbus.data.model.FavoriteGroup;
+import kr.rokoroku.mbus.data.model.FavoriteItem;
 import kr.rokoroku.mbus.data.model.Provider;
 import kr.rokoroku.mbus.data.model.Route;
 import kr.rokoroku.mbus.data.model.SearchHistory;
@@ -95,22 +94,21 @@ public class DatabaseFacade {
 
         } catch (Exception e) {
             Log.e(TAG, "Exception in DatabaseFacade", e);
-            Crashlytics.logException(e);
-
-            boolean crashedBefore = preferences.getBoolean(BaseApplication.PREFERENCE_DB_CRASHED_BEFORE, false);
-            if (crashedBefore) {
-                recreateFile();
-                preferences.edit()
-                        .putBoolean(BaseApplication.PREFERENCE_DB_CRASHED_BEFORE, false)
-                        .commit();
-
-            } else {
-                preferences.edit()
-                        .putBoolean(BaseApplication.PREFERENCE_DB_CRASHED_BEFORE, true)
-                        .commit();
-
-                android.os.Process.killProcess(android.os.Process.myPid());
-            }
+//
+//            boolean crashedBefore = preferences.getBoolean(BaseApplication.PREFERENCE_DB_CRASHED_BEFORE, false);
+//            if (crashedBefore) {
+//                recreateFile();
+//                preferences.edit()
+//                        .putBoolean(BaseApplication.PREFERENCE_DB_CRASHED_BEFORE, false)
+//                        .commit();
+//
+//            } else {
+//                preferences.edit()
+//                        .putBoolean(BaseApplication.PREFERENCE_DB_CRASHED_BEFORE, true)
+//                        .commit();
+//
+//                android.os.Process.killProcess(android.os.Process.myPid());
+//            }
         }
     }
 
@@ -145,11 +143,13 @@ public class DatabaseFacade {
                     .fileDB(userfile)
                     .asyncWriteEnable()
                     .cacheHardRefEnable()
+                    .closeOnJvmShutdown()
                     .make();
             this.dataDB = DBMaker
                     .fileDB(datafile)
                     .asyncWriteEnable()
                     .cacheHardRefEnable()
+                    .closeOnJvmShutdown()
                     .make();
         } catch (Exception e) {
             Log.e(TAG, "Exception in DatabaseFacade", e);
@@ -186,6 +186,7 @@ public class DatabaseFacade {
         }
 
         this.searchHistoryTable = userDB.hashSetCreate(TABLE_SEARCH_HISTORY)
+                .serializer(SearchHistory.SERIALIZER)
                 .expireMaxSize(10)
                 .makeOrGet();
 
@@ -233,7 +234,6 @@ public class DatabaseFacade {
     }
 
     public Route getRandomRoute() {
-
         Random random = new Random();
         for (BTreeMap<String, Route> stringRouteBTreeMap : routeTable.values()) {
             Object[] list = stringRouteBTreeMap.values().toArray();
@@ -411,7 +411,7 @@ public class DatabaseFacade {
             for (FavoriteGroup favoriteGroup : favorite.getFavoriteGroups()) {
                 Log.d(TAG, "favoriteGroup: " + favoriteGroup.toString());
                 for (int i = 0; i < favoriteGroup.size(); i++) {
-                    FavoriteGroup.FavoriteItem favoriteItem = favoriteGroup.get(i);
+                    FavoriteItem favoriteItem = favoriteGroup.get(i);
                     Log.d(TAG, "favoriteGroupItem: " + favoriteItem.toString());
                 }
             }

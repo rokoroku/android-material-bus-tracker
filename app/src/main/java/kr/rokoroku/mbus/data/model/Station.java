@@ -34,9 +34,11 @@ import kr.rokoroku.mbus.api.seoulweb.model.SearchStationResult;
 import kr.rokoroku.mbus.api.seoulweb.model.StationByPositionResult;
 import kr.rokoroku.mbus.api.seoulweb.model.StationRouteResult;
 import kr.rokoroku.mbus.util.GeoUtils;
-import kr.rokoroku.mbus.util.SerializationUtil;
+import kr.rokoroku.mbus.util.SerializeUtil;
 
 public class Station implements Parcelable, Serializable {
+
+    static final long serialVersionUID = 1L;
 
     private String id;
     private String name;
@@ -577,6 +579,22 @@ public class Station implements Parcelable, Serializable {
                     ", key='" + key + '\'' +
                     '}';
         }
+
+        public static Serializer<RemoteEntry> SERIALIZER = new Serializer<RemoteEntry>() {
+            @Override
+            public void serialize(DataOutput out, RemoteEntry value) throws IOException {
+                out.writeUTF(value.key);
+                Provider.SERIALIZER.serialize(out, value.provider);
+            }
+
+            @Override
+            public RemoteEntry deserialize(DataInput in, int available) throws IOException {
+                String key = in.readUTF();
+                Provider provider = Provider.SERIALIZER.deserialize(in, available);
+
+                return new RemoteEntry(provider, key);
+            }
+        };
     }
 
     public static class DistanceComparator implements Comparator<Station> {
@@ -639,34 +657,31 @@ public class Station implements Parcelable, Serializable {
     public static final Serializer<Station> SERIALIZER = new Serializer<Station>() {
         @Override
         public void serialize(DataOutput out, Station value) throws IOException {
-            SerializationUtil.serializeString(out, value.id);
-            SerializationUtil.serializeString(out, value.name);
-            SerializationUtil.serializeString(out, value.city);
-            SerializationUtil.serializeString(out, value.localId);
-            SerializationUtil.serializeDouble(out, value.latitude);
-            SerializationUtil.serializeDouble(out, value.longitude);
+            SerializeUtil.writeString(out, value.id);
+            SerializeUtil.writeString(out, value.name);
+            SerializeUtil.writeString(out, value.city);
+            SerializeUtil.writeString(out, value.localId);
+            SerializeUtil.writeDouble(out, value.latitude);
+            SerializeUtil.writeDouble(out, value.longitude);
             Provider.SERIALIZER.serialize(out, value.provider);
 
-            SerializationUtil.writeByteArray(out, SerializationUtil.serialize(value.remoteEntryList));
-            SerializationUtil.writeByteArray(out, SerializationUtil.serialize(value.stationRouteList));
+            SerializeUtil.writeList(out, value.remoteEntryList, RemoteEntry.SERIALIZER);
+            SerializeUtil.writeList(out, value.stationRouteList, StationRoute.SERIALIZER);
         }
 
         @Override
         public Station deserialize(DataInput in, int available) throws IOException {
             Station station = new Station();
-            station.id = SerializationUtil.deserializeString(in);
-            station.name = SerializationUtil.deserializeString(in);
-            station.city = SerializationUtil.deserializeString(in);
-            station.localId = SerializationUtil.deserializeString(in);
-            station.latitude = SerializationUtil.deserializeDouble(in);
-            station.longitude = SerializationUtil.deserializeDouble(in);
+            station.id = SerializeUtil.readString(in);
+            station.name = SerializeUtil.readString(in);
+            station.city = SerializeUtil.readString(in);
+            station.localId = SerializeUtil.readString(in);
+            station.latitude = SerializeUtil.readDouble(in);
+            station.longitude = SerializeUtil.readDouble(in);
             station.provider = Provider.SERIALIZER.deserialize(in, available);
 
-            //noinspection unchecked
-            station.remoteEntryList = SerializationUtil.deserialize(SerializationUtil.readByteArray(in), ArrayList.class);
-            //noinspection unchecked
-            station.stationRouteList = SerializationUtil.deserialize(SerializationUtil.readByteArray(in), ArrayList.class);
-
+            station.remoteEntryList = SerializeUtil.readList(in, RemoteEntry.SERIALIZER);
+            station.stationRouteList = SerializeUtil.readList(in, StationRoute.SERIALIZER);
             return station;
         }
     };

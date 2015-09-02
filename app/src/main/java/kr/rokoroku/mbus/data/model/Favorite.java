@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import kr.rokoroku.mbus.util.SerializationUtil;
+import kr.rokoroku.mbus.util.SerializeUtil;
 
 /**
  * Created by rok on 2015. 6. 8..
@@ -118,45 +118,32 @@ public class Favorite implements Serializable {
 
     public static Serializer<Favorite> SERIALIZER = new Serializer<Favorite>() {
 
+        private Serializer<Map<String, Integer>> stringIntegerMapSerializer = new Serializer<Map<String, Integer>>() {
+            @Override
+            public void serialize(DataOutput out, Map<String, Integer> value) throws IOException {
+                SerializeUtil.writeMap(out, value, Serializer.STRING, Serializer.INTEGER);
+            }
+
+            @Override
+            public Map<String, Integer> deserialize(DataInput in, int available) throws IOException {
+                return SerializeUtil.readMap(in, Serializer.STRING, Serializer.INTEGER);
+            }
+        };
+
         @Override
         public void serialize(DataOutput out, Favorite value) throws IOException {
             out.writeUTF(value.name);
-            SerializationUtil.writeByteArray(out, SerializationUtil.serialize(value.coloredRouteTable));
-            SerializationUtil.writeByteArray(out, SerializationUtil.serialize(value.coloredStationTable));
-
-            out.writeInt(value.favoriteGroups.size());
-            for (FavoriteGroup favoriteGroup : value.favoriteGroups) {
-                out.writeUTF(favoriteGroup.getName());
-                out.writeInt(favoriteGroup.size());
-                for (FavoriteGroup.FavoriteItem favoriteItem : favoriteGroup.getItems()) {
-                    SerializationUtil.writeByteArray(out, SerializationUtil.serialize(favoriteItem));
-                }
-            }
+            SerializeUtil.writeMap(out, value.coloredRouteTable, Provider.SERIALIZER, stringIntegerMapSerializer);
+            SerializeUtil.writeMap(out, value.coloredStationTable, Provider.SERIALIZER, stringIntegerMapSerializer);
+            SerializeUtil.writeList(out, value.favoriteGroups, FavoriteGroup.SERIALIZER);
         }
 
         @Override
-        @SuppressWarnings("unchecked")
         public Favorite deserialize(DataInput in, int available) throws IOException {
             Favorite favorite = new Favorite(in.readUTF());
-            favorite.coloredRouteTable = SerializationUtil.deserialize(SerializationUtil.readByteArray(in), HashMap.class);
-            favorite.coloredStationTable = SerializationUtil.deserialize(SerializationUtil.readByteArray(in), HashMap.class);
-
-            int favoriteGroupSize = in.readInt();
-            for(int i=0; i<favoriteGroupSize; i++) {
-                String name = in.readUTF();
-                int favoriteItemSize = in.readInt();
-
-                FavoriteGroup favoriteGroup = new FavoriteGroup(name);
-                for(int j=0; j<favoriteItemSize; j++) {
-                    byte[] favoriteItemBytes = SerializationUtil.readByteArray(in);
-                    if(favoriteItemBytes != null) {
-                        FavoriteGroup.FavoriteItem favoriteItem = SerializationUtil.deserialize(favoriteItemBytes, FavoriteGroup.FavoriteItem.class);
-                        favoriteGroup.add(j, favoriteItem);
-                    }
-                }
-                favorite.addFavoriteGroup(i, favoriteGroup);
-            }
-
+            favorite.coloredRouteTable = SerializeUtil.readMap(in, Provider.SERIALIZER, stringIntegerMapSerializer);
+            favorite.coloredStationTable = SerializeUtil.readMap(in, Provider.SERIALIZER, stringIntegerMapSerializer);
+            favorite.favoriteGroups = SerializeUtil.readList(in, FavoriteGroup.SERIALIZER);
             return favorite;
         }
     };

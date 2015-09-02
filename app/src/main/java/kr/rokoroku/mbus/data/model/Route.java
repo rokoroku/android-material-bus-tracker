@@ -9,9 +9,8 @@ import org.mapdb.Serializer;
 import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchAllResult;
 import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchRouteResult;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusRouteInfo;
-import kr.rokoroku.mbus.api.seoulweb.model.RouteStationResult;
 import kr.rokoroku.mbus.api.seoulweb.model.SearchRouteResult;
-import kr.rokoroku.mbus.util.SerializationUtil;
+import kr.rokoroku.mbus.util.SerializeUtil;
 import kr.rokoroku.mbus.util.TimeUtils;
 
 import java.io.DataInput;
@@ -24,6 +23,8 @@ import java.util.Date;
 import java.util.List;
 
 public class Route implements Parcelable, Serializable {
+
+    static final long serialVersionUID = 1L;
 
     private String id;
     private String name;
@@ -570,66 +571,65 @@ public class Route implements Parcelable, Serializable {
     public static final Serializer<Route> SERIALIZER = new Serializer<Route>() {
         @Override
         public void serialize(DataOutput out, Route value) throws IOException {
-            SerializationUtil.serializeString(out, value.id);
-            SerializationUtil.serializeString(out, value.name);
+            SerializeUtil.writeString(out, value.id);
+            SerializeUtil.writeString(out, value.name);
             RouteType.SERIALIZER.serialize(out, value.type);
             Provider.SERIALIZER.serialize(out, value.provider);
 
-            SerializationUtil.serializeString(out, value.startStationId);
-            SerializationUtil.serializeString(out, value.startStationName);
-            SerializationUtil.serializeString(out, value.endStationId);
-            SerializationUtil.serializeString(out, value.endStationName);
-            SerializationUtil.serializeString(out, value.turnStationId);
-            SerializationUtil.serializeString(out, value.turnStationName);
-            out.writeInt(value.turnStationSeq);
+            SerializeUtil.writeString(out, value.startStationId);
+            SerializeUtil.writeString(out, value.startStationName);
+            SerializeUtil.writeString(out, value.endStationId);
+            SerializeUtil.writeString(out, value.endStationName);
+            SerializeUtil.writeString(out, value.turnStationId);
+            SerializeUtil.writeString(out, value.turnStationName);
+            SerializeUtil.writeInt(out, value.turnStationSeq);
 
-            SerializationUtil.serializeString(out, value.firstUpTime);
-            SerializationUtil.serializeString(out, value.lastUpTime);
-            SerializationUtil.serializeString(out, value.firstDownTime);
-            SerializationUtil.serializeString(out, value.lastDownTime);
-            SerializationUtil.serializeString(out, value.allocNormal);
-            SerializationUtil.serializeString(out, value.allocWeekend);
-            SerializationUtil.serializeString(out, value.regionName);
-            SerializationUtil.serializeString(out, value.companyName);
-            SerializationUtil.serializeString(out, value.companyTel);
-            SerializationUtil.serializeString(out, value.garageName);
-            SerializationUtil.serializeString(out, value.garageTel);
+            SerializeUtil.writeString(out, value.firstUpTime);
+            SerializeUtil.writeString(out, value.lastUpTime);
+            SerializeUtil.writeString(out, value.firstDownTime);
+            SerializeUtil.writeString(out, value.lastDownTime);
+            SerializeUtil.writeString(out, value.allocNormal);
+            SerializeUtil.writeString(out, value.allocWeekend);
+            SerializeUtil.writeString(out, value.regionName);
+            SerializeUtil.writeString(out, value.companyName);
+            SerializeUtil.writeString(out, value.companyTel);
+            SerializeUtil.writeString(out, value.garageName);
+            SerializeUtil.writeString(out, value.garageTel);
             District.SERIALIZER.serialize(out, value.district);
 
-            SerializationUtil.writeByteArray(out, SerializationUtil.serialize(value.routeStationList));
+            SerializeUtil.writeList(out, value.routeStationList, RouteStation.SERIALIZER);
         }
 
         @Override
         public Route deserialize(DataInput in, int available) throws IOException {
             Route route = new Route();
-            route.id = SerializationUtil.deserializeString(in);
-            route.name = SerializationUtil.deserializeString(in);
+            route.id = SerializeUtil.readString(in);
+            route.name = SerializeUtil.readString(in);
             route.type = RouteType.SERIALIZER.deserialize(in, available);
             route.provider = Provider.SERIALIZER.deserialize(in, available);
 
-            route.startStationId = SerializationUtil.deserializeString(in);
-            route.startStationName = SerializationUtil.deserializeString(in);
-            route.endStationId = SerializationUtil.deserializeString(in);
-            route.endStationName = SerializationUtil.deserializeString(in);
-            route.turnStationId = SerializationUtil.deserializeString(in);
-            route.turnStationName = SerializationUtil.deserializeString(in);
-            route.turnStationSeq = in.readInt();
+            route.startStationId = SerializeUtil.readString(in);
+            route.startStationName = SerializeUtil.readString(in);
+            route.endStationId = SerializeUtil.readString(in);
+            route.endStationName = SerializeUtil.readString(in);
+            route.turnStationId = SerializeUtil.readString(in);
+            route.turnStationName = SerializeUtil.readString(in);
+            route.turnStationSeq = SerializeUtil.readInt(in);
 
-            route.firstUpTime = SerializationUtil.deserializeString(in);
-            route.lastUpTime = SerializationUtil.deserializeString(in);
-            route.firstDownTime = SerializationUtil.deserializeString(in);
-            route.lastDownTime = SerializationUtil.deserializeString(in);
-            route.allocNormal = SerializationUtil.deserializeString(in);
-            route.allocWeekend = SerializationUtil.deserializeString(in);
-            route.regionName = SerializationUtil.deserializeString(in);
-            route.companyName = SerializationUtil.deserializeString(in);
-            route.companyTel = SerializationUtil.deserializeString(in);
-            route.garageName = SerializationUtil.deserializeString(in);
-            route.garageTel = SerializationUtil.deserializeString(in);
+            route.firstUpTime = SerializeUtil.readString(in);
+            route.lastUpTime = SerializeUtil.readString(in);
+            route.firstDownTime = SerializeUtil.readString(in);
+            route.lastDownTime = SerializeUtil.readString(in);
+            route.allocNormal = SerializeUtil.readString(in);
+            route.allocWeekend = SerializeUtil.readString(in);
+            route.regionName = SerializeUtil.readString(in);
+            route.companyName = SerializeUtil.readString(in);
+            route.companyTel = SerializeUtil.readString(in);
+            route.garageName = SerializeUtil.readString(in);
+            route.garageTel = SerializeUtil.readString(in);
             route.district = District.SERIALIZER.deserialize(in, available);
 
-            //noinspection unchecked
-            route.routeStationList = SerializationUtil.deserialize(SerializationUtil.readByteArray(in), ArrayList.class);
+            route.routeStationList = SerializeUtil.readList(in, RouteStation.SERIALIZER);
             return route;
         }
     };

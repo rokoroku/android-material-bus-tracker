@@ -21,6 +21,8 @@ import kr.rokoroku.mbus.core.DatabaseFacade;
 
 public class StationRoute implements Parcelable, Serializable, Comparable<StationRoute> {
 
+    static final long serialVersionUID = 1L;
+
     private String routeId;
     private String routeName;
     private String firstStationName;

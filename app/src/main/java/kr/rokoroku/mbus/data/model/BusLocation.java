@@ -7,6 +7,7 @@ import com.google.android.gms.maps.model.LatLng;
 
 import kr.rokoroku.mbus.api.gbis.model.GbisBusLocation;
 import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchRouteResult;
+import kr.rokoroku.mbus.api.incheon.data.IncheonBusPosition;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusLocation;
 import kr.rokoroku.mbus.api.seoulweb.model.RouteStationResult;
 import kr.rokoroku.mbus.api.seoulweb.model.TopisRealtimeResult;
@@ -71,6 +72,12 @@ public class BusLocation implements Comparable<BusLocation>, Parcelable {
         this.isLowPlate = "1".equals(resultEntity.busType);
         this.isLastBus = "Y".equalsIgnoreCase(resultEntity.lstbusyn);
         this.latLng = new LatLng(resultEntity.gpsY, resultEntity.gpsX);
+    }
+
+    public BusLocation(IncheonBusPosition.ResultEntity resultEntity) {
+        this.id = resultEntity.vehId;
+        this.plateNumber = resultEntity.plate;
+        this.stationSeq = resultEntity.seq;
     }
 
     public String getId() {

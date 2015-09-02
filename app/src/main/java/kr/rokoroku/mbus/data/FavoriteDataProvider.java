@@ -4,6 +4,7 @@ import java.util.List;
 
 import kr.rokoroku.mbus.data.model.Favorite;
 import kr.rokoroku.mbus.data.model.FavoriteGroup;
+import kr.rokoroku.mbus.data.model.FavoriteItem;
 
 /**
  * Created by rok on 2015. 6. 2..
@@ -14,7 +15,7 @@ public class FavoriteDataProvider {
     private List<FavoriteGroup> favoriteGroups;
 
     private FavoriteGroup mLastRemovedGroup;
-    private FavoriteGroup.FavoriteItem mLastRemovedChild;
+    private FavoriteItem mLastRemovedChild;
     private int mLastRemovedGroupPosition = -1;
     private int mLastRemovedChildPosition = -1;
     private long mLastRemovedChildParentGroupId = -1;
@@ -53,7 +54,7 @@ public class FavoriteDataProvider {
         }
     }
 
-    public FavoriteGroup.FavoriteItem getChildItem(int groupIndex, int childIndex) {
+    public FavoriteItem getChildItem(int groupIndex, int childIndex) {
         FavoriteGroup groupItem = getGroupItem(groupIndex);
         if (groupItem != null) {
             return groupItem.get(childIndex);
@@ -82,7 +83,7 @@ public class FavoriteDataProvider {
 
         } else {
             FavoriteGroup targetGroup = favoriteGroups.get(toGroup);
-            FavoriteGroup.FavoriteItem sourceChild = sourceGroup.remove(fromChild);
+            FavoriteItem sourceChild = sourceGroup.remove(fromChild);
             if (sourceChild != null && targetGroup != null) {
                 if(toChild > targetGroup.size()) toChild = targetGroup.size();
                 targetGroup.add(toChild, sourceChild);
@@ -95,7 +96,7 @@ public class FavoriteDataProvider {
         favoriteGroups.add(position, favoriteGroup);
     }
 
-    public void addChildItem(int groupPosition, FavoriteGroup.FavoriteItem favoriteItem) {
+    public void addChildItem(int groupPosition, FavoriteItem favoriteItem) {
         FavoriteGroup groupItem = getGroupItem(groupPosition);
         if (groupItem != null) groupItem.add(favoriteItem);
     }

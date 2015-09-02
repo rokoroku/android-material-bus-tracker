@@ -43,6 +43,7 @@ public enum RouteType {
     // Intercity
     PURPLE(40),             // 시외 버스
     PURPLE_GYEONGGI(41),    // 경기 시외 버스
+    PURPLE_INCHEON(42),     // 인천 급행간선 버스
 
     // Airport Limousine
     AIRPORT(50),            // 공항 리무진
@@ -66,6 +67,25 @@ public enum RouteType {
             if(routeType.value == value) return routeType;
         }
         return null;
+    }
+
+    public static RouteType valueOfIncheon(String type) {
+        switch (type) {
+            case "간선":
+                return BLUE_INCHEON;
+            case "지선":
+                return GREEN_INCHEON;
+            case "순환":
+                return YELLOW_INCHEON;
+            case "좌석":
+            case "급행":
+            case "광역":
+                return RED_INCHEON;
+            case "급행간선":
+                return PURPLE_INCHEON;
+            default:
+                return UNKNOWN;
+        }
     }
 
     public static RouteType valueOfGbis(String type) {

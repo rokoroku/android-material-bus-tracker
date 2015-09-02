@@ -5,6 +5,9 @@
         <attr name="lineColor" format="color"/>
         <attr name="iconColor" format="color"/>
         <attr name="fillColor" format="color"/>
+        <attr name="topLineColor" format="color"/>
+        <attr name="centerLineColor" format="color"/>
+        <attr name="bottomLineColor" format="color"/>
         <attr name="iconType"/>
         <attr name="iconDrawable" format="reference"/>
         <attr name="connectorType"/>

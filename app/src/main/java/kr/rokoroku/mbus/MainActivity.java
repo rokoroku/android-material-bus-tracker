@@ -55,6 +55,7 @@ import kr.rokoroku.mbus.core.ApiFacade;
 import kr.rokoroku.mbus.core.DatabaseFacade;
 import kr.rokoroku.mbus.core.LocationClient;
 import kr.rokoroku.mbus.data.SearchDataProvider;
+import kr.rokoroku.mbus.data.model.FavoriteItem;
 import kr.rokoroku.mbus.data.model.Route;
 import kr.rokoroku.mbus.data.model.Station;
 import kr.rokoroku.mbus.ui.adapter.FavoriteAdapter;
@@ -681,9 +682,9 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
                     FavoriteGroup groupItem = mFavoriteDataProvider.getGroupItem(i);
                     int size = groupItem.size();
                     for (int j = 0; j < size; j++) {
-                        FavoriteGroup.FavoriteItem item = groupItem.get(j);
-                        FavoriteGroup.FavoriteItem.Type itemType = item.getType();
-                        if (itemType == FavoriteGroup.FavoriteItem.Type.ROUTE) {
+                        FavoriteItem item = groupItem.get(j);
+                        FavoriteItem.Type itemType = item.getType();
+                        if (itemType == FavoriteItem.Type.ROUTE) {
                             Route route = item.getData(Route.class);
                             if (route != null) {
                                 int color = route.getType().getColor(this);
@@ -695,7 +696,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
                                     searchResults.add(searchResult);
                                 }
                             }
-                        } else if (itemType == FavoriteGroup.FavoriteItem.Type.STATION) {
+                        } else if (itemType == FavoriteItem.Type.STATION) {
                             Station station = item.getData(Station.class);
                             if (station != null) {
                                 int color = ThemeUtils.getThemeColor(this, R.attr.cardPrimaryTextColor);
