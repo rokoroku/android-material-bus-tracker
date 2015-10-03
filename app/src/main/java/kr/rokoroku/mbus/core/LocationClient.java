@@ -10,7 +10,6 @@ import com.google.android.gms.common.ConnectionResult;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import io.nlopez.smartlocation.OnLocationUpdatedListener;
 import io.nlopez.smartlocation.SmartLocation;
 import io.nlopez.smartlocation.location.config.LocationParams;
 import io.nlopez.smartlocation.location.providers.LocationGooglePlayServicesWithFallbackProvider;
@@ -23,12 +22,13 @@ public class LocationClient {
 
     private static final String TAG = "LocationClient";
 
-    private static final int REQUEST_TIMEOUT_DELAY = 3000;
+    private static final int REQUEST_TIMEOUT_DELAY = 5000;
     private static Location sLastKnownLocation;
 
     private Context mContext;
     private Timer mTimer;
     private Listener mListener;
+    private ActivityTracker mActivityTracker;
     private boolean isLocationRequested;
 
     private LocationClient(Context context, Listener listener) {
@@ -59,11 +59,16 @@ public class LocationClient {
                         .start(location -> {
                             Log.d(TAG, "Location Updated Successfully");
                             handleLocationUpdate(location);
-                            cancelTimeoutTimer();
+                            cancelTimer();
                         });
 
                 isLocationRequested = true;
-                startTimeoutTimer(REQUEST_TIMEOUT_DELAY);
+
+                int timeoutDelay = REQUEST_TIMEOUT_DELAY;
+                if (sLastKnownLocation == null) {
+                    timeoutDelay *= 2;
+                }
+                startTimer(timeoutDelay);
 
             } else {
                 if (mListener != null) {
@@ -78,7 +83,7 @@ public class LocationClient {
         }
     }
 
-    private synchronized void startTimeoutTimer(int delay) {
+    private synchronized void startTimer(int delay) {
         if (mTimer != null) mTimer.cancel();
 
         mTimer = new Timer(true);
@@ -100,17 +105,17 @@ public class LocationClient {
         }, delay);
     }
 
-    private synchronized void cancelTimeoutTimer() {
+    private synchronized void cancelTimer() {
         if (mTimer != null) mTimer.cancel();
         mTimer = null;
     }
 
     public void stop() {
-        cancelTimeoutTimer();
+        cancelTimer();
     }
 
     public void handleLocationUpdate(Location location) {
-        cancelTimeoutTimer();
+        cancelTimer();
 
         if (location != null) {
             sLastKnownLocation = location;
@@ -125,10 +130,20 @@ public class LocationClient {
         new LocationClient(context).start(true);
     }
 
+    public void setActivityTracker(ActivityTracker tracker) {
+        this.mActivityTracker = tracker;
+    }
+
     public interface Listener {
         void onLocationUpdate(Location location);
 
         void onError(String failReason, ConnectionResult connectionResult);
+    }
+
+    public interface ActivityTracker {
+        void onActivityChanged();
+
+        void onLocationUpdate();
     }
 
     public static Builder with(Context context) {
@@ -138,6 +153,7 @@ public class LocationClient {
     public static class Builder {
         Context context;
         Listener listener;
+        ActivityTracker activityTracker;
 
         public Builder(Context context) {
             this.context = context;
@@ -148,8 +164,15 @@ public class LocationClient {
             return this;
         }
 
+        public Builder tracker(ActivityTracker activityTracker) {
+            this.activityTracker = activityTracker;
+            return this;
+        }
+
         public LocationClient build() {
-            return new LocationClient(context, listener);
+            LocationClient locationClient = new LocationClient(context, listener);
+            locationClient.setActivityTracker(activityTracker);
+            return locationClient;
         }
     }
 

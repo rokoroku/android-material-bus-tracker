@@ -498,9 +498,10 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
         apiFacade.searchByKeyword(finalKeyword, mSearchDataProvider, new SimpleProgressCallback() {
             @Override
             public void onComplete(boolean success, Object value) {
-                mSearchDataProvider.sortByKeyword(finalKeyword);
-                mSearchAdapter.notifyDataSetChanged();
                 ViewUtils.runOnUiThread(() -> {
+                    mSearchDataProvider.sortByKeyword(finalKeyword);
+                    mSearchAdapter.notifyDataSetChanged();
+                    mSearchBox.closeSearch();
                     mSearchFragment.setRefreshing(false);
                     mSearchFragment.setRefreshEnabled(false);
                     if (mSearchDataProvider.getCount() == 0) {

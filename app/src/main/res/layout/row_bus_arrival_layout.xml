@@ -9,34 +9,48 @@
     android:paddingTop="8dp">
 
     <!--Bus Information Layout-->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        android:text="첫 번째 도착예정 버스"
-        android:textColor="?attr/cardPrimaryTextColor"
-        android:textSize="14sp" />
-
-    <include
-        android:id="@+id/bus_arrival_item_1"
-        layout="@layout/row_bus_arrival_item"
+    <LinearLayout
+        android:id="@+id/bus_arrival_view_1"
         android:layout_width="match_parent"
-        android:layout_height="42dp"
-        android:layout_margin="8dp" />
-
-    <TextView
-        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        android:text="두 번째 도착예정 버스"
-        android:textColor="?attr/cardPrimaryTextColor"
-        android:textSize="14sp" />
+        android:orientation="vertical">
 
-    <include
-        android:id="@+id/bus_arrival_item_2"
-        layout="@layout/row_bus_arrival_item"
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="첫 번째 도착예정 버스"
+            android:textColor="?attr/cardPrimaryTextColor"
+            android:textSize="14sp" />
+
+        <include
+            android:id="@+id/bus_arrival_item_1"
+            layout="@layout/row_bus_arrival_item"
+            android:layout_width="match_parent"
+            android:layout_height="42dp"
+            android:layout_margin="8dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/bus_arrival_view_2"
         android:layout_width="match_parent"
-        android:layout_height="42dp"
-        android:layout_margin="8dp" />
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="두 번째 도착예정 버스"
+            android:textColor="?attr/cardPrimaryTextColor"
+            android:textSize="14sp" />
+
+        <include
+            android:id="@+id/bus_arrival_item_2"
+            layout="@layout/row_bus_arrival_item"
+            android:layout_width="match_parent"
+            android:layout_height="42dp"
+            android:layout_margin="8dp" />
+    </LinearLayout>
 
 </LinearLayout>

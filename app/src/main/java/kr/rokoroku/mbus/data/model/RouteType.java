@@ -71,15 +71,14 @@ public enum RouteType {
 
     public static RouteType valueOfIncheon(String type) {
         switch (type) {
-            case "간선":
+            case "간선형":
                 return BLUE_INCHEON;
-            case "지선":
+            case "지선형":
                 return GREEN_INCHEON;
-            case "순환":
+            case "지선(순환)":
                 return YELLOW_INCHEON;
-            case "좌석":
-            case "급행":
-            case "광역":
+            case "좌석형":
+            case "광역형":
                 return RED_INCHEON;
             case "급행간선":
                 return PURPLE_INCHEON;

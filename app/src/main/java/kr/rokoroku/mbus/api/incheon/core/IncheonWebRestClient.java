@@ -22,6 +22,7 @@ import kr.rokoroku.mbus.data.model.Route;
 import kr.rokoroku.mbus.data.model.RouteStation;
 import kr.rokoroku.mbus.data.model.Station;
 import kr.rokoroku.mbus.data.model.StationRoute;
+import kr.rokoroku.mbus.util.ViewUtils;
 import retrofit.Callback;
 import retrofit.RestAdapter;
 import retrofit.RetrofitError;
@@ -53,7 +54,7 @@ public class IncheonWebRestClient implements ApiWrapperInterface {
                     .setClient(client)
                     .setLog(new AndroidLog("IncheonWebRestClient"))
                     .setLogLevel(BaseApplication.logLevel)
-                    .setConverter(new GsonConverter(new Gson(), "UTF-8"))
+                    .setConverter(new IncheonResponseConverter())
                     .build()
                     .create(IncheonWebRestInterface.class);
             adapter = AnswerWrapper.wrap(adapter);

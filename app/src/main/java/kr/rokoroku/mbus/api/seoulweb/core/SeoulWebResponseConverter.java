@@ -6,6 +6,7 @@ import com.mobprofs.retrofit.converters.SimpleXmlConverter;
 import java.io.InputStream;
 import java.lang.reflect.Type;
 
+import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchAllResult;
 import kr.rokoroku.mbus.api.seoulweb.model.StationByPositionResult;
 import kr.rokoroku.mbus.api.seoulweb.model.TopisMapLineResult;
 import kr.rokoroku.mbus.api.seoulweb.model.TopisRealtimeResult;
@@ -25,6 +26,7 @@ public class SeoulWebResponseConverter implements Converter {
     private Converter xmlConverter;
 
     public SeoulWebResponseConverter() {
+        Gson gson = new Gson();
         gsonConverter = new GsonConverter(new Gson(), "UTF-8");
         xmlConverter = new SimpleXmlConverter();
     }

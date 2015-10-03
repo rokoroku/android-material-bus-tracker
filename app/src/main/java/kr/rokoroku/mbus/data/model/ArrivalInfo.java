@@ -159,8 +159,8 @@ public class ArrivalInfo implements Parcelable {
     }
 
     public ArrivalInfo(ArrivalInfoResult.ResultEntity resultEntity) {
-        this.routeId = resultEntity.routeId.substring(3);
-        this.stationId = resultEntity.stationName;
+        this(resultEntity.routeId.substring(3), resultEntity.stationId);
+
         if(resultEntity.arrivalTime > 0) {
             this.busArrivalItem1 = new BusArrivalItem();
             busArrivalItem1.behind = resultEntity.prevStationCount;
@@ -169,13 +169,11 @@ public class ArrivalInfo implements Parcelable {
     }
 
     public ArrivalInfo(IncheonArrivalInfo.ResultEntity resultEntity, String stationId) {
-        this.routeId = resultEntity.routeId;
-        this.stationId = stationId;
-        this.isDriveEnd = false;
+        this(resultEntity.routeId, stationId);
 
         this.busArrivalItem1 = new BusArrivalItem();
         this.busArrivalItem1.behind = resultEntity.remainStation;
-        String[] split = resultEntity.predictedTime.split("분 초");
+        String[] split = resultEntity.predictedTime.replace(" ","").split("[분초]");
 
         int min = 0;
         int sec = 0;

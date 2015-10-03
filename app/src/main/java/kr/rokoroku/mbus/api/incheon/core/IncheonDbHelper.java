@@ -6,6 +6,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.graphics.PointF;
+import android.os.Build;
 
 import com.crashlytics.android.Crashlytics;
 import com.readystatesoftware.sqliteasset.SQLiteAssetHelper;
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import kr.rokoroku.mbus.BaseApplication;
+import kr.rokoroku.mbus.BuildConfig;
 import kr.rokoroku.mbus.data.model.Provider;
 import kr.rokoroku.mbus.data.model.Route;
 import kr.rokoroku.mbus.data.model.RouteType;
@@ -80,7 +82,7 @@ public class IncheonDbHelper extends SQLiteAssetHelper {
     public Station getStationByLocalId(String localId) {
         String[] args = {localId};
         Cursor cursor = getReadableDatabase()
-                .query(TABLE_STATION, null, "no=?", args, null, null, null);
+                .query(TABLE_STATION, null, "localId=?", args, null, null, null);
 
         if (cursor.moveToFirst()) return parseStation(cursor);
         else return null;
@@ -89,7 +91,7 @@ public class IncheonDbHelper extends SQLiteAssetHelper {
     public List<Station> getStationsByName(String name) {
         String[] args = {"%" + name + "%"};
         Cursor cursor = getReadableDatabase()
-                .query(TABLE_ROUTE, null, "name like ?", args, null, null, null);
+                .query(TABLE_STATION, null, "name like ?", args, null, null, null);
 
         List<Station> stations = new ArrayList<>();
         if (cursor.moveToFirst()) do {
@@ -104,13 +106,14 @@ public class IncheonDbHelper extends SQLiteAssetHelper {
     private Station parseStation(Cursor cursor) {
         try {
             String id = cursor.getString(cursor.getColumnIndexOrThrow("id"));
-            String no = cursor.getString(cursor.getColumnIndexOrThrow("no"));
+            String no = cursor.getString(cursor.getColumnIndexOrThrow("localId"));
             String name = cursor.getString(cursor.getColumnIndexOrThrow("name"));
             Double latitude = cursor.getDouble(cursor.getColumnIndexOrThrow("latitude"));
             Double longitude = cursor.getDouble(cursor.getColumnIndexOrThrow("longitude"));
 
             Station station = new Station(id, Provider.INCHEON);
             station.setName(name);
+            station.setCity("인천");
             station.setLocalId(no);
             station.setLatitude(latitude);
             station.setLongitude(longitude);
@@ -118,7 +121,9 @@ public class IncheonDbHelper extends SQLiteAssetHelper {
 
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
-            Crashlytics.logException(e);
+            if(!BuildConfig.DEBUG) {
+                Crashlytics.logException(e);
+            }
         }
         return null;
     }
@@ -160,7 +165,9 @@ public class IncheonDbHelper extends SQLiteAssetHelper {
 
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
-            Crashlytics.logException(e);
+            if(!BuildConfig.DEBUG) {
+                Crashlytics.logException(e);
+            }
         }
         return null;
     }
@@ -180,7 +187,7 @@ public class IncheonDbHelper extends SQLiteAssetHelper {
                 + "longitude" + " > " + String.valueOf(p4.y);
 
         Cursor cursor = getReadableDatabase()
-                .query(TABLE_ROUTE, null, condition, null, null, null, null);
+                .query(TABLE_STATION, null, condition, null, null, null, null);
 
         List<Station> stations = new ArrayList<>();
         if (cursor.moveToFirst()) do {

@@ -5,6 +5,8 @@ import android.text.TextUtils;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.gson.Gson;
 
+import org.apache.http.client.HttpClient;
+
 import java.lang.ref.SoftReference;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,9 +42,11 @@ import kr.rokoroku.mbus.util.GeoUtils;
 import kr.rokoroku.mbus.util.ProgressCallback;
 import kr.rokoroku.mbus.util.SimpleProgressCallback;
 import kr.rokoroku.mbus.util.ViewUtils;
+import retrofit.Callback;
 import retrofit.RestAdapter;
 import retrofit.RetrofitError;
 import retrofit.android.AndroidLog;
+import retrofit.client.ApacheClient;
 import retrofit.client.Client;
 import retrofit.client.Response;
 import retrofit.converter.GsonConverter;
@@ -77,6 +81,17 @@ public class GbisWebRestClient implements ApiWrapperInterface {
                     .setConverter(new GsonConverter(new Gson(), "UTF-8"))
                     .build()
                     .create(GbisWebRestInterface.class);
+            adapter.searchAll("asdf", 1, 1, new retrofit.Callback<GbisSearchAllResult>() {
+                @Override
+                public void success(GbisSearchAllResult gbisSearchAllResult, Response response) {
+
+                }
+
+                @Override
+                public void failure(RetrofitError error) {
+
+                }
+            });
             adapter = AnswerWrapper.wrap(adapter);
         }
         return adapter;

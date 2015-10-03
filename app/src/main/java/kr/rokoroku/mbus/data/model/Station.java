@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -349,7 +350,7 @@ public class Station implements Parcelable, Serializable {
         if (stationRoute != null) {
             stationRoute.setArrivalInfo(arrivalInfo);
         } else {
-            if (temporalArrivalInfos == null) temporalArrivalInfos = new TreeMap<>();
+            if (temporalArrivalInfos == null) temporalArrivalInfos = new HashMap<>();
             temporalArrivalInfos.put(routeId, arrivalInfo);
         }
     }

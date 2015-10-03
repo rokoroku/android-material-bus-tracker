@@ -509,7 +509,9 @@ public class ApiFacade {
                 }
 
                 public void next() {
-                    apiIndices[0]++;
+                    synchronized (apiIndices) {
+                        apiIndices[0]++;
+                    }
                     if (apiIndices[0] < apiClients.size()) {
                         ApiWrapperInterface nextClient = apiClients.get(apiIndices[0]);
                         nextClient.searchRouteByKeyword(finalKeyword, this);
@@ -559,7 +561,9 @@ public class ApiFacade {
                 }
 
                 public void next() {
-                    apiIndices[1]++;
+                    synchronized (apiIndices) {
+                        apiIndices[1]++;
+                    }
                     if (apiIndices[1] < apiClients.size()) {
                         ApiWrapperInterface nextClient = apiClients.get(apiIndices[1]);
                         nextClient.searchStationByKeyword(finalKeyword, this);

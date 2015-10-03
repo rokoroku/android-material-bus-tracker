@@ -272,9 +272,9 @@ public class StationDataProvider {
             }
         }
 
-        public int getId() {
+        public long getId() {
             if (type.equals(Type.ROUTE)) {
-                return getStationRoute().getRouteId().hashCode();
+                return Long.parseLong(getStationRoute().getRouteId());
             } else if (data instanceof RouteType) {
                 return getRouteType().ordinal();
             } else {

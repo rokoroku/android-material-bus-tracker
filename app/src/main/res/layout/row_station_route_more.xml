@@ -13,7 +13,7 @@
     <ProgressBar
         android:id="@+id/progress_bar"
         android:layout_width="36dp"
-        android:layout_height="160dp"
+        android:layout_height="36dp"
         android:layout_gravity="center"
         android:indeterminate="true"
         android:indeterminateTint="@color/md_grey_600"
@@ -21,14 +21,35 @@
         android:visibility="visible" />
 
     <!--Arrival Information Layout-->
-    <include
+
+    <LinearLayout
         android:id="@+id/bus_arrival_layout"
-        layout="@layout/row_bus_arrival_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="start|center_vertical"
         android:layout_marginLeft="8dp"
-        android:layout_marginStart="8dp" />
+        android:layout_marginStart="8dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/bus_arrival_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="4dp"
+            android:text="@string/first_arriving_bus"
+            android:textColor="?attr/cardPrimaryTextColor"
+            android:textSize="14sp" />
+
+        <include
+            android:id="@+id/bus_arrival_item"
+            layout="@layout/row_bus_arrival_item"
+            android:layout_width="match_parent"
+            android:layout_height="42dp"
+            android:layout_margin="8dp" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/bus_operation_end_layout"

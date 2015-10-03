@@ -85,4 +85,8 @@
     <string name="placeholder_favorite_empty">즐겨찾기가 비어있어요.\n아래 버튼을 눌러 새 즐겨찾기를 추가 해 보세요.</string>
     <string name="bus_arrival_behind_time_in_minute">%1$d분 전</string>
 
+    <string name="first_arriving_bus">첫 번째 도착예정 버스</string>
+    <string name="second_arriving_bus">두 번째 도착예정 버스</string>
+    <string name="unknown_vehicle_number">차량 번호 정보 없음</string>
+
 </resources>

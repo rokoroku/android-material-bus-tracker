@@ -1,6 +1,7 @@
 package kr.rokoroku.mbus.api.incheon.core;
 
 import android.text.TextUtils;
+import android.util.SparseArray;
 
 import com.google.gson.Gson;
 import com.mobprofs.retrofit.converters.SimpleXmlConverter;
@@ -13,9 +14,13 @@ import org.jsoup.select.Elements;
 import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.InputMismatchException;
 import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.StringTokenizer;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -58,7 +63,7 @@ public class IncheonResponseConverter implements Converter {
                 InputStream inputStream = body.in();
                 byte[] b = new byte[4096];
                 for (int n; (n = inputStream.read(b)) != -1; ) {
-                    stringBuffer.append(new String(b, 0, n));
+                    stringBuffer.append(new String(b, 0, n, "EUC-KR"));
                 }
 
                 if (type.equals(IncheonBusPosition.class)) {
@@ -70,7 +75,7 @@ public class IncheonResponseConverter implements Converter {
                     }
                     return gsonConverter.fromBody(new TypedString(string), type);
 
-                } else if (type.equals(List.class)) {
+                } else {
                     if (stringBuffer.subSequence(0, 10).equals("routeData=")) {
                         return parseRouteStation(stringBuffer.toString());
 
@@ -81,9 +86,9 @@ public class IncheonResponseConverter implements Converter {
             }
 
         } catch (Exception e) {
+            e.printStackTrace();
             throw new ConversionException(e);
         }
-        return null;
     }
 
     @Override
@@ -92,9 +97,9 @@ public class IncheonResponseConverter implements Converter {
     }
 
     private List<RouteStation> parseRouteStation(String body) throws Exception {
-        List<RouteStation> routeStations = new ArrayList<>();
+        Map<Integer, RouteStation> routeStations = new TreeMap<>();
         StringTokenizer tokenizer = new StringTokenizer(body.substring(10), "|");
-        while (tokenizer.hasMoreTokens()) {
+        while (tokenizer.hasMoreTokens()) try {
             String nextToken = tokenizer.nextToken();
             Scanner scanner = new Scanner(nextToken);
             scanner.useDelimiter(";");
@@ -103,38 +108,43 @@ public class IncheonResponseConverter implements Converter {
             String stationId = scanner.next();
             String stationName = scanner.next();
 
-            if (!TextUtils.isEmpty(stationName) && !stationName.equals("없음")) {
+            if (!routeStations.containsKey(seq) && !TextUtils.isEmpty(stationName) &&
+                    !stationName.equals("없음") && !stationName.equals("생성노드")) {
                 Station station = IncheonDbHelper.getInstance().getStation(stationId);
                 if (station != null) {
                     RouteStation routeStation = new RouteStation(station, null, seq, District.INCHEON);
-                    routeStations.add(routeStation);
+                    routeStations.put(seq, routeStation);
                 }
             }
+        } catch (InputMismatchException e) {
+            e.printStackTrace();
+
+        } catch (NoSuchElementException e) {
+            e.printStackTrace();
+            break;
         }
-        return routeStations;
+        return new ArrayList<>(routeStations.values());
     }
 
     private List<StationRoute> parseStationRoute(String body) throws Exception {
         List<StationRoute> stationRoutes = new ArrayList<>();
         Document document = Jsoup.parse(body);
         Element table = document.getElementById("idRowTemplate").parent();
-        for (Element row : table.getAllElements()) {
-            Elements a = row.getElementsByClass("a");
-            if(a != null) {
-                String href = a.attr("href");
-                Pattern pattern = Pattern.compile("\\((\\d+),\\s*'(\\w)+'+\\)");
-                Matcher matcher = pattern.matcher(href);
-
-                String routeId = matcher.group(0);
-                String routeName = matcher.group(1);
-                String routeType = row.getElementsByIndexEquals(1).html();
-
+        Elements rows = table.getElementsByTag("a");
+        for (Element a : rows) try {
+            String href = a.attr("href");
+            Pattern pattern = Pattern.compile("\\((\\d+),\\s*'(\\w+)'\\s*\\)");
+            Matcher matcher = pattern.matcher(href);
+            if(matcher.find()) {
+                String routeId = matcher.group(1);
                 Route route = IncheonDbHelper.getInstance().getRoute(routeId);
-                if(route != null) {
+                if (route != null) {
                     StationRoute stationRoute = new StationRoute(route, null);
                     stationRoutes.add(stationRoute);
                 }
             }
+        } catch (NoSuchElementException e) {
+            e.printStackTrace();
         }
         return stationRoutes;
     }
