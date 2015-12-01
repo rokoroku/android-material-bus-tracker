@@ -24,8 +24,10 @@ import static android.graphics.PorterDuff.Mode.CLEAR;
 public final class ConnectorView extends View {
 
     private final Paint iconPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint fillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint topLinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint centerLinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint bottomLinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private static final PorterDuffXfermode CLEAR_XFER_MODE = new PorterDuffXfermode(CLEAR);
 
     public enum ConnectorType {
@@ -61,11 +63,15 @@ public final class ConnectorView extends View {
     public void initAttribute(Context context, AttributeSet attrs) {
         TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.ConnectorView);
 
-        int lineColor = a.getColor(R.styleable.ConnectorView_lineColor, Color.LTGRAY);
+        int centerLineColor = a.getColor(R.styleable.ConnectorView_lineColor, Color.LTGRAY);
+        int bottomLineColor = a.getColor(R.styleable.ConnectorView_topLineColor, centerLineColor);
+        int topLineColor = a.getColor(R.styleable.ConnectorView_bottomLineColor, centerLineColor);
         int iconColor = a.getColor(R.styleable.ConnectorView_iconColor, Color.LTGRAY);
         int fillColor = a.getColor(R.styleable.ConnectorView_fillColor, Color.TRANSPARENT);
         iconPaint.setColor(iconColor);
-        linePaint.setColor(lineColor);
+        topLinePaint.setColor(topLineColor);
+        centerLinePaint.setColor(centerLineColor);
+        bottomLinePaint.setColor(bottomLineColor);
         fillPaint.setColor(fillColor);
         if (fillColor == Color.TRANSPARENT) {
             fillPaint.setXfermode(CLEAR_XFER_MODE);
@@ -117,6 +123,10 @@ public final class ConnectorView extends View {
         int width = getWidth();
         int height = getHeight();
 
+        if (width == 0 || height == 0) {
+            return;
+        }
+
         if (cache != null && (cache.getWidth() != width || cache.getHeight() != height)) {
             cache.recycle();
             cache = null;
@@ -132,20 +142,23 @@ public final class ConnectorView extends View {
             float thirdWidth = width / 3f;
 
             iconPaint.setStrokeWidth(strokeSize);
-            linePaint.setStrokeWidth(strokeSize);
+            centerLinePaint.setStrokeWidth(strokeSize);
+            topLinePaint.setStrokeWidth(strokeSize);
+            bottomLinePaint.setStrokeWidth(strokeSize);
 
             switch (connectorType) {
                 case NODE:
                 default:
-                    cacheCanvas.drawLine(halfWidth, 0, halfWidth, height, linePaint);
+                    cacheCanvas.drawLine(halfWidth, 0, halfWidth, halfHeight, topLinePaint);
+                    cacheCanvas.drawLine(halfWidth, halfHeight, halfWidth, height, bottomLinePaint);
                     break;
                 case START:
-                    cacheCanvas.drawLine(halfWidth, halfHeight, halfWidth, height, linePaint);
-                    cacheCanvas.drawCircle(halfWidth, halfHeight, strokeSize / 2, linePaint);
+                    cacheCanvas.drawLine(halfWidth, halfHeight, halfWidth, height, bottomLinePaint);
+                    cacheCanvas.drawCircle(halfWidth, halfHeight, strokeSize / 2, centerLinePaint);
                     break;
                 case END:
-                    cacheCanvas.drawLine(halfWidth, 0, halfWidth, halfHeight, linePaint);
-                    cacheCanvas.drawCircle(halfWidth, halfHeight, strokeSize / 2, linePaint);
+                    cacheCanvas.drawLine(halfWidth, 0, halfWidth, halfHeight, topLinePaint);
+                    cacheCanvas.drawCircle(halfWidth, halfHeight, strokeSize / 2, centerLinePaint);
                     break;
                 case NONE:
                     break;
@@ -199,5 +212,23 @@ public final class ConnectorView extends View {
             }
             invalidate();
         }
+    }
+
+    public void setTopLineColor(int color) {
+        topLinePaint.setColor(color);
+        if (cache != null) {
+            cache.recycle();
+            cache = null;
+        }
+        invalidate();
+    }
+
+    public void setBottomLineColor(int color) {
+        bottomLinePaint.setColor(color);
+        if (cache != null) {
+            cache.recycle();
+            cache = null;
+        }
+        invalidate();
     }
 }

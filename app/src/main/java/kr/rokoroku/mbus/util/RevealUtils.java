@@ -57,7 +57,6 @@ public class RevealUtils {
 
         } catch (Exception e) {
             Log.e("RevealUtils", "Exception in RevealUtils", e);
-            Crashlytics.logException(e);
             if(listener != null) {
                 listener.onAnimationStart();
                 listener.onAnimationEnd();

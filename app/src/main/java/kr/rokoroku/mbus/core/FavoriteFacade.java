@@ -3,7 +3,6 @@ package kr.rokoroku.mbus.core;
 import android.content.Context;
 import android.support.annotation.AttrRes;
 import android.support.annotation.Nullable;
-import android.support.design.widget.Snackbar;
 
 import java.util.List;
 
@@ -11,6 +10,7 @@ import kr.rokoroku.mbus.BaseApplication;
 import kr.rokoroku.mbus.R;
 import kr.rokoroku.mbus.data.model.Favorite;
 import kr.rokoroku.mbus.data.model.FavoriteGroup;
+import kr.rokoroku.mbus.data.model.FavoriteItem;
 import kr.rokoroku.mbus.data.model.Provider;
 import kr.rokoroku.mbus.data.model.Route;
 import kr.rokoroku.mbus.data.model.RouteStation;
@@ -131,7 +131,7 @@ public class FavoriteFacade {
 
     public FavoriteGroup addToFavorite(FavoriteGroup favoriteGroup, Route route, RouteStation routeStation) {
         if (favoriteGroup == null) favoriteGroup = getDefaultFavoriteGroup();
-        FavoriteGroup.FavoriteItem item = new FavoriteGroup.FavoriteItem(route);
+        FavoriteItem item = new FavoriteItem(route);
         if (routeStation != null) item.setExtraData(routeStation);
 
         favoriteGroup.add(item);
@@ -142,7 +142,7 @@ public class FavoriteFacade {
 
     public FavoriteGroup addToFavorite(FavoriteGroup favoriteGroup, Station station, StationRoute stationRoute) {
         if (favoriteGroup == null) favoriteGroup = getDefaultFavoriteGroup();
-        FavoriteGroup.FavoriteItem item = new FavoriteGroup.FavoriteItem(station);
+        FavoriteItem item = new FavoriteItem(station);
         if (stationRoute != null) item.setExtraData(stationRoute);
 
         favoriteGroup.add(item);

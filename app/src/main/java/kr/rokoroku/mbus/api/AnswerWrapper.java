@@ -4,6 +4,8 @@ import com.crashlytics.android.answers.Answers;
 import com.crashlytics.android.answers.CustomEvent;
 import com.google.android.gms.analytics.HitBuilders;
 
+import java.util.List;
+
 import kr.rokoroku.mbus.BaseApplication;
 import kr.rokoroku.mbus.api.gbis.core.GbisRestInterface;
 import kr.rokoroku.mbus.api.gbis.model.GbisBaseInfo;
@@ -15,6 +17,9 @@ import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchMapLineResult;
 import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchRouteResult;
 import kr.rokoroku.mbus.api.gbisweb.model.GbisSearchStationByPosResult;
 import kr.rokoroku.mbus.api.gbisweb.model.GbisStationRouteResult;
+import kr.rokoroku.mbus.api.incheon.core.IncheonWebRestInterface;
+import kr.rokoroku.mbus.api.incheon.data.IncheonArrivalInfo;
+import kr.rokoroku.mbus.api.incheon.data.IncheonBusPosition;
 import kr.rokoroku.mbus.api.seoul.core.SeoulBusRestInterface;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusArrivalList;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusLocationList;
@@ -30,6 +35,8 @@ import kr.rokoroku.mbus.api.seoulweb.model.StationByPositionResult;
 import kr.rokoroku.mbus.api.seoulweb.model.StationRouteResult;
 import kr.rokoroku.mbus.api.seoulweb.model.TopisMapLineResult;
 import kr.rokoroku.mbus.api.seoulweb.model.TopisRealtimeResult;
+import kr.rokoroku.mbus.data.model.RouteStation;
+import kr.rokoroku.mbus.data.model.StationRoute;
 import retrofit.Callback;
 import retrofit.RetrofitError;
 import retrofit.client.Response;
@@ -48,20 +55,20 @@ public class AnswerWrapper {
 
     public static CustomEvent createCustomEvent(String tag, String method) {
         CustomEvent customEvent = new CustomEvent(tag);
-        if (method != null) customEvent.putCustomAttribute(KEY_METHOD, method);
+        if (method != null) customEvent.putCustomAttribute(KEY_METHOD, method.substring(0, method.length() > 100 ? 100 : method.length()));
         return customEvent;
     }
 
     public static CustomEvent createCustomEvent(String tag, String method, String result) {
         CustomEvent customEvent = new CustomEvent(tag);
-        if (method != null) customEvent.putCustomAttribute(KEY_METHOD, method);
-        if (result != null) customEvent.putCustomAttribute(KEY_RESULT, result);
+        if (method != null) customEvent.putCustomAttribute(KEY_METHOD, method.substring(0, method.length() > 100 ? 100 : method.length()));
+        if (result != null) customEvent.putCustomAttribute(KEY_RESULT, result.substring(0, result.length() > 100 ? 100 : result.length()));
         return customEvent;
     }
 
     public static CustomEvent createCustomEvent(String tag, String method, Number value) {
         CustomEvent customEvent = new CustomEvent(tag);
-        if (method != null) customEvent.putCustomAttribute(KEY_METHOD, method);
+        if (method != null) customEvent.putCustomAttribute(KEY_METHOD, method.substring(0, method.length() > 100 ? 100 : method.length()));
         if (value != null) customEvent.putCustomAttribute(KEY_VALUE, value);
         return customEvent;
     }
@@ -289,6 +296,37 @@ public class AnswerWrapper {
                                         Callback<GbisSearchMapLineResult> callback) {
                 callback = createWrappedCallback(callback, "GbisWebRestClient", "getRouteMapLine");
                 gbisWebRestInterface.getRouteMapLine(routeId, callback);
+            }
+        };
+    }
+
+    public static IncheonWebRestInterface wrap(IncheonWebRestInterface adapter) {
+        return new IncheonWebRestInterface() {
+            @Override
+            public void getArrivalInfo(@Query("bstopId") String stationId,
+                                       Callback<IncheonArrivalInfo> callback) {
+                callback = createWrappedCallback(callback, "IncheonWebRestClient", "getRouteRealtime");
+                adapter.getArrivalInfo(stationId, callback);
+            }
+
+            @Override
+            public void getRouteRealtime(@Query("routeid") String routeId,
+                                         Callback<IncheonBusPosition> callback) {
+                callback = createWrappedCallback(callback, "IncheonWebRestClient", "getRouteRealtime");
+                adapter.getRouteRealtime(routeId, callback);
+            }
+
+            @Override
+            public void getRouteStations(@Query("routeid") String routeId,
+                                         Callback<List<RouteStation>> callback) {
+                callback = createWrappedCallback(callback, "IncheonWebRestClient", "getRouteStations");
+                adapter.getRouteStations(routeId, callback);
+            }
+
+            @Override
+            public void getStationRoutes(@Field("nodeid") String stationId, Callback<List<StationRoute>> callback) {
+                callback = createWrappedCallback(callback, "IncheonWebRestClient", "getStationRoutes");
+                adapter.getStationRoutes(stationId, callback);
             }
         };
     }

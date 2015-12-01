@@ -6,6 +6,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+import kr.rokoroku.mbus.BaseApplication;
+
 /**
  * Created by rok on 2015. 6. 3..
  */
@@ -17,7 +19,7 @@ public class TimeUtils {
 
     public static boolean checkShouldUpdate(Long timestamp) {
         return timestamp < 0 ||
-                System.currentTimeMillis() - timestamp > 20000;
+                System.currentTimeMillis() - timestamp > (BaseApplication.REFRESH_INTERVAL / 2);
     }
 
     public static DateFormat getSeoulBusDateFormat() {

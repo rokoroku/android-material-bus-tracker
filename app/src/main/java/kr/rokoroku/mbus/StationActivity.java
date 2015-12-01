@@ -62,7 +62,7 @@ public class StationActivity extends AbstractBaseActivity
     private FloatingActionButton mAddFavoriteSelectedButton;
 
     private StationDataProvider mStationDataProvider;
-    private RecyclerView.Adapter mBusStationAdapter;
+    private StationAdapter mBusStationAdapter;
     private RecyclerView.LayoutManager mLayoutManager;
     private RecyclerViewExpandableItemManager mRecyclerViewExpandableItemManager;
     private RecyclerViewExpandableItemManager.OnGroupExpandListener mGroupExpandListener;
@@ -191,6 +191,7 @@ public class StationActivity extends AbstractBaseActivity
             if (isRefreshing) return false;
             else isRefreshing = true;
 
+            mBusStationAdapter.clearCache();
             if (station.getId() == null && station.getLocalId() != null && station.getProvider().equals(Provider.SEOUL)) {
                 ApiFacade.getInstance().getSeoulWebRestClient().getStationBaseInfo(station.getLocalId(), new ApiWrapperInterface.Callback<Station>() {
                     @Override
@@ -236,7 +237,7 @@ public class StationActivity extends AbstractBaseActivity
                                 public void onComplete(boolean success, List<ArrivalInfo> value) {
                                     if (success && value != null) {
                                         mStationDataProvider.setArrivalInfos(value);
-                                        mBusStationAdapter.notifyDataSetChanged();
+                                        runOnUiThread(mBusStationAdapter::notifyDataSetChanged);
                                         scheduleTimer(BaseApplication.REFRESH_INTERVAL);
                                     }
                                     if (mRefreshActionItem != null) {

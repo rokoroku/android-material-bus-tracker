@@ -6,8 +6,6 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
-import android.os.Handler;
-import android.support.design.widget.CoordinatorLayout;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.TypedValue;
@@ -44,9 +42,6 @@ import kr.rokoroku.mbus.util.GeoUtils;
 import kr.rokoroku.mbus.util.SimpleProgressCallback;
 import kr.rokoroku.mbus.util.ThemeUtils;
 import kr.rokoroku.mbus.util.ViewUtils;
-import retrofit.Callback;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
 
 /**
  * Created by rok on 2015. 7. 17..
@@ -151,8 +146,8 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
 
     public void updateLocation(boolean force) {
         GoogleMap map = getMap();
-        if (map != null && map.getMyLocation() != null) {
-            Location myLocation = map.getMyLocation();
+        if (map != null && LocationClient.getLastKnownLocation() != null) {
+            Location myLocation = LocationClient.getLastKnownLocation();
             onLocationUpdate(myLocation);
 
         } else {
@@ -179,19 +174,19 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
 
                 ApiFacade.getInstance().getRouteData(route, null, new SimpleProgressCallback<Route>() {
                     @Override
-                    public void onComplete(boolean success, Route value) {
-                        mRouteExtra = value;
-                        List<MapLine> mapLineList = value.getMapLineList();
+                    public void onComplete(boolean success, Route route) {
+                        mRouteExtra = route;
+                        List<MapLine> mapLineList = route.getMapLineList();
                         if (mapLineList == null) {
-                            ApiFacade.getInstance().getRouteMapLine(value, new Callback<List<MapLine>>() {
+                            ApiFacade.getInstance().getRouteMapLine(route, new SimpleProgressCallback<List<MapLine>>() {
                                 @Override
-                                public void success(List<MapLine> mapLines, Response response) {
-                                    value.setMapLineList(mapLines);
-                                    drawRoute(value);
+                                public void onComplete(boolean success, List<MapLine> result) {
+                                    mRouteExtra.setMapLineList(result);
+                                    drawRoute(mRouteExtra);
                                 }
 
                                 @Override
-                                public void failure(RetrofitError error) {
+                                public void onError(int progress, Throwable t) {
                                     if (mListener != null && getActivity() != null) {
                                         mListener.onErrorMessage(getString(R.string.error_failed_to_retrieve_map_line));
                                     }
@@ -199,7 +194,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
 
                             });
                         } else {
-                            new Handler().postDelayed(() -> drawRoute(route), 1000);
+                            ViewUtils.runOnUiThread(() -> drawRoute(route), 1000);
                         }
 
                     }
@@ -287,6 +282,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
 
         int paddingTop = ViewUtils.getStatusBarHeight(context) + ThemeUtils.getDimension(context, android.R.attr.actionBarSize);
         map.setPadding(0, paddingTop, 0, 0);
+
         map.setMyLocationEnabled(true);
         map.setOnCameraChangeListener(this);
         map.setOnInfoWindowClickListener(this);

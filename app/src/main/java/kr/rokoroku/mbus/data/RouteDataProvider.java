@@ -140,11 +140,11 @@ public class RouteDataProvider {
             return busLocation;
         }
 
-        public int getId() {
+        public long getId() {
             if (type == Type.STATION) {
-                return routeStation.getId() != null ? Integer.parseInt(routeStation.getId()) : routeStation.hashCode();
+                return routeStation.getId() != null ? Long.parseLong(routeStation.getId() + routeStation.getSequence()) : routeStation.hashCode();
             } else {
-                return busLocation.getId() != null ? Integer.parseInt(busLocation.getId()) : busLocation.hashCode();
+                return busLocation.getId() != null ? Long.parseLong(busLocation.getId()) : busLocation.hashCode();
             }
         }
 

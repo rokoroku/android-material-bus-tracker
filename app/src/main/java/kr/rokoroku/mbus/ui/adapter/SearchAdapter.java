@@ -4,39 +4,28 @@ package kr.rokoroku.mbus.ui.adapter;
  * Created by rok on 2015. 6. 2..
  */
 
-
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Typeface;
-import android.os.Build;
 import android.os.Parcelable;
-import android.support.v7.internal.view.menu.MenuBuilder;
-import android.support.v7.internal.view.menu.MenuPopupHelper;
-import android.support.v7.widget.ListPopupWindow;
+import android.support.v7.view.menu.MenuBuilder;
 import android.support.v7.widget.RecyclerView;
 import android.util.TypedValue;
-import android.view.Gravity;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.PopupMenu;
-import android.widget.PopupWindow;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import kr.rokoroku.mbus.RouteActivity;
 import kr.rokoroku.mbus.R;
+import kr.rokoroku.mbus.RouteActivity;
 import kr.rokoroku.mbus.StationActivity;
 import kr.rokoroku.mbus.data.SearchDataProvider;
 import kr.rokoroku.mbus.data.model.Provider;
 import kr.rokoroku.mbus.data.model.Route;
 import kr.rokoroku.mbus.data.model.Station;
-import kr.rokoroku.mbus.ui.widget.QuickAction;
 import kr.rokoroku.mbus.util.FormatUtils;
 import kr.rokoroku.mbus.util.ThemeUtils;
 import kr.rokoroku.mbus.util.ViewUtils;

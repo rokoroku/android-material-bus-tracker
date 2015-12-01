@@ -17,23 +17,17 @@
 apply plugin: 'com.android.library'
 
 android {
+    compileSdkVersion 23
+    buildToolsVersion '23.0.2'
+
     defaultConfig {
         minSdkVersion 9
-        targetSdkVersion 22
-
-        compileSdkVersion 22
-        buildToolsVersion "22.0.1"
-
-        versionCode 72
-        versionName "0.7.2"
+        targetSdkVersion 23
+        versionCode 85
+        versionName "0.8.5"
     }
     buildTypes {
         release {
-            minifyEnabled false
-            shrinkResources false
-            consumerProguardFiles 'proguard-rules.pro'
-        }
-        debug {
             minifyEnabled false
             shrinkResources false
             consumerProguardFiles 'proguard-rules.pro'
@@ -42,6 +36,6 @@ android {
 }
 
 dependencies {
-    compile 'com.android.support:appcompat-v7:22.2.0'
-    compile 'com.android.support:recyclerview-v7:22.2.0'
+    compile 'com.android.support:appcompat-v7:23.1.1'
+    compile 'com.android.support:recyclerview-v7:23.1.1'
 }

@@ -17,6 +17,7 @@ import kr.rokoroku.mbus.core.FavoriteFacade;
 import kr.rokoroku.mbus.data.model.ArrivalInfo;
 import kr.rokoroku.mbus.data.model.Favorite;
 import kr.rokoroku.mbus.data.model.FavoriteGroup;
+import kr.rokoroku.mbus.data.model.FavoriteItem;
 import kr.rokoroku.mbus.data.model.Provider;
 import kr.rokoroku.mbus.data.model.Route;
 import kr.rokoroku.mbus.data.model.RouteType;
@@ -150,15 +151,15 @@ public class StationDataProvider {
         Favorite favorite = FavoriteFacade.getInstance().getCurrentFavorite();
         for (FavoriteGroup favoriteGroup : favorite.getFavoriteGroups()) {
             for (int i = 0; i < favoriteGroup.size(); i++) {
-                FavoriteGroup.FavoriteItem favoriteItem = favoriteGroup.get(i);
-                FavoriteGroup.FavoriteItem.Type type = favoriteItem.getType();
-                if (type == FavoriteGroup.FavoriteItem.Type.ROUTE) {
+                FavoriteItem favoriteItem = favoriteGroup.get(i);
+                FavoriteItem.Type type = favoriteItem.getType();
+                if (type == FavoriteItem.Type.ROUTE) {
                     Route data = favoriteItem.getData(Route.class);
                     if (data != null && stationRoute.getRouteId().equals(data.getId())) {
                         return true;
                     }
 
-                } else if(type == FavoriteGroup.FavoriteItem.Type.STATION) {
+                } else if(type == FavoriteItem.Type.STATION) {
                     StationRoute route = favoriteItem.getExtraData(StationRoute.class);
                     if(route != null && stationRoute.getRouteId().equals(route.getRouteId())) {
                         return true;
@@ -271,9 +272,9 @@ public class StationDataProvider {
             }
         }
 
-        public int getId() {
+        public long getId() {
             if (type.equals(Type.ROUTE)) {
-                return getStationRoute().getRouteId().hashCode();
+                return Long.parseLong(getStationRoute().getRouteId());
             } else if (data instanceof RouteType) {
                 return getRouteType().ordinal();
             } else {

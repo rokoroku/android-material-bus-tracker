@@ -462,7 +462,7 @@ public class SearchBox extends RelativeLayout {
      * Force an update of the results
      */
     public void updateResults() {
-        resultList.clear();
+        clearResults();
         int count = 0;
         for (int x = 0; x < searchables.size(); x++) {
             if (searchables.get(x).title.toLowerCase().startsWith(
@@ -477,7 +477,6 @@ public class SearchBox extends RelativeLayout {
         } else {
             results.setVisibility(View.VISIBLE);
         }
-
     }
 
     /**
@@ -815,7 +814,7 @@ public class SearchBox extends RelativeLayout {
     }
 
     private void setInitialResults() {
-        resultList.clear();
+        clearResults();
         int count = 0;
         for (int x = 0; x < initialResults.size(); x++) {
             if (count < 5) {
@@ -840,6 +839,7 @@ public class SearchBox extends RelativeLayout {
         this.results.setVisibility(View.GONE);
         if (listener != null)
             listener.onSearchClosed();
+        clearResults();
         sideButtonStateChanged(true);
         Drawable drawable = (isUserrSideButtonEnabled && sideButtonDrawable != null) ? sideButtonDrawable :
                 context.getResources().getDrawable(R.drawable.ic_action_mic);

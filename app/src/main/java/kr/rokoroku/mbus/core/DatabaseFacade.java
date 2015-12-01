@@ -6,8 +6,6 @@ import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.util.Log;
 
-import com.crashlytics.android.Crashlytics;
-
 import org.mapdb.BTreeKeySerializer;
 import org.mapdb.BTreeMap;
 import org.mapdb.Bind;
@@ -27,6 +25,7 @@ import java.util.Set;
 import kr.rokoroku.mbus.BaseApplication;
 import kr.rokoroku.mbus.data.model.Favorite;
 import kr.rokoroku.mbus.data.model.FavoriteGroup;
+import kr.rokoroku.mbus.data.model.FavoriteItem;
 import kr.rokoroku.mbus.data.model.Provider;
 import kr.rokoroku.mbus.data.model.Route;
 import kr.rokoroku.mbus.data.model.SearchHistory;
@@ -95,22 +94,21 @@ public class DatabaseFacade {
 
         } catch (Exception e) {
             Log.e(TAG, "Exception in DatabaseFacade", e);
-            Crashlytics.logException(e);
-
-            boolean crashedBefore = preferences.getBoolean(BaseApplication.PREFERENCE_DB_CRASHED_BEFORE, false);
-            if (crashedBefore) {
-                recreateFile();
-                preferences.edit()
-                        .putBoolean(BaseApplication.PREFERENCE_DB_CRASHED_BEFORE, false)
-                        .commit();
-
-            } else {
-                preferences.edit()
-                        .putBoolean(BaseApplication.PREFERENCE_DB_CRASHED_BEFORE, true)
-                        .commit();
-
-                android.os.Process.killProcess(android.os.Process.myPid());
-            }
+//
+//            boolean crashedBefore = preferences.getBoolean(BaseApplication.PREFERENCE_DB_CRASHED_BEFORE, false);
+//            if (crashedBefore) {
+//                recreateFile();
+//                preferences.edit()
+//                        .putBoolean(BaseApplication.PREFERENCE_DB_CRASHED_BEFORE, false)
+//                        .commit();
+//
+//            } else {
+//                preferences.edit()
+//                        .putBoolean(BaseApplication.PREFERENCE_DB_CRASHED_BEFORE, true)
+//                        .commit();
+//
+//                android.os.Process.killProcess(android.os.Process.myPid());
+//            }
         }
     }
 
@@ -145,14 +143,17 @@ public class DatabaseFacade {
                     .fileDB(userfile)
                     .asyncWriteEnable()
                     .cacheHardRefEnable()
+                    .closeOnJvmShutdown()
                     .make();
             this.dataDB = DBMaker
                     .fileDB(datafile)
                     .asyncWriteEnable()
                     .cacheHardRefEnable()
+                    .closeOnJvmShutdown()
                     .make();
         } catch (Exception e) {
             Log.e(TAG, "Exception in DatabaseFacade", e);
+            recreateFile();
         }
     }
 
@@ -186,6 +187,7 @@ public class DatabaseFacade {
         }
 
         this.searchHistoryTable = userDB.hashSetCreate(TABLE_SEARCH_HISTORY)
+                .serializer(SearchHistory.SERIALIZER)
                 .expireMaxSize(10)
                 .makeOrGet();
 
@@ -226,14 +228,13 @@ public class DatabaseFacade {
         createOrLoadTables();
     }
 
-    public Route getRoute(Provider provider, String routeId) {
+    public synchronized Route getRoute(Provider provider, String routeId) {
         Map<String, Route> routeMap = routeTable.get(provider);
         if (routeMap != null) return routeMap.get(routeId);
         else return null;
     }
 
-    public Route getRandomRoute() {
-
+    public synchronized Route getRandomRoute() {
         Random random = new Random();
         for (BTreeMap<String, Route> stringRouteBTreeMap : routeTable.values()) {
             Object[] list = stringRouteBTreeMap.values().toArray();
@@ -267,13 +268,13 @@ public class DatabaseFacade {
         }
     }
 
-    public Station getStation(Provider provider, String stationId) {
+    public synchronized Station getStation(Provider provider, String stationId) {
         Map<String, Station> stationMap = stationTable.get(provider);
         if (stationMap != null) return stationMap.get(stationId);
         else return temporalStationCache.get(stationId);
     }
 
-    public Station getStationWithSecondaryKey(Provider provider, String localId) {
+    public synchronized Station getStationWithSecondaryKey(Provider provider, String localId) {
         Map<String, Station> primaryMap = stationTable.get(provider);
         Map<String, String> secondaryMap = secondaryStationKeyTable.get(provider);
         String stationId = secondaryMap.get(localId);
@@ -342,7 +343,7 @@ public class DatabaseFacade {
         }
     }
 
-    public Favorite getBookmark(String id) {
+    public synchronized Favorite getBookmark(String id) {
         return bookmarkTable.get(id);
     }
 
@@ -355,37 +356,39 @@ public class DatabaseFacade {
         return searchHistoryTable;
     }
 
-    AsyncTask<Void, Void, Void> commitTask;
+    AsyncTask<Void, Void, Boolean> commitTask;
 
     public synchronized void commitAsync() {
         if (commitTask == null) {
-            commitTask = new AsyncTask<Void, Void, Void>() {
+            commitTask = new AsyncTask<Void, Void, Boolean>() {
                 @Override
-                protected Void doInBackground(Void[] params) {
+                protected Boolean doInBackground(Void[] params) {
+                    boolean success = true;
                     synchronized (DatabaseFacade.this) {
-                        boolean success = true;
 
                         if (isDataDbChanged) try {
                             dataDB.commit();
                         } catch (Exception e) {
+                            e.printStackTrace();
                             success = false;
                         }
                         if (isUserDbChanged) try {
                             userDB.commit();
                         } catch (Exception e) {
+                            e.printStackTrace();
                             success = false;
-                        }
-                        if (!success) {
-                            reopen();
                         }
                         isUserDbChanged = false;
                         isDataDbChanged = false;
                     }
-                    return null;
+                    return success;
                 }
 
                 @Override
-                protected void onPostExecute(Void o) {
+                protected void onPostExecute(Boolean result) {
+                    if (!result) {
+                        reopen();
+                    }
                     commitTask = null;
                 }
             };
@@ -394,6 +397,7 @@ public class DatabaseFacade {
     }
 
     private synchronized void reopen() {
+        Log.d("DatabaseFacade", "reopened");
         userDB.close();
         dataDB.close();
         createOrLoadFile();
@@ -411,7 +415,7 @@ public class DatabaseFacade {
             for (FavoriteGroup favoriteGroup : favorite.getFavoriteGroups()) {
                 Log.d(TAG, "favoriteGroup: " + favoriteGroup.toString());
                 for (int i = 0; i < favoriteGroup.size(); i++) {
-                    FavoriteGroup.FavoriteItem favoriteItem = favoriteGroup.get(i);
+                    FavoriteItem favoriteItem = favoriteGroup.get(i);
                     Log.d(TAG, "favoriteGroupItem: " + favoriteItem.toString());
                 }
             }
