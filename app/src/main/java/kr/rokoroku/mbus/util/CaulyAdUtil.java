@@ -62,7 +62,7 @@ public class CaulyAdUtil {
                     .layoutID(R.layout.row_ad_view)
                     .iconImageID(R.id.icon)
                     .titleID(R.id.title)
-                    .subtitleID(R.id.subtitle)
+                    //.subtitleID(R.id.subtitle)
                     .textID(R.id.text)
                     .clickingView(R.id.card_view)
                     .sponsorPosition(R.id.sponsor, CaulyAdInfo.Direction.RIGHT)

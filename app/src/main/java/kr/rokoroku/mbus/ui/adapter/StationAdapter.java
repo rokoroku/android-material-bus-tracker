@@ -28,8 +28,10 @@ import com.h6ah4i.android.widget.advrecyclerview.utils.AbstractExpandableItemAda
 import com.h6ah4i.android.widget.advrecyclerview.utils.AbstractExpandableItemViewHolder;
 
 import java.lang.ref.WeakReference;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -38,6 +40,7 @@ import kr.rokoroku.mbus.RouteActivity;
 import kr.rokoroku.mbus.R;
 import kr.rokoroku.mbus.core.ApiFacade;
 import kr.rokoroku.mbus.core.FavoriteFacade;
+import kr.rokoroku.mbus.data.RouteDataProvider;
 import kr.rokoroku.mbus.data.StationDataProvider;
 import kr.rokoroku.mbus.data.model.ArrivalInfo;
 import kr.rokoroku.mbus.data.model.Provider;
@@ -77,6 +80,10 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
         // ExpandableItemAdapter requires stable ID, and also
         // have to implement the getGroupItemId()/getChildItemId() methods appropriately.
         setHasStableIds(true);
+    }
+
+    public void clearCache() {
+        mReloadingArrivalInfoSet.clear();
     }
 
     @Override
@@ -226,51 +233,55 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
             holder.setItem(null, childPosition);
             return;
         }
+
         StationRoute stationRoute = item.getStationRoute();
-        holder.mRouteId = stationRoute.getRouteId();
+        final String routeId = stationRoute.getRouteId();
+        holder.mRouteId = routeId;
 
         if (stationRoute.getArrivalInfo() == null || TimeUtils.checkShouldUpdate(stationRoute.getArrivalInfo().getTimestamp())) {
             synchronized (mReloadingArrivalInfoSet) {
-                if (!mReloadingArrivalInfoSet.contains(stationRoute.getRouteId())) {
-                    mReloadingArrivalInfoSet.add(stationRoute.getRouteId());
-
+                if (!mReloadingArrivalInfoSet.contains(routeId)) {
+                    mReloadingArrivalInfoSet.add(routeId);
                     ApiFacade.getInstance().getArrivalInfo(station, stationRoute, new SimpleProgressCallback<List<ArrivalInfo>>() {
                         @Override
                         public void onComplete(boolean success, List<ArrivalInfo> value) {
-                            holder.setItem(stationRoute.getArrivalInfo(), childPosition);
-                            ViewUtils.runOnUiThread(() -> {
-                                notifyDataSetChanged();
-                                synchronized (mReloadingArrivalInfoSet) {
-                                    mReloadingArrivalInfoSet.remove(stationRoute.getRouteId());
-                                }
-                            }, 50);
+                            ArrivalInfo resultArrivalInfo = stationRoute.getArrivalInfo();
+                            if (resultArrivalInfo == null) {
+                                resultArrivalInfo = new ArrivalInfo(routeId, station.getId());
+                            }
+                            stationRoute.setArrivalInfo(resultArrivalInfo);
+                            ViewUtils.runOnUiThread(StationAdapter.this::notifyDataSetChanged);
+                            ViewUtils.runOnUiThread(() -> mReloadingArrivalInfoSet.remove(routeId), 1000);
                         }
 
                         @Override
                         public void onError(int progress, Throwable t) {
                             Toast.makeText(holder.itemView.getContext(), t.getMessage(), Toast.LENGTH_LONG).show();
                             holder.setItem(null, childPosition);
-                            ViewUtils.runOnUiThread(() -> {
-                                notifyDataSetChanged();
-                                synchronized (mReloadingArrivalInfoSet) {
-                                    mReloadingArrivalInfoSet.remove(stationRoute.getRouteId());
-                                }
-                            }, 50);
+                            ViewUtils.runOnUiThread(() -> mReloadingArrivalInfoSet.remove(routeId), 1000);
                         }
                     });
+                    return;
                 }
             }
+            holder.setItem(stationRoute.getArrivalInfo(), childPosition);
+
         } else {
             holder.setItem(stationRoute.getArrivalInfo(), childPosition);
         }
 
         FavoriteFacade.Color cardColor = FavoriteFacade.getInstance().getFavoriteRouteColor(
-                stationRoute.getProvider(), stationRoute.getRouteId());
+                stationRoute.getProvider(), routeId);
         holder.mCardView.setCardBackgroundColor(ThemeUtils.dimColor(cardColor.getColor(holder.itemView.getContext()), 0.95f));
-
         StationDataProvider.StationListItemData dataAfter = getItem(groupPosition + 1);
-        boolean roundBottom = dataAfter == null || dataAfter.getType().equals(StationDataProvider.StationListItemData.Type.SECTION);
-        holder.mCardView.setRoundBottom(roundBottom);
+
+        int childCount = getChildCount(groupPosition);
+        if(childCount == 1 || childPosition == 1) {
+            holder.mCardView.setRoundBottom(dataAfter == null || dataAfter.getType().equals(StationDataProvider.StationListItemData.Type.SECTION));
+        } else if(childCount == 2 && childPosition == 0) {
+            holder.mCardView.setRoundBottom(false);
+        }
+
     }
 
     public int getExpandedPosition() {
@@ -699,7 +710,7 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
                     if (timeDiff >= 0) {
 
                         String timeString = context.getString(R.string.bus_arrival_behind_time_in_minute,
-                                (int) Math.floor(timeDiff / 1000 / 60));
+                                (int) Math.round(timeDiff / 1000 / 60 + 0.5));
 
                         mRemainTime.setText(timeString);
                         if (mRemainTime.getVisibility() == View.GONE) {

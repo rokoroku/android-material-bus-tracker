@@ -143,7 +143,7 @@ public class FloatingActionLayout extends FrameLayout {
                         .start();
             } else {
                 Animation anim = android.view.animation.AnimationUtils
-                        .loadAnimation(layout.getContext(), android.support.design.R.anim.fab_in);
+                        .loadAnimation(layout.getContext(), android.support.design.R.anim.design_fab_in);
                 anim.setDuration(200L);
                 anim.setInterpolator(AnimationUtils.FAST_OUT_SLOW_IN_INTERPOLATOR);
                 layout.startAnimation(anim);
@@ -174,7 +174,7 @@ public class FloatingActionLayout extends FrameLayout {
                         .start();
             } else {
                 Animation anim = android.view.animation.AnimationUtils
-                        .loadAnimation(layout.getContext(), android.support.design.R.anim.fab_out);
+                        .loadAnimation(layout.getContext(), android.support.design.R.anim.design_fab_out);
                 anim.setInterpolator(AnimationUtils.FAST_OUT_SLOW_IN_INTERPOLATOR);
                 anim.setDuration(200L);
                 anim.setAnimationListener(new AnimationUtils.AnimationListenerAdapter() {

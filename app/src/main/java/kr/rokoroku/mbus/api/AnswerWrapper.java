@@ -55,20 +55,20 @@ public class AnswerWrapper {
 
     public static CustomEvent createCustomEvent(String tag, String method) {
         CustomEvent customEvent = new CustomEvent(tag);
-        if (method != null) customEvent.putCustomAttribute(KEY_METHOD, method);
+        if (method != null) customEvent.putCustomAttribute(KEY_METHOD, method.substring(0, method.length() > 100 ? 100 : method.length()));
         return customEvent;
     }
 
     public static CustomEvent createCustomEvent(String tag, String method, String result) {
         CustomEvent customEvent = new CustomEvent(tag);
-        if (method != null) customEvent.putCustomAttribute(KEY_METHOD, method);
-        if (result != null) customEvent.putCustomAttribute(KEY_RESULT, result);
+        if (method != null) customEvent.putCustomAttribute(KEY_METHOD, method.substring(0, method.length() > 100 ? 100 : method.length()));
+        if (result != null) customEvent.putCustomAttribute(KEY_RESULT, result.substring(0, result.length() > 100 ? 100 : result.length()));
         return customEvent;
     }
 
     public static CustomEvent createCustomEvent(String tag, String method, Number value) {
         CustomEvent customEvent = new CustomEvent(tag);
-        if (method != null) customEvent.putCustomAttribute(KEY_METHOD, method);
+        if (method != null) customEvent.putCustomAttribute(KEY_METHOD, method.substring(0, method.length() > 100 ? 100 : method.length()));
         if (value != null) customEvent.putCustomAttribute(KEY_VALUE, value);
         return customEvent;
     }

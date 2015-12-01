@@ -693,7 +693,8 @@ public class ApiFacade {
                         wrappedClient.getStationArrivalInfo(externalStation.getId(), new ApiWrapperInterface.Callback<List<ArrivalInfo>>() {
                             @Override
                             public void onSuccess(List<ArrivalInfo> result) {
-                                if (result != null) {
+                                if (result != null && !result.isEmpty()) {
+                                    station.setArrivalInfos(result);
                                     externalStation.setArrivalInfos(result);
                                     resultArrivalInfos.addAll(result);
                                 }

@@ -335,7 +335,9 @@ public class Station implements Parcelable, Serializable {
             List<ArrivalInfo> arrivalInfoList = new ArrayList<>();
             for (StationRoute stationRoute : getStationRouteList()) {
                 ArrivalInfo arrivalInfo = getArrivalInfo(stationRoute.getRouteId());
-                arrivalInfoList.add(arrivalInfo);
+                if (arrivalInfo != null) {
+                    arrivalInfoList.add(arrivalInfo);
+                }
             }
             return arrivalInfoList;
         }
@@ -385,9 +387,8 @@ public class Station implements Parcelable, Serializable {
             setStationRouteList(stationRoutes);
         } else {
             for (StationRoute stationRoute : stationRoutes) {
-                if (!stationRouteList.contains(stationRoute)) {
-                    stationRouteList.add(stationRoute);
-                }
+                stationRouteList.remove(stationRoute);
+                stationRouteList.add(stationRoute);
             }
         }
     }
@@ -584,13 +585,13 @@ public class Station implements Parcelable, Serializable {
         public static Serializer<RemoteEntry> SERIALIZER = new Serializer<RemoteEntry>() {
             @Override
             public void serialize(DataOutput out, RemoteEntry value) throws IOException {
-                out.writeUTF(value.key);
+                SerializeUtil.writeString(out, value.key);
                 Provider.SERIALIZER.serialize(out, value.provider);
             }
 
             @Override
             public RemoteEntry deserialize(DataInput in, int available) throws IOException {
-                String key = in.readUTF();
+                String key = SerializeUtil.readString(in);
                 Provider provider = Provider.SERIALIZER.deserialize(in, available);
 
                 return new RemoteEntry(provider, key);

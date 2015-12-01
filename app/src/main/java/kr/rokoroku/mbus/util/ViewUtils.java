@@ -2,7 +2,6 @@ package kr.rokoroku.mbus.util;
 
 import android.content.Context;
 import android.content.res.Resources;
-import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -10,25 +9,17 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.annotation.AttrRes;
-import android.support.annotation.ColorRes;
 import android.support.annotation.MenuRes;
 import android.support.v4.view.ViewCompat;
-import android.support.v7.internal.view.menu.MenuBuilder;
-import android.support.v7.internal.view.menu.MenuPopupHelper;
+import android.support.v7.view.menu.MenuBuilder;
+import android.support.v7.view.menu.MenuPopupHelper;
 import android.support.v7.widget.ListPopupWindow;
 import android.util.DisplayMetrics;
-import android.util.Log;
-import android.util.NoSuchPropertyException;
-import android.util.TypedValue;
 import android.view.Display;
 import android.view.Gravity;
 import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
-
-import kr.rokoroku.mbus.R;
 
 /**
  * Created by rok on 2015. 5. 29..

@@ -92,8 +92,11 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
         this.mExpandableItemManager = mExpandableItemManager;
     }
 
-    public void clearArrivalInfoCache() {
-        if (mArrivalInfoCache != null) mArrivalInfoCache.clear();
+    public void clearCache() {
+        synchronized (mReloadingArrivalInfoSet) {
+            mArrivalInfoCache = null;
+            mReloadingArrivalInfoSet.clear();
+        }
     }
 
     @Override
@@ -110,8 +113,8 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
             RouteDataProvider.RouteListItemData item = mDataProvider.getItem(groupPosition);
             RouteStation routeStation = item.getRouteStation();
 
-            if(routeStation != null) {
-                ArrivalInfo arrivalInfo = routeStation.getArrivalInfo();
+            if(routeStation != null && routeStation.isBusStop()) {
+                ArrivalInfo arrivalInfo = getArrivalInfoCache(routeStation.getLocalId());
                 if(arrivalInfo != null && arrivalInfo.getBusArrivalItem2() != null) {
                     return 2;
                 } else {
@@ -251,6 +254,12 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
 
     @Override
     public boolean onHookGroupExpand(int groupPosition, boolean fromUser) {
+
+        int expandedPosition = getExpandedPosition();
+        if (expandedPosition > 0) {
+            mExpandableItemManager.collapseGroup(expandedPosition);
+        }
+
         mExpandedGroupId = getGroupId(groupPosition);
         return super.onHookGroupExpand(groupPosition, fromUser);
     }
@@ -274,17 +283,22 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
 
         if (routeStation != null) {
             holder.setColorByStationId(routeStation.getId());
-            ArrivalInfo arrivalInfo = getArrivalInfoCache(routeStation.getLocalId());
+
+            final String localStationId = routeStation.getLocalId();
+            final String routeId = routeStation.getRouteId();
+
+            ArrivalInfo arrivalInfo = getArrivalInfoCache(localStationId);
             if (arrivalInfo == null) arrivalInfo = routeStation.getArrivalInfo();
             if (arrivalInfo == null || TimeUtils.checkShouldUpdate(arrivalInfo.getTimestamp())) {
-                StationRoute stationRoute = routeStation.getStationRoute(routeStation.getRouteId());
+                StationRoute stationRoute = routeStation.getStationRoute(routeId);
                 if (stationRoute == null) {
-                    stationRoute = new StationRoute(mDataProvider.getRoute(), routeStation.getLocalId());
+                    stationRoute = new StationRoute(mDataProvider.getRoute(), localStationId);
                 }
 
-                synchronized (mReloadingArrivalInfoSet) {
-                    if (!mReloadingArrivalInfoSet.contains(routeStation.getRouteId())) {
-                        mReloadingArrivalInfoSet.add(routeStation.getRouteId());
+                if (childPosition == 0) synchronized (mReloadingArrivalInfoSet) {
+                    if (!mReloadingArrivalInfoSet.contains(localStationId)) {
+                        mReloadingArrivalInfoSet.add(localStationId);
+
                         final StationRoute finalStationRoute = stationRoute;
                         ApiFacade.getInstance().getArrivalInfo(routeStation, stationRoute, new SimpleProgressCallback<List<ArrivalInfo>>() {
                             @Override
@@ -293,16 +307,13 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
                                 holder.setItem(resultArrivalInfo, childPosition);
                                 holder.setColorByStationId(routeStation.getId());
                                 if (resultArrivalInfo == null) {
-                                    resultArrivalInfo = new ArrivalInfo(routeStation.getRouteId(), routeStation.getId());
+                                    resultArrivalInfo = new ArrivalInfo(routeId, routeStation.getId());
                                 }
                                 routeStation.putArrivalInfo(resultArrivalInfo);
                                 putArrivalInfoCache(finalStationRoute.getLocalStationId(), resultArrivalInfo);
-                                ViewUtils.runOnUiThread(() -> {
-                                    notifyDataSetChanged();
-                                    synchronized (mReloadingArrivalInfoSet) {
-                                        mReloadingArrivalInfoSet.remove(routeStation.getRouteId());
-                                    }
-                                }, 50);
+
+                                ViewUtils.runOnUiThread(RouteAdapter.this::notifyDataSetChanged);
+                                ViewUtils.runOnUiThread(() -> mReloadingArrivalInfoSet.remove(localStationId), 1000);
                             }
 
                             @Override
@@ -310,19 +321,21 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
                                 Toast.makeText(holder.itemView.getContext(), t.getMessage(), Toast.LENGTH_LONG).show();
                                 holder.setItem(null, childPosition);
                                 holder.setColorByStationId(routeStation.getId());
-                                ViewUtils.runOnUiThread(() -> {
-                                    notifyDataSetChanged();
-                                    synchronized (mReloadingArrivalInfoSet) {
-                                        mReloadingArrivalInfoSet.remove(routeStation.getRouteId());
-                                    }
-                                }, 50);
+                                ViewUtils.runOnUiThread(() -> mReloadingArrivalInfoSet.remove(localStationId), 1000);
                             }
                         });
+                        return;
                     }
                 }
+                holder.setItem(arrivalInfo, childPosition);
+
             } else {
                 holder.setItem(arrivalInfo, childPosition);
                 holder.setColorByStationId(arrivalInfo.getStationId());
+                if (childPosition == 0 && getArrivalInfoCache(localStationId) == null) {
+                    putArrivalInfoCache(localStationId, arrivalInfo);
+                    ViewUtils.runOnUiThread(this::notifyDataSetChanged, 50);
+                }
             }
         }
 
@@ -331,6 +344,7 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
         } else {
             holder.mConnector.setVisibility(View.VISIBLE);
         }
+
         RouteDataProvider.RouteListItemData dataAfter = getItem(groupPosition + 1);
         int childCount = getChildCount(groupPosition);
         if(childCount == 1 || childPosition == 1) {
@@ -454,11 +468,18 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
         }
 
         public void setItem(BusLocation busLocation) {
+            Context context = itemView.getContext();
             mBusTitle.setText(busLocation.getPlateNumber());
+
             int remainSeat = busLocation.getRemainSeat();
             if (remainSeat >= 0) {
                 mBusDescription.setVisibility(View.VISIBLE);
-                mBusDescription.setText("남은 좌석 : " + remainSeat + "석");
+                String remainSeatString;
+                if (remainSeat == 0)
+                    remainSeatString = context.getString(R.string.bus_arrival_no_remain_seat);
+                else
+                    remainSeatString = context.getString(R.string.bus_arrival_remain_seat, remainSeat);
+                mBusDescription.setText(remainSeatString);
             } else {
                 mBusDescription.setVisibility(View.GONE);
             }
@@ -768,7 +789,7 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
                     if (timeDiff >= 0) {
 
                         String timeString = context.getString(R.string.bus_arrival_behind_time_in_minute,
-                                (int) Math.floor(timeDiff / 1000 / 60));
+                                (int) Math.round(timeDiff / 1000 / 60 + 0.5));
 
                         mRemainTime.setText(timeString);
                         if (mRemainTime.getVisibility() == View.GONE) {

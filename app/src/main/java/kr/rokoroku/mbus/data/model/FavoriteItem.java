@@ -9,6 +9,7 @@ import java.io.Serializable;
 import java.util.List;
 
 import kr.rokoroku.mbus.core.DatabaseFacade;
+import kr.rokoroku.mbus.util.SerializeUtil;
 
 /**
  * Created by rok on 15. 8. 29..
@@ -161,15 +162,24 @@ public class FavoriteItem implements Serializable {
         public static final Serializer<AccessKey> SERIALIZER = new Serializer<AccessKey>() {
             @Override
             public void serialize(DataOutput out, AccessKey value) throws IOException {
-                out.writeUTF(value.id);
-                Provider.SERIALIZER.serialize(out, value.provider);
+                if (value != null) {
+                    out.writeByte(1);
+                    SerializeUtil.writeString(out, value.id);
+                    Provider.SERIALIZER.serialize(out, value.provider);
+                } else {
+                    out.writeByte(0);
+                }
             }
 
             @Override
             public AccessKey deserialize(DataInput in, int available) throws IOException {
-                String id = in.readUTF();
-                Provider provider = Provider.SERIALIZER.deserialize(in, available);
-                return new AccessKey(provider, id);
+                if (in.readByte() == 1) {
+                    String id = SerializeUtil.readString(in);
+                    Provider provider = Provider.SERIALIZER.deserialize(in, available);
+                    return new AccessKey(provider, id);
+                } else {
+                    return null;
+                }
             }
         };
 

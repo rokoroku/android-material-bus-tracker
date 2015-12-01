@@ -427,7 +427,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
     public void onSearchTermChanged() {
         if (TextUtils.isEmpty(mSearchBox.getSearchText())) {
             mSearchButton.hide(true);
-        } else {
+        } else if (mSearchButton.isHidden()) {
             mSearchButton.show(true);
         }
     }
@@ -1060,6 +1060,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
 
                     @Override
                     public void onFailedToReceiveNativeAd(CaulyNativeAdView caulyNativeAdView, int i, String s) {
+                        Log.e("CaulyAd", s);
                         mFavoriteAdapter.setAdPosition(-1);
                         showFavoriteFrame();
                     }

@@ -213,7 +213,7 @@ public class RouteActivity extends AbstractBaseActivity
                             public void onComplete(boolean success, Object value) {
                                 if (success) {
                                     scheduleTimer(BaseApplication.REFRESH_INTERVAL);
-                                    mBusRouteAdapter.clearArrivalInfoCache();
+                                    mBusRouteAdapter.clearCache();
                                     mBusRouteAdapter.notifyDataSetChanged();
                                 }
                                 ViewUtils.runOnUiThread(() -> {
@@ -331,9 +331,9 @@ public class RouteActivity extends AbstractBaseActivity
 
         //set listener
         mGroupExpandListener = (i, b) -> {
-            if (mLastExpandedPosition >= 0 && mLastExpandedPosition != i) {
-                mRecyclerViewExpandableItemManager.collapseGroup(mLastExpandedPosition);
-            }
+//            if (mLastExpandedPosition >= 0 && mLastExpandedPosition != i) {
+//                mRecyclerViewExpandableItemManager.collapseGroup(mLastExpandedPosition);
+//            }
             mLastExpandedPosition = i;
             ActionMode actionMode = getActionMode();
             if (actionMode != null) {

@@ -18,6 +18,7 @@ import kr.rokoroku.mbus.api.gbisweb.model.GbisStationRouteResult;
 import kr.rokoroku.mbus.api.seoul.model.SeoulBusRouteByStation;
 import kr.rokoroku.mbus.api.seoulweb.model.StationRouteResult;
 import kr.rokoroku.mbus.core.DatabaseFacade;
+import kr.rokoroku.mbus.util.SerializeUtil;
 
 public class StationRoute implements Parcelable, Serializable, Comparable<StationRoute> {
 
@@ -247,12 +248,13 @@ public class StationRoute implements Parcelable, Serializable, Comparable<Statio
     public static Serializer<StationRoute> SERIALIZER = new Serializer<StationRoute>() {
         @Override
         public void serialize(DataOutput out, StationRoute value) throws IOException {
-            out.writeUTF(value.routeId);
-            out.writeUTF(value.routeName);
-            out.writeUTF(value.stationLocalId);
-            out.writeUTF(value.firstStationName);
-            out.writeUTF(value.lastStationName);
-            out.writeUTF(value.destination);
+
+            SerializeUtil.writeString(out, value.routeId);
+            SerializeUtil.writeString(out, value.routeName);
+            SerializeUtil.writeString(out, value.stationLocalId);
+            SerializeUtil.writeString(out, value.firstStationName);
+            SerializeUtil.writeString(out, value.lastStationName);
+            SerializeUtil.writeString(out, value.destination);
             out.writeInt(value.routeType == null ? Integer.MIN_VALUE : value.routeType.getValue());
             out.writeInt(value.provider == null ? Integer.MIN_VALUE : value.provider.getCityCode());
             out.writeInt(value.sequence);
@@ -261,12 +263,12 @@ public class StationRoute implements Parcelable, Serializable, Comparable<Statio
         @Override
         public StationRoute deserialize(DataInput in, int available) throws IOException {
             StationRoute stationRoute = new StationRoute();
-            stationRoute.routeId = in.readUTF();
-            stationRoute.routeName = in.readUTF();
-            stationRoute.stationLocalId = in.readUTF();
-            stationRoute.firstStationName = in.readUTF();
-            stationRoute.lastStationName = in.readUTF();
-            stationRoute.destination = in.readUTF();
+            stationRoute.routeId = SerializeUtil.readString(in);
+            stationRoute.routeName = SerializeUtil.readString(in);
+            stationRoute.stationLocalId = SerializeUtil.readString(in);
+            stationRoute.firstStationName = SerializeUtil.readString(in);
+            stationRoute.lastStationName = SerializeUtil.readString(in);
+            stationRoute.destination = SerializeUtil.readString(in);
             int typeValue = in.readInt();
             stationRoute.routeType = typeValue == Integer.MIN_VALUE ? null : RouteType.valueOf(typeValue);
             int cityCode = in.readInt();

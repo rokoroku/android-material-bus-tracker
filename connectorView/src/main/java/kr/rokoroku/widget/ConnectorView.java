@@ -123,6 +123,10 @@ public final class ConnectorView extends View {
         int width = getWidth();
         int height = getHeight();
 
+        if (width == 0 || height == 0) {
+            return;
+        }
+
         if (cache != null && (cache.getWidth() != width || cache.getHeight() != height)) {
             cache.recycle();
             cache = null;

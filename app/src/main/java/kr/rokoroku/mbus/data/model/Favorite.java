@@ -132,7 +132,7 @@ public class Favorite implements Serializable {
 
         @Override
         public void serialize(DataOutput out, Favorite value) throws IOException {
-            out.writeUTF(value.name);
+            SerializeUtil.writeString(out, value.name);
             SerializeUtil.writeMap(out, value.coloredRouteTable, Provider.SERIALIZER, stringIntegerMapSerializer);
             SerializeUtil.writeMap(out, value.coloredStationTable, Provider.SERIALIZER, stringIntegerMapSerializer);
             SerializeUtil.writeList(out, value.favoriteGroups, FavoriteGroup.SERIALIZER);
@@ -140,7 +140,7 @@ public class Favorite implements Serializable {
 
         @Override
         public Favorite deserialize(DataInput in, int available) throws IOException {
-            Favorite favorite = new Favorite(in.readUTF());
+            Favorite favorite = new Favorite(SerializeUtil.readString(in));
             favorite.coloredRouteTable = SerializeUtil.readMap(in, Provider.SERIALIZER, stringIntegerMapSerializer);
             favorite.coloredStationTable = SerializeUtil.readMap(in, Provider.SERIALIZER, stringIntegerMapSerializer);
             favorite.favoriteGroups = SerializeUtil.readList(in, FavoriteGroup.SERIALIZER);

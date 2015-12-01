@@ -10,6 +10,8 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.io.Serializable;
 
+import kr.rokoroku.mbus.util.SerializeUtil;
+
 /**
  * Created by rok on 2015. 6. 24..
  */
@@ -62,13 +64,13 @@ public class SearchHistory implements Serializable, Comparable<SearchHistory> {
     public static final Serializer<SearchHistory> SERIALIZER = new Serializer<SearchHistory>() {
         @Override
         public void serialize(DataOutput out, SearchHistory value) throws IOException {
-            out.writeUTF(value.title);
+            SerializeUtil.writeString(out, value.title);
             out.writeLong(value.timestamp);
         }
 
         @Override
         public SearchHistory deserialize(DataInput in, int available) throws IOException {
-            String title = in.readUTF();
+            String title = SerializeUtil.readString(in);
             long timestamp = in.readLong();
             return new SearchHistory(title, timestamp);
         }

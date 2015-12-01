@@ -14,14 +14,24 @@
  *    limitations under the License.
  */
 
-package com.h6ah4i.android.widget.advrecyclerview;
+package com.h6ah4i.android.widget.advrecyclerview.draggable;
 
-import com.h6ah4i.android.widget.advrecyclerview.animator.GeneralItemAnimator;
-import com.h6ah4i.android.widget.advrecyclerview.animator.RefactoredDefaultItemAnimator;
+import android.support.v7.widget.RecyclerView;
 
-public class RefactoredDefaultItemAnimatorTest extends GeneralItemAnimatorTest {
+class TopBottomEdgeEffectDecorator extends BaseEdgeEffectDecorator {
+    public TopBottomEdgeEffectDecorator(RecyclerView recyclerView) {
+        super(recyclerView);
+    }
+
     @Override
-    protected GeneralItemAnimator onCreateTestTargetItemAnimator() {
-        return new RefactoredDefaultItemAnimator();
+    protected int getEdgeDirection(int no) {
+        switch (no) {
+            case 0:
+                return EDGE_TOP;
+            case 1:
+                return EDGE_BOTTOM;
+            default:
+                throw new IllegalArgumentException();
+        }
     }
 }

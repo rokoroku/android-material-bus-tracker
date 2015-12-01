@@ -52,8 +52,8 @@ public class LocationClient {
         if (force || shouldUpdate) {
             if (isLocationProviderAvailable(mContext)) {
 
-                SmartLocation.with(mContext).location()
-                        .provider(new LocationGooglePlayServicesWithFallbackProvider(mContext))
+                SmartLocation.with(mContext)
+                        .location(new LocationGooglePlayServicesWithFallbackProvider(mContext))
                         .config(LocationParams.BEST_EFFORT)
                         .oneFix()
                         .start(location -> {

@@ -14,16 +14,21 @@
  *    limitations under the License.
  */
 
-package com.h6ah4i.android.widget.advrecyclerview;
+package com.h6ah4i.android.widget.advrecyclerview.draggable.annotation;
 
-import android.app.Application;
-import android.test.ApplicationTestCase;
+import android.support.annotation.IntDef;
 
-/**
- * <a href="http://d.android.com/tools/testing/testing_android.html">Testing Fundamentals</a>
- */
-public class ApplicationTest extends ApplicationTestCase<Application> {
-    public ApplicationTest() {
-        super(Application.class);
-    }
+import com.h6ah4i.android.widget.advrecyclerview.draggable.DraggableItemConstants;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
+@IntDef(flag = true, value = {
+        DraggableItemConstants.STATE_FLAG_DRAGGING,
+        DraggableItemConstants.STATE_FLAG_IS_ACTIVE,
+        DraggableItemConstants.STATE_FLAG_IS_IN_RANGE,
+        DraggableItemConstants.STATE_FLAG_IS_UPDATED,
+})
+@Retention(RetentionPolicy.SOURCE)
+public @interface DraggableItemStateFlags {
 }

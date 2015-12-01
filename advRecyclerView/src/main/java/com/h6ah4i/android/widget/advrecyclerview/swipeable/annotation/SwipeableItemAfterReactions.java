@@ -14,14 +14,20 @@
  *    limitations under the License.
  */
 
-package com.h6ah4i.android.widget.advrecyclerview;
+package com.h6ah4i.android.widget.advrecyclerview.swipeable.annotation;
 
-import com.h6ah4i.android.widget.advrecyclerview.animator.GeneralItemAnimator;
-import com.h6ah4i.android.widget.advrecyclerview.animator.SwipeDismissItemAnimator;
+import android.support.annotation.IntDef;
 
-public class SwipeDismissItemAnimatorTest extends GeneralItemAnimatorTest {
-    @Override
-    protected GeneralItemAnimator onCreateTestTargetItemAnimator() {
-        return new SwipeDismissItemAnimator();
-    }
+import com.h6ah4i.android.widget.advrecyclerview.swipeable.SwipeableItemConstants;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
+@IntDef(flag = true, value = {
+        SwipeableItemConstants.AFTER_SWIPE_REACTION_DEFAULT,
+        SwipeableItemConstants.AFTER_SWIPE_REACTION_MOVE_TO_SWIPED_DIRECTION,
+        SwipeableItemConstants.AFTER_SWIPE_REACTION_REMOVE_ITEM,
+})
+@Retention(RetentionPolicy.SOURCE)
+public @interface SwipeableItemAfterReactions {
 }

@@ -123,7 +123,7 @@ public class FavoriteGroup implements Serializable {
         public void serialize(DataOutput out, FavoriteGroup value) throws IOException {
             if(value != null && value.name != null) {
                 out.writeByte(1);
-                out.writeUTF(value.name);
+                SerializeUtil.writeString(out, value.name);
                 SerializeUtil.writeList(out, value.list, FavoriteItem.SERIALIZER);
             } else {
                 out.writeByte(0);
@@ -134,7 +134,7 @@ public class FavoriteGroup implements Serializable {
         public FavoriteGroup deserialize(DataInput in, int available) throws IOException {
             boolean isNull = in.readByte() == 0;
             if(!isNull) {
-                String name = in.readUTF();
+                String name = SerializeUtil.readString(in);
                 List<FavoriteItem> items = SerializeUtil.readList(in, FavoriteItem.SERIALIZER);
                 return new FavoriteGroup(name, items);
             } else {

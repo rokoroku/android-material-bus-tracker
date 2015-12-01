@@ -7,7 +7,7 @@
     <string name="bus_garage">차고지</string>
     <string name="bus_arrival_behind_stations">%1$d 정류장 남음</string>
     <string name="bus_arrival_remain_seat">남은 좌석 : %1$d</string>
-    <string name="bus_arrival_no_remain_seat">빈 자리 없음</string>
+    <string name="bus_arrival_no_remain_seat">좌석 없음</string>
     <string name="bus_arrival_passed">버스가 도착했거나 지나갔습니다.</string>
     <string name="bus_arrival_operation_end">운행 종료</string>
 

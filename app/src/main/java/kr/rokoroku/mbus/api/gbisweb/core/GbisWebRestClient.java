@@ -1,11 +1,10 @@
 package kr.rokoroku.mbus.api.gbisweb.core;
 
 import android.text.TextUtils;
+import android.util.Pair;
 
 import com.google.android.gms.maps.model.LatLng;
 import com.google.gson.Gson;
-
-import org.apache.http.client.HttpClient;
 
 import java.lang.ref.SoftReference;
 import java.util.ArrayList;
@@ -41,12 +40,11 @@ import kr.rokoroku.mbus.data.model.StationRoute;
 import kr.rokoroku.mbus.util.GeoUtils;
 import kr.rokoroku.mbus.util.ProgressCallback;
 import kr.rokoroku.mbus.util.SimpleProgressCallback;
+import kr.rokoroku.mbus.util.TimeUtils;
 import kr.rokoroku.mbus.util.ViewUtils;
-import retrofit.Callback;
 import retrofit.RestAdapter;
 import retrofit.RetrofitError;
 import retrofit.android.AndroidLog;
-import retrofit.client.ApacheClient;
 import retrofit.client.Client;
 import retrofit.client.Response;
 import retrofit.converter.GsonConverter;
@@ -63,7 +61,7 @@ public class GbisWebRestClient implements ApiWrapperInterface {
     private GbisWebRestInterface adapter;
     private Map<String, SoftReference<GbisSearchAllResult>> searchResultCache;
     private Map<String, SoftReference<GbisSearchRouteResult>> searchRouteResultCache;
-    private Map<String, SoftReference<GbisStationRouteResult>> stationRouteResultCache;
+    private Map<String, SoftReference<Pair<GbisStationRouteResult, Long>>> stationRouteResultCache;
     private Timer cacheTimer;
 
     public GbisWebRestClient(Client client) {
@@ -367,7 +365,8 @@ public class GbisWebRestClient implements ApiWrapperInterface {
                     putStationRouteResultCache(stationId, gbisStationRouteResult);
 
                     Station station = DatabaseFacade.getInstance().getStation(getProvider(), stationId);
-                    if (station == null) station = DatabaseFacade.getInstance().getStation(Provider.INCHEON, stationId);
+                    if (station == null)
+                        station = DatabaseFacade.getInstance().getStation(Provider.INCHEON, stationId);
                     if (station == null) station = new Station(stationId, getProvider());
                     station.setName(gbisStationRouteResult.getResult().getStationNm());
 
@@ -591,9 +590,7 @@ public class GbisWebRestClient implements ApiWrapperInterface {
             cacheTimer.schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    synchronized (GbisWebRestClient.this) {
-                        searchRouteResultCache.remove(routeId);
-                    }
+                    searchRouteResultCache.remove(routeId);
                 }
             }, TTL);
         }
@@ -619,7 +616,8 @@ public class GbisWebRestClient implements ApiWrapperInterface {
             stationRouteResultCache = new HashMap<>();
         }
         if (!stationRouteResultCache.containsKey(stationId)) {
-            stationRouteResultCache.put(stationId, new SoftReference<>(gbisStationRouteResult));
+            Pair<GbisStationRouteResult, Long> pair = new Pair<>(gbisStationRouteResult, System.currentTimeMillis());
+            stationRouteResultCache.put(stationId, new SoftReference<>(pair));
 
             if (cacheTimer == null) {
                 cacheTimer = new Timer();
@@ -632,9 +630,7 @@ public class GbisWebRestClient implements ApiWrapperInterface {
             cacheTimer.schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    synchronized (GbisWebRestClient.this) {
-                        stationRouteResultCache.remove(stationId);
-                    }
+                    stationRouteResultCache.remove(stationId);
                 }
             }, TTL);
         }
@@ -642,11 +638,11 @@ public class GbisWebRestClient implements ApiWrapperInterface {
 
     private GbisStationRouteResult getCachedStationRouteResult(String stationId) {
         if (stationRouteResultCache != null) {
-            SoftReference<GbisStationRouteResult> reference = stationRouteResultCache.get(stationId);
+            SoftReference<Pair<GbisStationRouteResult, Long>> reference = stationRouteResultCache.get(stationId);
             if (reference != null) {
-                GbisStationRouteResult stationRouteResult = reference.get();
-                if (stationRouteResult != null) {
-                    return stationRouteResult;
+                Pair<GbisStationRouteResult, Long> stationRouteResult = reference.get();
+                if (stationRouteResult != null && !TimeUtils.checkShouldUpdate(stationRouteResult.second)) {
+                    return stationRouteResult.first;
                 } else synchronized (this) {
                     stationRouteResultCache.remove(stationId);
                 }
