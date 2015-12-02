@@ -17,6 +17,7 @@ import android.provider.Settings;
 import android.speech.RecognizerIntent;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.content.ContextCompat;
@@ -35,11 +36,6 @@ import android.widget.TextView;
 
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.balysv.materialmenu.MaterialMenuDrawable;
-import com.canelmas.let.AskPermission;
-import com.canelmas.let.DeniedPermission;
-import com.canelmas.let.Let;
-import com.canelmas.let.RuntimePermissionListener;
-import com.canelmas.let.RuntimePermissionRequest;
 import com.fsn.cauly.CaulyNativeAdView;
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
@@ -59,17 +55,17 @@ import co.naughtyspirit.showcaseview.utils.PositionsUtil;
 import io.codetail.animation.SupportAnimator;
 import kr.rokoroku.mbus.core.ApiFacade;
 import kr.rokoroku.mbus.core.DatabaseFacade;
-import kr.rokoroku.mbus.core.LocationClient;
-import kr.rokoroku.mbus.data.SearchDataProvider;
-import kr.rokoroku.mbus.data.model.FavoriteItem;
-import kr.rokoroku.mbus.data.model.Route;
-import kr.rokoroku.mbus.data.model.Station;
-import kr.rokoroku.mbus.ui.adapter.FavoriteAdapter;
-import kr.rokoroku.mbus.data.FavoriteDataProvider;
 import kr.rokoroku.mbus.core.FavoriteFacade;
+import kr.rokoroku.mbus.core.LocationClient;
+import kr.rokoroku.mbus.data.FavoriteDataProvider;
+import kr.rokoroku.mbus.data.SearchDataProvider;
 import kr.rokoroku.mbus.data.model.Favorite;
 import kr.rokoroku.mbus.data.model.FavoriteGroup;
+import kr.rokoroku.mbus.data.model.FavoriteItem;
+import kr.rokoroku.mbus.data.model.Route;
 import kr.rokoroku.mbus.data.model.SearchHistory;
+import kr.rokoroku.mbus.data.model.Station;
+import kr.rokoroku.mbus.ui.adapter.FavoriteAdapter;
 import kr.rokoroku.mbus.ui.adapter.SearchAdapter;
 import kr.rokoroku.mbus.util.CaulyAdUtil;
 import kr.rokoroku.mbus.util.RevealUtils;
@@ -79,13 +75,13 @@ import kr.rokoroku.mbus.util.ViewUtils;
 
 
 public class MainActivity extends AbstractBaseActivity implements RecyclerViewFragment.RecyclerViewInterface,
-        FavoriteAdapter.EventListener, SearchBox.SearchListener, SearchBox.MenuListener,
-        RuntimePermissionListener {
+        FavoriteAdapter.EventListener, SearchBox.SearchListener, SearchBox.MenuListener {
 
     private static final String SAVED_STATE_EXPANDABLE_ITEM_MANAGER = "expandable_state";
     private static final String TAG_FRAGMENT_MAP = "MAP";
     private static final String TAG_FRAGMENT_SEARCH = "SEARCH";
     private static final String TAG_FRAGMENT_FAVORITE = "FAVORITE";
+    private static final int PERMISSION_REQUEST_CODE = 50;
     private static final int RESULT_GPS_SETTINGS = 55;
 
     private SearchBox mSearchBox;
@@ -187,51 +183,50 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
         }
     }
 
-    @AskPermission(Manifest.permission.ACCESS_FINE_LOCATION)
     private void askForGpsPermission() {
-        Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-        startActivityForResult(intent, RESULT_GPS_SETTINGS);
-    }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        Let.handle(this, requestCode, permissions, grantResults);
-    }
-
-    @Override
-    public void onShowPermissionRationale(List<String> permissions, RuntimePermissionRequest permissionRequest) {
-
-        //  tell user why you need these permissions
-        final StringBuilder sb = new StringBuilder();
-
-        for (String permission : permissions) {
-            sb.append(permission);
-            sb.append("\n");
+        if (LocationClient.isPermissionGranted()) {
+            if (!LocationClient.isLocationProviderAvailable(this)) {
+                Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                startActivityForResult(intent, RESULT_GPS_SETTINGS);
+            }
         }
+//        else if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+//                Manifest.permission.ACCESS_FINE_LOCATION)) {
 
-        new MaterialDialog.Builder(this)
-                .title("Permission Required!")
-                .content(sb.toString())
-                .cancelable(true)
-                .negativeText("No Thanks")
-                .positiveText("Try Again")
-                .callback(new MaterialDialog.ButtonCallback() {
-                    @Override
-                    public void onPositive(MaterialDialog dialog) {
-                        permissionRequest.retry();
-                    }
+            // Show an expanation to the user *asynchronously* -- don't block
+            // this thread waiting for the user's response! After the user
+            // sees the explanation, try again to request the permission.
+        else {
 
-                    @Override
-                    public void onNegative(MaterialDialog dialog) {
-                        dialog.dismiss();
-                    }
-                })
-                .show();
+            // No explanation needed, we can request the permission.
+            ActivityCompat.requestPermissions(this, new String[]{
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                    }, PERMISSION_REQUEST_CODE);
+
+        }
     }
 
     @Override
-    public void onPermissionDenied(List<DeniedPermission> deniedPermissionList) {
-        LocationClient.setPermissionDenied(true);
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSION_REQUEST_CODE: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // permission was granted, yay!
+                    askForGpsPermission();
+
+                } else {
+                    // permission denied, boo!
+                    Snackbar.make(mCoordinatorLayout, R.string.alert_gps_permission_disabled, Snackbar.LENGTH_LONG).show();
+
+                }
+            }
+
+            // other 'case' lines to check for other
+            // permissions this app might request
+        }
     }
 
     @Override
@@ -252,6 +247,11 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
         if (wasLocationEnabled != locationEnabled) {
             mLocationButton.setEnabled(locationEnabled);
             enableSearchBoxLocationButton(locationEnabled);
+            if (!locationEnabled && !mLocationButton.isHidden()) {
+                mLocationButton.hide(true);
+            } else if (locationEnabled && mLocationButton.isHidden()) {
+                mLocationButton.show(true);
+            }
         }
         if (mFavoriteAdapter != null && mFavoriteAdapter.getAdTag() != null) {
             if (mFavoriteAdapter.getAdPosition() == -1) {
@@ -775,7 +775,9 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
 
     private void showFirstFavoriteHintIfNotShown() {
         String preferenceKey = "Hint_Favorite";
-        if (mFavoriteFragment != null && !getSharedPreferences(ShowcaseView.PREFERENCE_NAME, MODE_PRIVATE).contains(preferenceKey)) {
+        SharedPreferences sharedPreferences = getSharedPreferences(ShowcaseView.PREFERENCE_NAME, MODE_PRIVATE);
+        boolean favoriteHintShown = sharedPreferences.contains(preferenceKey);
+        if (mFavoriteFragment != null && !favoriteHintShown) {
             RecyclerView recyclerView = mFavoriteFragment.getRecyclerView();
             View childView = null;
             for (int i = 1; i < recyclerView.getChildCount() - 1; i++) {
@@ -794,6 +796,18 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
                         .build();
             }
         }
+        // TODO: REMOVE AFTER THIS BUILD
+        else if (favoriteHintShown) {
+            boolean clearNotice = sharedPreferences.contains("db_clear_notice1");
+            if (!clearNotice) {
+                new MaterialDialog.Builder(this)
+                        .title("안내사항")
+                        .content("안정성 등의 문제로 데이터베이스를 수정하면서 기존 데이터를 초기화하게 되었습니다 ㅠ_ㅠ. 미리 안내드리지 못한 점 사과드리며, 더욱 더 좋은 기능으로 찾아뵙도록 노력하겠습니다")
+                        .positiveText("알았어요.")
+                        .show();
+            }
+        }
+        sharedPreferences.edit().putBoolean("db_clear_notice1", true).apply();
     }
 
     private void showMap() {
@@ -810,7 +824,9 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
             previousSearchQuery = mSearchBox.getSearchText();
             if (TextUtils.isEmpty(previousSearchQuery)) previousSearchQuery = null;
             mSearchBox.setLogoText(getString(R.string.hint_nearby_location));
-            mLocationButton.show(true);
+            if (LocationClient.isLocationProviderAvailable(this)) {
+                mLocationButton.show(true);
+            }
             enableSearchBoxLocationButton(false);
         }
         showToolbarLayer();
@@ -819,7 +835,9 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
     private void hideMap() {
         if (mMapFrame.getVisibility() == View.VISIBLE) {
             if (mSearchFrame.getVisibility() != View.VISIBLE) {
-                mLocationButton.hide(true);
+                if (!mLocationButton.isHidden()) {
+                    mLocationButton.hide(true);
+                }
             }
             mSearchBox.setLogoText(previousSearchQuery != null ? previousSearchQuery : getString(R.string.hint_search));
             RevealUtils.unrevealView(mMapFrame, RevealUtils.Position.CENTER, 600, null);
@@ -876,7 +894,9 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
             mSearchBox.setMaterialIconState(MaterialMenuDrawable.IconState.ARROW);
             mSearchBox.setMaterialIconMorphAnimationEnable(false);
             mPlusButton.hideMenuButton(animate);
-            mLocationButton.show(animate);
+            if (LocationClient.isLocationProviderAvailable(this)) {
+                mLocationButton.show(true);
+            }
         }
 
         showToolbarLayer();
@@ -905,7 +925,9 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
             }
             mFavoriteAdapter.notifyDataSetChanged();
             mPlusButton.showMenuButton(animate);
-            mLocationButton.hide(animate);
+            if (!mLocationButton.isHidden()) {
+                mLocationButton.hide(animate);
+            }
             mSearchBox.setMaterialIconState(MaterialMenuDrawable.IconState.BURGER);
             mSearchBox.setMaterialIconMorphAnimationEnable(true);
             mSearchBox.setSearchString("", false);
@@ -1191,14 +1213,19 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
         } else if (requestCode == RESULT_GPS_SETTINGS) {
             boolean locationEnabled = LocationClient.isLocationProviderAvailable(this);
             if (locationEnabled) {
-                Snackbar.make(mCoordinatorLayout, "GPS 기능이 활성화되었습니다.", Snackbar.LENGTH_LONG).show();
+                Snackbar.make(mCoordinatorLayout, R.string.alert_gps_enabled, Snackbar.LENGTH_LONG).show();
 
             } else {
-                Snackbar.make(mCoordinatorLayout, "GPS 기능이 비활성화되었습니다.", Snackbar.LENGTH_LONG).show();
+                Snackbar.make(mCoordinatorLayout, R.string.alert_gps_disabled, Snackbar.LENGTH_LONG).show();
             }
             if (wasLocationEnabled != locationEnabled) {
                 mLocationButton.setEnabled(locationEnabled);
                 enableSearchBoxLocationButton(locationEnabled);
+                if (!locationEnabled && !mLocationButton.isHidden()) {
+                    mLocationButton.hide(true);
+                } else if (locationEnabled && mLocationButton.isHidden()) {
+                    mLocationButton.show(true);
+                }
             }
             wasLocationEnabled = locationEnabled;
             return;

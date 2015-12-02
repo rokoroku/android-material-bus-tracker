@@ -142,6 +142,26 @@ public class FavoriteItem implements Serializable {
         return null;
     }
 
+    public boolean contains(Route route) {
+        if (dataKey != null) {
+            if (dataKey.provider == route.getProvider() && dataKey.id.equals(route.getId())) return true;
+        }
+        if (extraKey != null) {
+            if (extraKey.id.equals(route.getId())) return true;
+        }
+        return false;
+    }
+
+    public boolean contains(Station station) {
+        if (dataKey != null) {
+            if (dataKey.provider == station.getProvider() && dataKey.id.equals(station.getId())) return true;
+        }
+        if (extraKey != null) {
+            if (extraKey.id.equals(station.getId())) return true;
+        }
+        return false;
+    }
+
     public static class AccessKey implements Serializable {
         Provider provider;
         String id;

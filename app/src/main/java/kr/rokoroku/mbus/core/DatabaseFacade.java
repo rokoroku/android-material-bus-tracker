@@ -37,9 +37,10 @@ import kr.rokoroku.mbus.data.model.Station;
 public class DatabaseFacade {
 
     private static final String TAG = "DBFacade";
-    private static final String DATABASE_FILENAME_USER = "user.db";
-    private static final String DATABASE_FILENAME_STATIC = "data.db";
+
     private static final int DATABASE_VERSION = 1;
+    private static final String DATABASE_FILENAME_USER = "user_data.db";
+    private static final String DATABASE_FILENAME_STATIC = "static_data.db";
 
     public static final String TABLE_ROUTE_PREFIX = "route_";
     public static final String TABLE_STATION_PREFIX = "station_";

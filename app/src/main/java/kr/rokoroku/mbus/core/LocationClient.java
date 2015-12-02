@@ -1,8 +1,11 @@
 package kr.rokoroku.mbus.core;
 
+import android.Manifest;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.location.Location;
 import android.support.annotation.Nullable;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -14,6 +17,7 @@ import java.util.TimerTask;
 import io.nlopez.smartlocation.SmartLocation;
 import io.nlopez.smartlocation.location.config.LocationParams;
 import io.nlopez.smartlocation.location.providers.LocationGooglePlayServicesWithFallbackProvider;
+import kr.rokoroku.mbus.BaseApplication;
 import kr.rokoroku.mbus.util.ViewUtils;
 
 /**
@@ -25,7 +29,6 @@ public class LocationClient {
 
     private static final int REQUEST_TIMEOUT_DELAY = 5000;
     private static Location sLastKnownLocation;
-    private static boolean isPermissionDenied = false;
 
     private Context mContext;
     private Timer mTimer;
@@ -37,10 +40,10 @@ public class LocationClient {
         this.mContext = context;
         this.mListener = listener;
 
-        if (!isPermissionDenied && sLastKnownLocation == null) try {
+        if (isPermissionGranted() && sLastKnownLocation == null) try {
             sLastKnownLocation = SmartLocation.with(context).location().getLastLocation();
         } catch (SecurityException e) {
-            isPermissionDenied = true;
+            e.printStackTrace();
         }
     }
 
@@ -50,7 +53,7 @@ public class LocationClient {
 
     public void start(boolean force) {
 
-        if (!isPermissionDenied) {
+        if (isPermissionGranted()) {
 
             boolean shouldUpdate = sLastKnownLocation == null ||
                     (System.currentTimeMillis() - sLastKnownLocation.getTime() > 2 * 60 * 1000);
@@ -198,19 +201,16 @@ public class LocationClient {
     }
 
     public static boolean isLocationProviderAvailable(Context context) {
-        if (!isPermissionDenied) try {
+        if (isPermissionGranted()) try {
             return SmartLocation.with(context).location().state().isAnyProviderAvailable();
         } catch (SecurityException e) {
-            isPermissionDenied = true;
+            e.printStackTrace();
         }
         return false;
     }
 
-    public static boolean isPermissionDenied() {
-        return isPermissionDenied;
-    }
-
-    public static void setPermissionDenied(boolean isPermissionDenied) {
-        LocationClient.isPermissionDenied = isPermissionDenied;
+    public static boolean isPermissionGranted() {
+        return ContextCompat.checkSelfPermission(BaseApplication.getInstance(),
+                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
     }
 }

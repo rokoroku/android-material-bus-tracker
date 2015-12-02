@@ -226,7 +226,7 @@ public abstract class AbstractBaseActivity extends AppCompatActivity implements 
         if (mItemDecoration == null) {
             mItemDecoration = new RecyclerView.ItemDecoration() {
                 int actionBarSize = (int) (ThemeUtils.getDimension(AbstractBaseActivity.this, R.attr.actionBarSize)
-                                        + ViewUtils.dpToPixel(4f, getResources()));
+                                        + ViewUtils.dpToPixel(6f, getResources()));
 
                 @Override
                 public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
@@ -256,6 +256,7 @@ public abstract class AbstractBaseActivity extends AppCompatActivity implements 
             titleTextView.requestFocus();
             titleTextView.setSingleLine(true);
             titleTextView.setSelected(true);
+            titleTextView.setGravity(Gravity.CENTER_VERTICAL);
             titleTextView.setMarqueeRepeatLimit(-1);
 
         } catch (Exception ignored) {

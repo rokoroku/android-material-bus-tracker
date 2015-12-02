@@ -1,1 +1,1 @@
-include ':app', ':persistentSearch', 'connectorView', ':circularReveal', ':advRecyclerView', ':fab', ':showcaseview'
+include ':app', ':persistentSearch', 'connectorView', ':circularReveal', ':advRecyclerView', ':fab', ':showcaseview', ':vector-compat'

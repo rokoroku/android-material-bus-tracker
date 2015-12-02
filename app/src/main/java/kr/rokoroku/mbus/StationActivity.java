@@ -1,6 +1,7 @@
 package kr.rokoroku.mbus;
 
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.design.widget.CoordinatorLayout;
@@ -14,6 +15,7 @@ import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -33,6 +35,7 @@ import kr.rokoroku.mbus.core.DatabaseFacade;
 import kr.rokoroku.mbus.data.model.ArrivalInfo;
 import kr.rokoroku.mbus.data.model.FavoriteGroup;
 import kr.rokoroku.mbus.data.model.Provider;
+import kr.rokoroku.mbus.data.model.Route;
 import kr.rokoroku.mbus.ui.adapter.StationAdapter;
 import kr.rokoroku.mbus.data.StationDataProvider;
 import kr.rokoroku.mbus.core.ApiFacade;
@@ -46,7 +49,7 @@ import kr.rokoroku.mbus.util.ViewUtils;
 
 
 public class StationActivity extends AbstractBaseActivity
-        implements SwipeRefreshLayout.OnRefreshListener {
+        implements SwipeRefreshLayout.OnRefreshListener, StationAdapter.OnItemInteractionListener {
 
     private static final String SAVED_STATE_EXPANDABLE_ITEM_MANAGER = "expandable_state";
     public static final String EXTRA_KEY_STATION = "station";
@@ -57,9 +60,10 @@ public class StationActivity extends AbstractBaseActivity
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private MenuItem mRefreshActionItem;
 
-    private FloatingActionMenu mPlusButton;
-    private FloatingActionButton mAddFavoriteButton;
-    private FloatingActionButton mAddFavoriteSelectedButton;
+//    private FloatingActionButton mMapButton;
+//    private FloatingActionMenu mPlusButton;
+//    private FloatingActionButton mAddFavoriteButton;
+//    private FloatingActionButton mAddFavoriteSelectedButton;
 
     private StationDataProvider mStationDataProvider;
     private StationAdapter mBusStationAdapter;
@@ -86,9 +90,10 @@ public class StationActivity extends AbstractBaseActivity
         mCoordinatorLayout = (CoordinatorLayout) findViewById(R.id.coordinator_layout);
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_layout);
 
-        mPlusButton = (FloatingActionMenu) findViewById(R.id.fab_plus);
-        mAddFavoriteButton = (FloatingActionButton) findViewById(R.id.fab_bookmark);
-        mAddFavoriteSelectedButton = (FloatingActionButton) findViewById(R.id.fab_bookmark_selection);
+//        mMapButton = (FloatingActionButton) findViewById(R.id.fab_map);
+//        mPlusButton = (FloatingActionMenu) findViewById(R.id.fab_plus);
+//        mAddFavoriteButton = (FloatingActionButton) findViewById(R.id.fab_bookmark);
+//        mAddFavoriteSelectedButton = (FloatingActionButton) findViewById(R.id.fab_bookmark_selection);
 
         //setup refresh layout
         int actionbarHeight = ThemeUtils.getDimension(this, R.attr.actionBarSize);
@@ -328,6 +333,7 @@ public class StationActivity extends AbstractBaseActivity
 
         //set data provider to adapter
         mBusStationAdapter = new StationAdapter(mStationDataProvider);
+        mBusStationAdapter.setItemInteractionListener(this);
         RecyclerView.Adapter wrappedAdapter = mRecyclerViewExpandableItemManager.createWrappedAdapter(mBusStationAdapter);
 
         //set adapter
@@ -358,60 +364,68 @@ public class StationActivity extends AbstractBaseActivity
     }
 
     private void initFloatingActionButtons() {
-        mAddFavoriteButton.setOnClickListener(v -> {
-            addToFavorite(null);
-            mPlusButton.close(true);
-        });
-
-        mAddFavoriteSelectedButton.setOnClickListener(v -> {
-            if (mLastExpandedPosition >= 0 && mRecyclerViewExpandableItemManager.isGroupExpanded(mLastExpandedPosition)) {
-                StationRoute stationRoute = mStationDataProvider.getItem(mLastExpandedPosition).getStationRoute();
-                addToFavorite(stationRoute);
-
-            } else if (getActionMode() == null) {
-                startActionMode(new ActionMode.Callback() {
-                    @Override
-                    public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-                        mode.setTitle(R.string.hint_select_favorite_link);
-                        // init marquee animation to toolbar title
-                        try {
-                            View modeCustomView = mode.getCustomView();
-                            Field f = modeCustomView.getClass().getDeclaredField("mTitleTextView");
-                            f.setAccessible(true);
-
-                            TextView titleTextView = null;
-                            titleTextView = (TextView) f.get(modeCustomView);
-                            titleTextView.setEllipsize(TextUtils.TruncateAt.MARQUEE);
-                            titleTextView.setFocusable(true);
-                            titleTextView.setFocusableInTouchMode(true);
-                            titleTextView.requestFocus();
-                            titleTextView.setSingleLine(true);
-                            titleTextView.setSelected(true);
-                            titleTextView.setMarqueeRepeatLimit(-1);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                        return true;
-                    }
-
-                    @Override
-                    public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-                        return false;
-                    }
-
-                    @Override
-                    public void onDestroyActionMode(ActionMode mode) {
-
-                    }
-                });
-            }
-            mPlusButton.close(true);
-        });
+//        mAddFavoriteButton.setOnClickListener(v -> {
+//            addToFavorite(null);
+//            mPlusButton.close(true);
+//        });
+//
+//        mAddFavoriteSelectedButton.setOnClickListener(v -> {
+//            if (mLastExpandedPosition >= 0 && mRecyclerViewExpandableItemManager.isGroupExpanded(mLastExpandedPosition)) {
+//                StationRoute stationRoute = mStationDataProvider.getItem(mLastExpandedPosition).getStationRoute();
+//                addToFavorite(stationRoute);
+//
+//            } else if (getActionMode() == null) {
+//                startActionMode(new ActionMode.Callback() {
+//                    @Override
+//                    public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+//                        mode.setTitle(R.string.hint_select_favorite_link);
+//                        // init marquee animation to toolbar title
+//                        try {
+//                            View modeCustomView = mode.getCustomView();
+//                            Field f = modeCustomView.getClass().getDeclaredField("mTitleTextView");
+//                            f.setAccessible(true);
+//
+//                            TextView titleTextView = null;
+//                            titleTextView = (TextView) f.get(modeCustomView);
+//                            titleTextView.setEllipsize(TextUtils.TruncateAt.MARQUEE);
+//                            titleTextView.setFocusable(true);
+//                            titleTextView.setFocusableInTouchMode(true);
+//                            titleTextView.requestFocus();
+//                            titleTextView.setSingleLine(true);
+//                            titleTextView.setSelected(true);
+//                            titleTextView.setMarqueeRepeatLimit(-1);
+//                        } catch (Exception e) {
+//                            e.printStackTrace();
+//                        }
+//                        return true;
+//                    }
+//
+//                    @Override
+//                    public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+//                        return false;
+//                    }
+//
+//                    @Override
+//                    public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+//                        return false;
+//                    }
+//
+//                    @Override
+//                    public void onDestroyActionMode(ActionMode mode) {
+//
+//                    }
+//                });
+//            }
+//            mPlusButton.close(true);
+//        });
+//
+//        mMapButton.setShowProgressBackground(false);
+//        mMapButton.setOnClickListener(v -> {
+//            Intent intent = new Intent(StationActivity.this, MapsActivity.class);
+//            intent.putExtra(MapsActivity.EXTRA_KEY_STATION, (Parcelable) mStationDataProvider.getStation());
+//            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+//            startActivity(intent);
+//        });
     }
 
     @Override
@@ -422,6 +436,27 @@ public class StationActivity extends AbstractBaseActivity
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_bus, menu);
+        MenuItem item = menu.findItem(R.id.action_add_to_favorite);
+        if (item != null && mStationDataProvider != null) {
+            Station station = mStationDataProvider.getStation();
+
+            Drawable drawable;
+            if (station != null && FavoriteFacade.getInstance().isAdded(station)) {
+                drawable = getResources().getDrawable(R.drawable.ic_favorite_star_filled);
+            } else {
+                drawable = getResources().getDrawable(R.drawable.ic_favorite_star);
+            }
+            ViewUtils.setTint(drawable, ThemeUtils.getThemeColor(this, android.R.attr.textColorPrimary));
+            item.setIcon(drawable);
+        }
+
+        MenuItem refresh = menu.findItem(R.id.action_refresh);
+        if (refresh != null && refresh.getIcon() != null) {
+            Drawable icon = refresh.getIcon();
+            ViewUtils.setTint(icon, ThemeUtils.getThemeColor(this, android.R.attr.textColorPrimary));
+            refresh.setIcon(icon);
+        }
+
         return true;
     }
 
@@ -436,6 +471,14 @@ public class StationActivity extends AbstractBaseActivity
                 mRefreshActionItem = item;
                 item.setActionView(R.layout.widget_refresh_action_view);
                 onRefresh();
+                return true;
+
+            case R.id.action_add_to_favorite:
+                addToFavorite(null);
+
+                Drawable drawable = getResources().getDrawable(R.drawable.ic_favorite_star_filled);
+                ViewUtils.setTint(drawable, ThemeUtils.getThemeColor(this, android.R.attr.textColorPrimary));
+                item.setIcon(drawable);
                 return true;
 
             case R.id.action_map:
@@ -518,5 +561,11 @@ public class StationActivity extends AbstractBaseActivity
                     .cancelable(true)
                     .show();
         }
+    }
+
+    @Override
+    public void onClickFavoriteButton(ImageButton button, StationRoute stationRoute) {
+        addToFavorite(stationRoute);
+        button.setImageResource(R.drawable.ic_favorite_star_filled);
     }
 }

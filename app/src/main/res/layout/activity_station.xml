@@ -24,40 +24,56 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end">
 
-        <com.github.clans.fab.FloatingActionMenu
-            android:id="@+id/fab_plus"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end|bottom"
-            android:layout_marginBottom="16dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginRight="16dp"
-            app:menu_buttonSpacing="4dp"
-            app:menu_colorNormal="?attr/colorAccent"
-            app:menu_colorPressed="?attr/colorAccent"
-            app:menu_shadowXOffset="0dp"
-            app:menu_shadowYOffset="1dp">
+        <!--<com.github.clans.fab.FloatingActionButton-->
+            <!--android:id="@+id/fab_map"-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:layout_gravity="end|bottom"-->
+            <!--android:layout_marginBottom="16dp"-->
+            <!--android:layout_marginEnd="16dp"-->
+            <!--android:layout_marginRight="16dp"-->
+            <!--android:src="@drawable/ic_map_24dp"-->
+            <!--app:fab_colorNormal="?attr/colorButtonNormal"-->
+            <!--app:fab_colorPressed="?attr/colorButtonNormal"-->
+            <!--app:fab_progress_color="?attr/colorAccent"-->
+            <!--app:fab_progress_width="2dp"-->
+            <!--app:fab_shadowXOffset="0dp"-->
+            <!--app:fab_shadowYOffset="1dp" />-->
 
-            <com.github.clans.fab.FloatingActionButton
-                android:id="@+id/fab_bookmark"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/ic_label_outline_black_24dp"
-                app:fab_colorNormal="?attr/colorButtonNormal"
-                app:fab_colorPressed="?attr/colorButtonNormal"
-                app:fab_label="@string/action_add_to_favorite"
-                app:fab_size="mini" />
+        <!--<com.github.clans.fab.FloatingActionMenu-->
+            <!--android:id="@+id/fab_plus"-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:layout_gravity="end|bottom"-->
+            <!--android:layout_marginBottom="16dp"-->
+            <!--android:layout_marginEnd="16dp"-->
+            <!--android:layout_marginRight="16dp"-->
+            <!--app:menu_buttonSpacing="4dp"-->
+            <!--app:menu_colorNormal="?attr/colorAccent"-->
+            <!--app:menu_colorPressed="?attr/colorAccent"-->
+            <!--app:menu_shadowXOffset="0dp"-->
+            <!--app:menu_shadowYOffset="1dp">-->
 
-            <com.github.clans.fab.FloatingActionButton
-                android:id="@+id/fab_bookmark_selection"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/ic_link_grey_600_24dp"
-                app:fab_colorNormal="?attr/colorButtonNormal"
-                app:fab_colorPressed="?attr/colorButtonNormal"
-                app:fab_label="@string/action_add_to_favorite_with_link"
-                app:fab_size="mini" />
+            <!--<com.github.clans.fab.FloatingActionButton-->
+                <!--android:id="@+id/fab_bookmark"-->
+                <!--android:layout_width="wrap_content"-->
+                <!--android:layout_height="wrap_content"-->
+                <!--android:src="@drawable/ic_label_outline_black_24dp"-->
+                <!--app:fab_colorNormal="?attr/colorButtonNormal"-->
+                <!--app:fab_colorPressed="?attr/colorButtonNormal"-->
+                <!--app:fab_label="@string/action_add_to_favorite"-->
+                <!--app:fab_size="mini" />-->
 
-        </com.github.clans.fab.FloatingActionMenu>
+            <!--<com.github.clans.fab.FloatingActionButton-->
+                <!--android:id="@+id/fab_bookmark_selection"-->
+                <!--android:layout_width="wrap_content"-->
+                <!--android:layout_height="wrap_content"-->
+                <!--android:src="@drawable/ic_link_grey_600_24dp"-->
+                <!--app:fab_colorNormal="?attr/colorButtonNormal"-->
+                <!--app:fab_colorPressed="?attr/colorButtonNormal"-->
+                <!--app:fab_label="@string/action_add_to_favorite_with_link"-->
+                <!--app:fab_size="mini" />-->
+
+        <!--</com.github.clans.fab.FloatingActionMenu>-->
     </kr.rokoroku.mbus.ui.widget.FloatingActionLayout>
 </android.support.design.widget.CoordinatorLayout>

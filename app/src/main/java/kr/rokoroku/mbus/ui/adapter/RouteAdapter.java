@@ -80,6 +80,8 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
     private Timer mTimer;
     private Set<WeakReference<BusArrivalItemViewHolder>> mArrivalViewReferenceSet;
 
+    private OnItemInteractionListener mItemInteractionListener;
+
     public RouteAdapter(RouteDataProvider dataProvider) {
         mDataProvider = dataProvider;
 
@@ -236,11 +238,11 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
 
             if (getExpandedPosition() == groupPosition && routeStation.isBusStop()) {
                 stationViewHolder.mNavigateButton.setVisibility(View.VISIBLE);
-                stationViewHolder.mPaintButton.setVisibility(View.VISIBLE);
+                stationViewHolder.mFavoriteButton.setVisibility(View.VISIBLE);
                 stationViewHolder.mContainer.setRoundBottom(false);
             } else {
                 stationViewHolder.mNavigateButton.setVisibility(View.GONE);
-                stationViewHolder.mPaintButton.setVisibility(View.GONE);
+                stationViewHolder.mFavoriteButton.setVisibility(View.GONE);
                 RouteDataProvider.RouteListItemData dataAfter = mDataProvider.getItem(itemPosition + 1);
                 stationViewHolder.mContainer.setRoundBottom(dataAfter == null || RouteDataProvider.RouteListItemData.Type.BUS.equals(dataAfter.getType()));
             }
@@ -512,17 +514,17 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
         public RouteStation mItem;
         public TextView mStationTitle;
         public TextView mStationDescription;
-        public ImageButton mPaintButton;
+        public ImageButton mFavoriteButton;
         public ImageButton mNavigateButton;
 
         public StationViewHolder(View v) {
             super(v);
             mStationTitle = (TextView) v.findViewById(R.id.station_title);
             mStationDescription = (TextView) v.findViewById(R.id.station_description);
-            mPaintButton = (ImageButton) v.findViewById(R.id.paint_button);
+            mFavoriteButton = (ImageButton) v.findViewById(R.id.favorite_button);
             mNavigateButton = (ImageButton) v.findViewById(R.id.navigate_button);
-            mPaintButton.setOnTouchListener(this);
-            mPaintButton.setOnClickListener(this);
+            mFavoriteButton.setOnTouchListener(this);
+            mFavoriteButton.setOnClickListener(this);
             mNavigateButton.setOnTouchListener(this);
             mNavigateButton.setOnClickListener(this);
         }
@@ -543,6 +545,12 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
             FavoriteFacade.Color favoriteStationColor = FavoriteFacade.getInstance().getFavoriteStationColor(
                     routeStation.getProvider(), routeStation.getId());
             mContainer.setCardBackgroundColor(favoriteStationColor.getColor(context));
+
+            if (FavoriteFacade.getInstance().isAdded(routeStation)) {
+                mFavoriteButton.setImageResource(R.drawable.ic_favorite_star_filled);
+            } else {
+                mFavoriteButton.setImageResource(R.drawable.ic_favorite_star);
+            }
 
             if (TextUtils.isEmpty(routeStation.getLocalId())) {
                 mConnector.setIconType(ConnectorView.IconType.NONE);
@@ -571,8 +579,11 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
         @Override
         public void onClick(View v) {
             Context context = v.getContext();
-            if (v.equals(mPaintButton)) {
-                showPalette(v, mItem);
+            if (v.equals(mFavoriteButton)) {
+                if (mItemInteractionListener != null && mItem != null) {
+                    mItemInteractionListener.onClickFavoriteButton(mFavoriteButton, mItem);
+                }
+                //showPalette(v, mItem);
 
             } else if (v.equals(mNavigateButton)) {
                 // Navigate to StationActivity
@@ -904,5 +915,17 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
             }
         }
         return null;
+    }
+
+    public OnItemInteractionListener getItemInteractionListener() {
+        return mItemInteractionListener;
+    }
+
+    public void setItemInteractionListener(OnItemInteractionListener listener) {
+        this.mItemInteractionListener = listener;
+    }
+
+    public interface OnItemInteractionListener {
+        void onClickFavoriteButton(ImageButton button, RouteStation routeStation);
     }
 }

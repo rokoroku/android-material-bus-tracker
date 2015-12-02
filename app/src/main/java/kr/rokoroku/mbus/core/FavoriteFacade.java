@@ -149,4 +149,28 @@ public class FavoriteFacade {
         DatabaseFacade.getInstance().putBookmark(currentFavorite.getName(), currentFavorite);
         return favoriteGroup;
     }
+
+    public boolean isAdded(Route route) {
+        Favorite bookmark = DatabaseFacade.getInstance().getBookmark(currentFavorite.getName());
+        if (bookmark != null && route != null) {
+            for (FavoriteGroup favoriteGroup : bookmark.getFavoriteGroups()) {
+                for (FavoriteItem favoriteItem : favoriteGroup.getItems()) {
+                    if (favoriteItem.contains(route)) return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public boolean isAdded(Station station) {
+        Favorite bookmark = DatabaseFacade.getInstance().getBookmark(currentFavorite.getName());
+        if (bookmark != null && station != null) {
+            for (FavoriteGroup favoriteGroup : bookmark.getFavoriteGroups()) {
+                for (FavoriteItem favoriteItem : favoriteGroup.getItems()) {
+                    if (favoriteItem.contains(station)) return true;
+                }
+            }
+        }
+        return false;
+    }
 }
