@@ -236,6 +236,7 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
 
         StationRoute stationRoute = item.getStationRoute();
         final String routeId = stationRoute.getRouteId();
+        final int childCount = getChildCount(groupPosition);
         holder.mRouteId = routeId;
 
         if (stationRoute.getArrivalInfo() == null || TimeUtils.checkShouldUpdate(stationRoute.getArrivalInfo().getTimestamp())) {
@@ -275,7 +276,6 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
         holder.mCardView.setCardBackgroundColor(ThemeUtils.dimColor(cardColor.getColor(holder.itemView.getContext()), 0.95f));
         StationDataProvider.StationListItemData dataAfter = getItem(groupPosition + 1);
 
-        int childCount = getChildCount(groupPosition);
         if(childCount == 1 || childPosition == 1) {
             holder.mCardView.setRoundBottom(dataAfter == null || dataAfter.getType().equals(StationDataProvider.StationListItemData.Type.SECTION));
         } else if(childCount == 2 && childPosition == 0) {

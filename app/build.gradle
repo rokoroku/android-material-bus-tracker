@@ -1,16 +1,19 @@
 buildscript {
     repositories {
         maven { url 'https://maven.fabric.io/public' }
+        jcenter()
     }
 
     dependencies {
         classpath 'io.fabric.tools:gradle:1.20.1'
+        classpath 'com.canelmas.let:let-plugin:0.1.9'
     }
 }
 
 apply plugin: 'com.android.application'
 apply plugin: 'me.tatarka.retrolambda'
 apply plugin: 'io.fabric'
+apply plugin: 'let'
 
 android {
     compileSdkVersion 23
@@ -42,6 +45,7 @@ android {
 repositories {
     maven { url 'https://maven.fabric.io/public' }
     maven { url 'https://jitpack.io' }
+    jcenter()
 }
 
 dependencies {
@@ -71,6 +75,7 @@ dependencies {
     compile 'org.mapdb:mapdb:2.0-beta12'
     compile 'com.wnafee:vector-compat:1.0.5'
     compile 'com.github.markushi:circlebutton:1.1'
+    compile 'com.github.paolorotolo:appintro:3.3.0'
     compile 'com.joooonho:selectableroundedimageview:1.0.1'
     compile 'com.readystatesoftware.sqliteasset:sqliteassethelper:2.0.1'
     compile('com.crashlytics.sdk.android:crashlytics:2.5.0@aar') { transitive = true; }

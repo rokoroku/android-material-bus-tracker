@@ -284,6 +284,7 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
         if (routeStation != null) {
             holder.setColorByStationId(routeStation.getId());
 
+            final int childCount = getChildCount(groupPosition);
             final String localStationId = routeStation.getLocalId();
             final String routeId = routeStation.getRouteId();
 
@@ -312,7 +313,9 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
                                 routeStation.putArrivalInfo(resultArrivalInfo);
                                 putArrivalInfoCache(finalStationRoute.getLocalStationId(), resultArrivalInfo);
 
-                                ViewUtils.runOnUiThread(RouteAdapter.this::notifyDataSetChanged);
+                                if (childCount == 1) {
+                                    ViewUtils.runOnUiThread(() -> { if(getChildCount(groupPosition) == 2) notifyDataSetChanged(); });
+                                }
                                 ViewUtils.runOnUiThread(() -> mReloadingArrivalInfoSet.remove(localStationId), 1000);
                             }
 
@@ -334,7 +337,11 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
                 holder.setColorByStationId(arrivalInfo.getStationId());
                 if (childPosition == 0 && getArrivalInfoCache(localStationId) == null) {
                     putArrivalInfoCache(localStationId, arrivalInfo);
-                    ViewUtils.runOnUiThread(this::notifyDataSetChanged, 50);
+                    if (childCount == 1) {
+                        ViewUtils.runOnUiThread(() -> {
+                            if(getChildCount(groupPosition) == 2) notifyDataSetChanged();
+                        }, 50);
+                    }
                 }
             }
         }

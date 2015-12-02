@@ -6,33 +6,33 @@ import org.simpleframework.xml.Root;
 /**
  * Created by rok on 2015. 4. 23..
  */
-@Root(name = "itemList")
+@Root(name = "itemList", strict = false)
 public class SeoulBusLocation {
-    @Element
+    @Element(required = false)
     private String stopFlag;    // 정류소도착여부 (0:운행중, 1:도착)
-    @Element
+    @Element(required = false)
+    private int isFullFlag;     // ??
+    @Element(required = false)
     private String rtDist;      // 노선옵셋거리 (Km)
-    @Element
+    @Element(required = false)
     private String lastStnId;
-    @Element
+    @Element(required = false)
     private String plainNo;     // 차량번호
-    @Element
+    @Element(required = false)
     private String sectDist;    // 구간옵셋거리 (Km)
-    @Element
+    @Element(required = false)
     private String fullSectDist;// 정류소간 거리
-    @Element
+    @Element(required = false)
     private String nextStTm;    // 다음정류소도착소요시간
-    @Element
+    @Element(required = false)
     private String sectionId;   // 구간ID
     @Element
     private int sectOrd;        // 구간순번
-    @Element
-    private int lastStnOrd;     // 마지막 구간
-    @Element
+    @Element(required = false)
     private String dataTm;
-    @Element
+    @Element(required = false)
     private String lastStTm;    // 종점도착소요시간
-    @Element
+    @Element(required = false)
     private String trnstnid;    // 회차지 정류소ID
     @Element
     private String vehId;       // 버스 ID
@@ -42,9 +42,13 @@ public class SeoulBusLocation {
     private Double gpsX;
     @Element
     private Double gpsY;
-    @Element
-    private String lstbusyn;    // 해당차량 운행여부
-    @Element
+    @Element(required = false)
+    private Double posX;
+    @Element(required = false)
+    private Double posY;
+    @Element(required = false)
+    private String islastyn;    // 해당차량 운행여부
+    @Element(required = false)
     private String isrunyn;     // 막차여부
 
     public void setStopFlag(String stopFlag) {
@@ -79,12 +83,8 @@ public class SeoulBusLocation {
         this.sectionId = sectionId;
     }
 
-    public void setLastStnOrd(int lastStnOrd) {
-        this.lastStnOrd = lastStnOrd;
-    }
-
-    public void setLstbusyn(String lstbusyn) {
-        this.lstbusyn = lstbusyn;
+    public void setIslastyn(String islastyn) {
+        this.islastyn = islastyn;
     }
 
     public void setSectOrd(int sectOrd) {
@@ -155,12 +155,8 @@ public class SeoulBusLocation {
         return sectionId;
     }
 
-    public int getLastStnOrd() {
-        return lastStnOrd;
-    }
-
-    public String getLstbusyn() {
-        return lstbusyn;
+    public String getIslastyn() {
+        return islastyn;
     }
 
     public int getSectOrd() {

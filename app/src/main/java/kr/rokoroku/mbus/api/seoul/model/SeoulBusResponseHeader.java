@@ -6,7 +6,7 @@ import org.simpleframework.xml.Root;
 /**
  * Created by rok on 2015. 4. 22..
  */
-@Root(name = "msgHeader")
+@Root(name = "msgHeader", strict = false)
 public class SeoulBusResponseHeader {
 
     @Element(name = "headerCd")

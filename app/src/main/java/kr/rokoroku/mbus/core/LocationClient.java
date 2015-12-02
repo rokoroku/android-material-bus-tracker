@@ -7,6 +7,7 @@ import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
 
+import java.security.Security;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -24,6 +25,7 @@ public class LocationClient {
 
     private static final int REQUEST_TIMEOUT_DELAY = 5000;
     private static Location sLastKnownLocation;
+    private static boolean isPermissionDenied = false;
 
     private Context mContext;
     private Timer mTimer;
@@ -35,8 +37,10 @@ public class LocationClient {
         this.mContext = context;
         this.mListener = listener;
 
-        if (sLastKnownLocation == null) {
+        if (!isPermissionDenied && sLastKnownLocation == null) try {
             sLastKnownLocation = SmartLocation.with(context).location().getLastLocation();
+        } catch (SecurityException e) {
+            isPermissionDenied = true;
         }
     }
 
@@ -46,40 +50,48 @@ public class LocationClient {
 
     public void start(boolean force) {
 
-        boolean shouldUpdate = sLastKnownLocation == null ||
-                (System.currentTimeMillis() - sLastKnownLocation.getTime() > 2 * 60 * 1000);
+        if (!isPermissionDenied) {
 
-        if (force || shouldUpdate) {
-            if (isLocationProviderAvailable(mContext)) {
+            boolean shouldUpdate = sLastKnownLocation == null ||
+                    (System.currentTimeMillis() - sLastKnownLocation.getTime() > 2 * 60 * 1000);
 
-                SmartLocation.with(mContext)
-                        .location(new LocationGooglePlayServicesWithFallbackProvider(mContext))
-                        .config(LocationParams.BEST_EFFORT)
-                        .oneFix()
-                        .start(location -> {
-                            Log.d(TAG, "Location Updated Successfully");
-                            handleLocationUpdate(location);
-                            cancelTimer();
-                        });
+            if (force || shouldUpdate) {
+                if (isLocationProviderAvailable(mContext)) {
 
-                isLocationRequested = true;
+                    SmartLocation.with(mContext)
+                            .location(new LocationGooglePlayServicesWithFallbackProvider(mContext))
+                            .config(LocationParams.BEST_EFFORT)
+                            .oneFix()
+                            .start(location -> {
+                                Log.d(TAG, "Location Updated Successfully");
+                                handleLocationUpdate(location);
+                                cancelTimer();
+                            });
 
-                int timeoutDelay = REQUEST_TIMEOUT_DELAY;
-                if (sLastKnownLocation == null) {
-                    timeoutDelay *= 2;
+                    isLocationRequested = true;
+
+                    int timeoutDelay = REQUEST_TIMEOUT_DELAY;
+                    if (sLastKnownLocation == null) {
+                        timeoutDelay *= 2;
+                    }
+                    startTimer(timeoutDelay);
+
+                } else {
+                    if (mListener != null) {
+                        mListener.onError("LOCATION_UNAVAILABLE", null);
+                    }
+                    stop();
                 }
-                startTimer(timeoutDelay);
 
             } else {
-                if (mListener != null) {
-                    mListener.onError("LOCATION_UNAVAILABLE", null);
-                }
-                stop();
+                isLocationRequested = true;
+                handleLocationUpdate(sLastKnownLocation);
             }
-
         } else {
-            isLocationRequested = true;
-            handleLocationUpdate(sLastKnownLocation);
+            if (mListener != null) {
+                mListener.onError("PERMISSION_DENIED", null);
+            }
+            stop();
         }
     }
 
@@ -186,6 +198,19 @@ public class LocationClient {
     }
 
     public static boolean isLocationProviderAvailable(Context context) {
-        return SmartLocation.with(context).location().state().isAnyProviderAvailable();
+        if (!isPermissionDenied) try {
+            return SmartLocation.with(context).location().state().isAnyProviderAvailable();
+        } catch (SecurityException e) {
+            isPermissionDenied = true;
+        }
+        return false;
+    }
+
+    public static boolean isPermissionDenied() {
+        return isPermissionDenied;
+    }
+
+    public static void setPermissionDenied(boolean isPermissionDenied) {
+        LocationClient.isPermissionDenied = isPermissionDenied;
     }
 }

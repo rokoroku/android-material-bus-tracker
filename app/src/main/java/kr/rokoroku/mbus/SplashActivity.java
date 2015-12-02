@@ -8,6 +8,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.ImageView;
 
+import co.naughtyspirit.showcaseview.ShowcaseView;
 import io.codetail.animation.SupportAnimator;
 import kr.rokoroku.mbus.core.FavoriteFacade;
 import kr.rokoroku.mbus.data.model.Favorite;
@@ -87,7 +88,8 @@ public class SplashActivity extends AppCompatActivity {
             @Override
             public void onAnimationEnd() {
                 if (!isFinishing()) {
-                    Intent intent = new Intent(SplashActivity.this, MainActivity.class);
+                    boolean shouldShowWalkthrough = !getSharedPreferences(BaseApplication.SHARED_PREFERENCE_KEY, MODE_PRIVATE).contains(BaseApplication.PREFERENCE_WALKTHROUGH);
+                    Intent intent = new Intent(SplashActivity.this, shouldShowWalkthrough ? WalkthroughActivity.class : MainActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(intent);
                     overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);

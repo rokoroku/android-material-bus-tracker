@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -42,6 +43,7 @@ import kr.rokoroku.mbus.util.GeoUtils;
 import kr.rokoroku.mbus.util.SimpleProgressCallback;
 import kr.rokoroku.mbus.util.ThemeUtils;
 import kr.rokoroku.mbus.util.ViewUtils;
+import kr.rokoroku.mbus.util.support.BitmapUtils;
 
 /**
  * Created by rok on 2015. 7. 17..
@@ -56,6 +58,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
 
     private final int DEFAULT_ZOOM_LEVEL = 16;
     private final int INITIAL_ZOOM_LEVEL = 12;
+    private final int STATION_VISIBLE_RADIUS = 2000;
 
     private LocationClient mLocationClient;
     private CameraPosition mPreviousPosition;
@@ -331,7 +334,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
             Log.d("onCameraChange", String.format("zoom: %f, radius: %.6f", cameraPosition.zoom, GeoUtils.getRadius(latLng, bounds)));
             int radius = (int) (GeoUtils.getRadius(latLng, bounds));
 
-            if (radius > 3000) {
+            if (radius > STATION_VISIBLE_RADIUS) {
                 if (mListener != null && getActivity() != null) {
                     mListener.onErrorMessage(getString(R.string.alert_zoom_to_search_nearby_station));
                 }
@@ -428,7 +431,6 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
                             .position(latLng)
                             .title(routeStation.getName())
                             .snippet(routeStation.getLocalId())
-                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.bus_stop_marker))
                             .visible(false);
                     Marker marker = map.addMarker(markerOptions);
                     markers.add(marker);
@@ -507,7 +509,6 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
                         .position(latLng)
                         .title(station.getName())
                         .snippet(station.getLocalId())
-                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.bus_stop_marker))
                         .visible(false);
 
                 GoogleMap map = getMap();
@@ -530,14 +531,14 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
             if (isSearchEnable) {
                 LatLngBounds bounds = getMap().getProjection().getVisibleRegion().latLngBounds;
                 int radius = (int) (GeoUtils.getRadius(cameraPosition.target, bounds));
-                if(radius > 3000) {
+                if(radius > STATION_VISIBLE_RADIUS) {
                     visible = false;
                 }
             } else if (cameraPosition.zoom < 11) {
                 visible = false;
             }
 
-            int size = (int) cameraPosition.zoom;
+            int size = (int) (cameraPosition.zoom * 2);
             bitmap = getScaledStationIcon(size);
 
             LatLngBounds bounds = getMap().getProjection().getVisibleRegion().latLngBounds;
@@ -566,7 +567,8 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
     }
 
     private Bitmap getScaledStationIcon(int dp) {
-        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.bus_stop_marker);
+        Drawable drawable = getResources().getDrawable(R.drawable.bus_stop_marker);
+        Bitmap bitmap = BitmapUtils.drawableToBitmap(drawable);
         int pixel = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, getResources().getDisplayMetrics());
         return Bitmap.createScaledBitmap(bitmap, pixel, pixel, false);
     }

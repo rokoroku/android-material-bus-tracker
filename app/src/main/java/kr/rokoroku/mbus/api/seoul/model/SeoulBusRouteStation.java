@@ -6,7 +6,7 @@ import org.simpleframework.xml.Root;
 /**
  * Created by rok on 2015. 4. 23..
  */
-@Root(name = "itemList")
+@Root(name = "itemList", strict = false)
 public class SeoulBusRouteStation {
     @Element
     String busRouteId;      // 노선 ID

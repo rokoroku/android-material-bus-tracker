@@ -1,10 +1,12 @@
 package kr.rokoroku.mbus.api.seoul.model;
 
 import org.simpleframework.xml.Element;
+import org.simpleframework.xml.Root;
 
 /**
  * Created by rok on 2015. 6. 9..
  */
+@Root(strict = false)
 public class SeoulBusArrival {
     /**
      * neus2 : 403

@@ -1,5 +1,6 @@
 package kr.rokoroku.mbus;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -34,6 +35,11 @@ import android.widget.TextView;
 
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.balysv.materialmenu.MaterialMenuDrawable;
+import com.canelmas.let.AskPermission;
+import com.canelmas.let.DeniedPermission;
+import com.canelmas.let.Let;
+import com.canelmas.let.RuntimePermissionListener;
+import com.canelmas.let.RuntimePermissionRequest;
 import com.fsn.cauly.CaulyNativeAdView;
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
@@ -73,7 +79,8 @@ import kr.rokoroku.mbus.util.ViewUtils;
 
 
 public class MainActivity extends AbstractBaseActivity implements RecyclerViewFragment.RecyclerViewInterface,
-        FavoriteAdapter.EventListener, SearchBox.SearchListener, SearchBox.MenuListener {
+        FavoriteAdapter.EventListener, SearchBox.SearchListener, SearchBox.MenuListener,
+        RuntimePermissionListener {
 
     private static final String SAVED_STATE_EXPANDABLE_ITEM_MANAGER = "expandable_state";
     private static final String TAG_FRAGMENT_MAP = "MAP";
@@ -162,8 +169,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
                         .callback(new MaterialDialog.ButtonCallback() {
                             @Override
                             public void onPositive(MaterialDialog dialog) {
-                                Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-                                startActivityForResult(intent, RESULT_GPS_SETTINGS);
+                                askForGpsPermission();
                             }
 
                             @Override
@@ -179,6 +185,53 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
                 dialog.show();
             }
         }
+    }
+
+    @AskPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+    private void askForGpsPermission() {
+        Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+        startActivityForResult(intent, RESULT_GPS_SETTINGS);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        Let.handle(this, requestCode, permissions, grantResults);
+    }
+
+    @Override
+    public void onShowPermissionRationale(List<String> permissions, RuntimePermissionRequest permissionRequest) {
+
+        //  tell user why you need these permissions
+        final StringBuilder sb = new StringBuilder();
+
+        for (String permission : permissions) {
+            sb.append(permission);
+            sb.append("\n");
+        }
+
+        new MaterialDialog.Builder(this)
+                .title("Permission Required!")
+                .content(sb.toString())
+                .cancelable(true)
+                .negativeText("No Thanks")
+                .positiveText("Try Again")
+                .callback(new MaterialDialog.ButtonCallback() {
+                    @Override
+                    public void onPositive(MaterialDialog dialog) {
+                        permissionRequest.retry();
+                    }
+
+                    @Override
+                    public void onNegative(MaterialDialog dialog) {
+                        dialog.dismiss();
+                    }
+                })
+                .show();
+    }
+
+    @Override
+    public void onPermissionDenied(List<DeniedPermission> deniedPermissionList) {
+        LocationClient.setPermissionDenied(true);
     }
 
     @Override
@@ -415,7 +468,9 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
 
     @Override
     public void onSearchCleared() {
-        mSearchButton.hide(true);
+        if (TextUtils.isEmpty(mSearchBox.getSearchText())) {
+            mSearchButton.hide(true);
+        }
     }
 
     @Override
@@ -1060,7 +1115,7 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
 
                     @Override
                     public void onFailedToReceiveNativeAd(CaulyNativeAdView caulyNativeAdView, int i, String s) {
-                        Log.e("CaulyAd", s);
+                        Log.e("CaulyAdFailure", "error: " + s);
                         mFavoriteAdapter.setAdPosition(-1);
                         showFavoriteFrame();
                     }

@@ -387,8 +387,12 @@ public class Station implements Parcelable, Serializable {
             setStationRouteList(stationRoutes);
         } else {
             for (StationRoute stationRoute : stationRoutes) {
-                stationRouteList.remove(stationRoute);
-                stationRouteList.add(stationRoute);
+                int index = stationRouteList.indexOf(stationRoute);
+                if (index >= 0) {
+                    stationRouteList.get(index).setArrivalInfo(stationRoute.getArrivalInfo());
+                } else {
+                    stationRouteList.add(stationRoute);
+                }
             }
         }
     }
