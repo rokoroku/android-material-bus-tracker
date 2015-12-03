@@ -11,7 +11,6 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.ActionMode;
 import android.view.Menu;
@@ -25,26 +24,27 @@ import android.widget.Toast;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.fsn.cauly.CaulyNativeAdView;
 import com.github.clans.fab.FloatingActionButton;
-import com.github.clans.fab.FloatingActionMenu;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.maps.model.LatLng;
 import com.h6ah4i.android.widget.advrecyclerview.animator.GeneralItemAnimator;
 import com.h6ah4i.android.widget.advrecyclerview.animator.RefactoredDefaultItemAnimator;
 import com.h6ah4i.android.widget.advrecyclerview.expandable.RecyclerViewExpandableItemManager;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.RunnableFuture;
 
+import kr.rokoroku.mbus.api.ApiWrapperInterface;
 import kr.rokoroku.mbus.core.ApiFacade;
 import kr.rokoroku.mbus.core.DatabaseFacade;
 import kr.rokoroku.mbus.core.FavoriteFacade;
 import kr.rokoroku.mbus.core.LocationClient;
 import kr.rokoroku.mbus.data.RouteDataProvider;
 import kr.rokoroku.mbus.data.model.FavoriteGroup;
+import kr.rokoroku.mbus.data.model.FavoriteItem;
 import kr.rokoroku.mbus.data.model.Route;
 import kr.rokoroku.mbus.data.model.RouteStation;
 import kr.rokoroku.mbus.data.model.RouteType;
@@ -58,6 +58,7 @@ import kr.rokoroku.mbus.util.ThemeUtils;
 import kr.rokoroku.mbus.util.TimeUtils;
 import kr.rokoroku.mbus.util.ViewUtils;
 import kr.rokoroku.widget.ConnectorView;
+import retrofit.Callback;
 
 
 public class RouteActivity extends AbstractBaseActivity
@@ -619,11 +620,12 @@ public class RouteActivity extends AbstractBaseActivity
             Route route = mRouteDataProvider.getRoute();
 
             Drawable drawable;
-            if (route != null && FavoriteFacade.getInstance().isAdded(route)) {
-                drawable = getResources().getDrawable(R.drawable.ic_favorite_star_filled);
-                ViewUtils.setTint(drawable, ThemeUtils.getResourceColor(this, R.color.md_red_700));
+            FavoriteItem item = FavoriteFacade.getInstance().getItem(route);
+            if (item != null) {
+                drawable = getResources().getDrawable(R.drawable.ic_favorite_24dp);
+                ViewUtils.setTint(drawable, ThemeUtils.getResourceColor(this, R.color.md_red_400));
             } else {
-                drawable = getResources().getDrawable(R.drawable.ic_favorite_star);
+                drawable = getResources().getDrawable(R.drawable.ic_favorite_outline_24dp);
                 ViewUtils.setTint(drawable, ThemeUtils.getThemeColor(this, android.R.attr.textColorPrimary));
             }
             favorite.setIcon(drawable);
@@ -646,11 +648,16 @@ public class RouteActivity extends AbstractBaseActivity
                 return true;
 
             case R.id.action_add_to_favorite:
-                addToFavorite(null);
-
-                Drawable drawable = getResources().getDrawable(R.drawable.ic_favorite_star_filled);
-                ViewUtils.setTint(drawable, ThemeUtils.getResourceColor(this, R.color.md_red_700));
-                item.setIcon(drawable);
+                FavoriteItem favoriteItem = FavoriteFacade.getInstance().getItem(mRouteDataProvider.getRoute());
+                if (favoriteItem == null) {
+                    addToFavorite(null);
+                } else {
+                    if (FavoriteFacade.getInstance().removeItem(favoriteItem)) {
+                        Snackbar.make(mCoordinatorLayout, R.string.alert_favorite_removed, Snackbar.LENGTH_LONG)
+                                .show();
+                        invalidateOptionsMenu();
+                    }
+                }
                 return true;
 
             case R.id.action_map:
@@ -694,8 +701,10 @@ public class RouteActivity extends AbstractBaseActivity
             String alertString;
             if (routeStation != null) {
                 alertString = getString(R.string.alert_favorite_added_with, routeStation.getName());
+                mBusRouteAdapter.notifyDataSetChanged();
             } else {
                 alertString = getString(R.string.alert_favorite_added);
+                invalidateOptionsMenu();
             }
             Snackbar.make(mCoordinatorLayout, alertString, Snackbar.LENGTH_LONG).show();
 
@@ -724,8 +733,10 @@ public class RouteActivity extends AbstractBaseActivity
                                 String alertString;
                                 if (routeStation != null) {
                                     alertString = getString(R.string.alert_favorite_added_with, routeStation.getName());
+                                    mBusRouteAdapter.notifyDataSetChanged();
                                 } else {
                                     alertString = getString(R.string.alert_favorite_added);
+                                    invalidateOptionsMenu();
                                 }
                                 Snackbar.make(mCoordinatorLayout, alertString, Snackbar.LENGTH_LONG).show();
                             }
@@ -738,7 +749,15 @@ public class RouteActivity extends AbstractBaseActivity
 
     @Override
     public void onClickFavoriteButton(ImageButton button, RouteStation routeStation) {
-        addToFavorite(routeStation);
-        button.setImageResource(R.drawable.ic_favorite_star_filled);
+        FavoriteItem favoriteItem = FavoriteFacade.getInstance().getItem(mRouteDataProvider.getRoute(), routeStation);
+        if (favoriteItem == null) {
+            addToFavorite(routeStation);
+        } else {
+            if (FavoriteFacade.getInstance().removeItem(favoriteItem)) {
+                Snackbar.make(mCoordinatorLayout, R.string.alert_favorite_removed, Snackbar.LENGTH_LONG)
+                        .show();
+                button.setImageResource(R.drawable.ic_favorite_outline_24dp);
+            }
+        }
     }
 }

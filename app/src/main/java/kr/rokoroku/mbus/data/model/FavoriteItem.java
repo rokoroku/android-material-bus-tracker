@@ -144,24 +144,42 @@ public class FavoriteItem implements Serializable {
         return null;
     }
 
-    public boolean contains(Route route) {
-        if (dataKey != null) {
-            if (dataKey.provider == route.getProvider() && dataKey.id.equals(route.getId())) return true;
-        }
-        if (extraKey != null) {
-            if (extraKey.id.equals(route.getId())) return true;
-        }
-        return false;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        FavoriteItem that = (FavoriteItem) o;
+
+        if (dataKey != null ? !dataKey.equals(that.dataKey) : that.dataKey != null) return false;
+        return !(extraKey != null ? !extraKey.equals(that.extraKey) : that.extraKey != null);
     }
 
-    public boolean contains(Station station) {
-        if (dataKey != null) {
-            if (dataKey.provider == station.getProvider() && dataKey.id.equals(station.getId())) return true;
-        }
-        if (extraKey != null) {
-            if (extraKey.id.equals(station.getId())) return true;
-        }
-        return false;
+    @Override
+    public int hashCode() {
+        int result = dataKey != null ? dataKey.hashCode() : 0;
+        result = 31 * result + (extraKey != null ? extraKey.hashCode() : 0);
+        return result;
+    }
+
+    public boolean equals(Route route, RouteStation routeStation) {
+        return dataKey != null &&
+                dataKey.provider == route.getProvider() &&
+                dataKey.id.equals(route.getId()) &&
+                (!(extraKey != null || routeStation != null)
+                        || extraKey != null && routeStation != null &&
+                        extraKey.provider == routeStation.getProvider() &&
+                        extraKey.id.equals(routeStation.getLocalId()));
+    }
+
+    public boolean equals(Station station, StationRoute stationRoute) {
+        return dataKey != null &&
+                dataKey.provider == station.getProvider() &&
+                dataKey.id.equals(station.getId()) &&
+                (!(extraKey != null || stationRoute != null)
+                        || extraKey != null && stationRoute != null &&
+                        extraKey.provider == stationRoute.getProvider() &&
+                        extraKey.id.equals(stationRoute.getRouteId()));
     }
 
     public static class AccessKey implements Serializable {

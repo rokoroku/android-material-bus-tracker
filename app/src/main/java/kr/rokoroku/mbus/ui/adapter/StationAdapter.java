@@ -43,6 +43,7 @@ import kr.rokoroku.mbus.core.ApiFacade;
 import kr.rokoroku.mbus.core.FavoriteFacade;
 import kr.rokoroku.mbus.data.StationDataProvider;
 import kr.rokoroku.mbus.data.model.ArrivalInfo;
+import kr.rokoroku.mbus.data.model.FavoriteItem;
 import kr.rokoroku.mbus.data.model.Provider;
 import kr.rokoroku.mbus.data.model.Route;
 import kr.rokoroku.mbus.data.model.RouteType;
@@ -302,7 +303,10 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
                                     resultArrivalInfo = new ArrivalInfo(routeId, station.getId());
                                 }
                                 stationRoute.setArrivalInfo(resultArrivalInfo);
-                                ViewUtils.runOnUiThread(StationAdapter.this::notifyDataSetChanged);
+                                arrivalViewHolder.setItem(stationRoute.getArrivalInfo(), childPosition);
+                                ViewUtils.runOnUiThread(() -> {
+                                    if (childCount != getChildCount(groupPosition)) notifyDataSetChanged();
+                                }, 100);
                                 ViewUtils.runOnUiThread(() -> mReloadingArrivalInfoSet.remove(routeId), 1000);
                             }
 
@@ -310,6 +314,9 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
                             public void onError(int progress, Throwable t) {
                                 Toast.makeText(arrivalViewHolder.itemView.getContext(), t.getMessage(), Toast.LENGTH_LONG).show();
                                 arrivalViewHolder.setItem(null, childPosition);
+                                ViewUtils.runOnUiThread(() -> {
+                                    if (childCount != getChildCount(groupPosition)) notifyDataSetChanged();
+                                }, 100);
                                 ViewUtils.runOnUiThread(() -> mReloadingArrivalInfoSet.remove(routeId), 1000);
                             }
                         });
@@ -448,10 +455,11 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
                 mRouteType.setTextColor(color);
             }
 
-            if (mDataProvider.checkFavoritedRoute(mItem)) {
-                mFavoriteButton.setImageResource(R.drawable.ic_favorite_star_filled);
+            FavoriteItem favoriteItem = FavoriteFacade.getInstance().getItem(mDataProvider.getStation(), stationRoute);
+            if (favoriteItem != null) {
+                mFavoriteButton.setImageResource(R.drawable.ic_favorite_24dp);
             } else {
-                mFavoriteButton.setImageResource(R.drawable.ic_favorite_star);
+                mFavoriteButton.setImageResource(R.drawable.ic_favorite_outline_24dp);
             }
 
             ArrivalInfo arrivalInfo = stationRoute.getArrivalInfo();

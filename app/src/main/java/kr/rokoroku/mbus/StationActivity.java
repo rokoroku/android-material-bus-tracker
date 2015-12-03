@@ -9,24 +9,18 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.ImageButton;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.fsn.cauly.CaulyNativeAdView;
-import com.github.clans.fab.FloatingActionButton;
-import com.github.clans.fab.FloatingActionMenu;
 import com.h6ah4i.android.widget.advrecyclerview.animator.RefactoredDefaultItemAnimator;
 import com.h6ah4i.android.widget.advrecyclerview.expandable.RecyclerViewExpandableItemManager;
 
-import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -35,8 +29,8 @@ import kr.rokoroku.mbus.api.ApiWrapperInterface;
 import kr.rokoroku.mbus.core.DatabaseFacade;
 import kr.rokoroku.mbus.data.model.ArrivalInfo;
 import kr.rokoroku.mbus.data.model.FavoriteGroup;
+import kr.rokoroku.mbus.data.model.FavoriteItem;
 import kr.rokoroku.mbus.data.model.Provider;
-import kr.rokoroku.mbus.data.model.Route;
 import kr.rokoroku.mbus.ui.adapter.StationAdapter;
 import kr.rokoroku.mbus.data.StationDataProvider;
 import kr.rokoroku.mbus.core.ApiFacade;
@@ -454,11 +448,11 @@ public class StationActivity extends AbstractBaseActivity
             Station station = mStationDataProvider.getStation();
 
             Drawable drawable;
-            if (station != null && FavoriteFacade.getInstance().isAdded(station)) {
-                drawable = getResources().getDrawable(R.drawable.ic_favorite_star_filled);
-                ViewUtils.setTint(drawable, ThemeUtils.getResourceColor(this, R.color.md_red_700));
+            if (FavoriteFacade.getInstance().getItem(station) != null) {
+                drawable = getResources().getDrawable(R.drawable.ic_favorite_24dp);
+                ViewUtils.setTint(drawable, ThemeUtils.getResourceColor(this, R.color.md_red_400));
             } else {
-                drawable = getResources().getDrawable(R.drawable.ic_favorite_star);
+                drawable = getResources().getDrawable(R.drawable.ic_favorite_outline_24dp);
                 ViewUtils.setTint(drawable, ThemeUtils.getThemeColor(this, android.R.attr.textColorPrimary));
             }
             item.setIcon(drawable);
@@ -481,11 +475,17 @@ public class StationActivity extends AbstractBaseActivity
                 return true;
 
             case R.id.action_add_to_favorite:
-                addToFavorite(null);
-
-                Drawable drawable = getResources().getDrawable(R.drawable.ic_favorite_star_filled);
-                ViewUtils.setTint(drawable, ThemeUtils.getResourceColor(this, R.color.md_red_700));
-                item.setIcon(drawable);
+                Station station = mStationDataProvider.getStation();
+                FavoriteItem favoriteItem = FavoriteFacade.getInstance().getItem(station);
+                if (favoriteItem == null) {
+                    addToFavorite(null);
+                } else {
+                    if (FavoriteFacade.getInstance().removeItem(favoriteItem)) {
+                        Snackbar.make(mCoordinatorLayout, R.string.alert_favorite_removed, Snackbar.LENGTH_LONG)
+                                .show();
+                        invalidateOptionsMenu();
+                    }
+                }
                 return true;
 
             case R.id.action_map:
@@ -529,8 +529,10 @@ public class StationActivity extends AbstractBaseActivity
             String alertString;
             if (stationRoute != null) {
                 alertString = getString(R.string.alert_favorite_added_with, stationRoute.getRouteName());
+                mBusStationAdapter.notifyDataSetChanged();
             } else {
                 alertString = getString(R.string.alert_favorite_added);
+                invalidateOptionsMenu();
             }
             Snackbar.make(mCoordinatorLayout, alertString, Snackbar.LENGTH_LONG).show();
 
@@ -558,8 +560,11 @@ public class StationActivity extends AbstractBaseActivity
                                 String alertString;
                                 if (stationRoute != null) {
                                     alertString = getString(R.string.alert_favorite_added_with, stationRoute.getRouteName());
+                                    mBusStationAdapter.notifyDataSetChanged();
+
                                 } else {
                                     alertString = getString(R.string.alert_favorite_added);
+                                    invalidateOptionsMenu();
                                 }
                                 Snackbar.make(mCoordinatorLayout, alertString, Snackbar.LENGTH_LONG).show();
                             }
@@ -572,7 +577,15 @@ public class StationActivity extends AbstractBaseActivity
 
     @Override
     public void onClickFavoriteButton(ImageButton button, StationRoute stationRoute) {
-        addToFavorite(stationRoute);
-        button.setImageResource(R.drawable.ic_favorite_star_filled);
+        FavoriteItem favoriteItem = FavoriteFacade.getInstance().getItem(mStationDataProvider.getStation(), stationRoute);
+        if (favoriteItem == null) {
+            addToFavorite(stationRoute);
+        } else {
+            if (FavoriteFacade.getInstance().removeItem(favoriteItem)) {
+                Snackbar.make(mCoordinatorLayout, R.string.alert_favorite_removed, Snackbar.LENGTH_LONG)
+                        .show();
+                button.setImageResource(R.drawable.ic_favorite_outline_24dp);
+            }
+        }
     }
 }

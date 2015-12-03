@@ -99,6 +99,6 @@
     <string name="walkthrough_station_title">주변 정류장</string>
     <string name="walkthrough_station_description">같은 이름의 정류장이 많아 헷갈리시죠?\n\n이제 주변의 정류장을 지도에서 쉽게 찾아 보세요.</string>
     <string name="walkthrough_favorite_title">즐겨찾기</string>
-    <string name="walkthrough_favorite_description">내가 원하는 순서로 정렬할 수는 없을까?\n\n다양한 편집 기능을 갖춘 즐겨찾기를 통해 나만의 즐겨찾기 목록을 만들어 보세요.</string>
+    <string name="walkthrough_favorite_description">원하는 순서로 정렬할 수는 없을까?\n\n다양한 편집 기능을 갖춘 즐겨찾기를 통해 나만의 즐겨찾기 목록을 만들어 보세요.</string>
 
 </resources>

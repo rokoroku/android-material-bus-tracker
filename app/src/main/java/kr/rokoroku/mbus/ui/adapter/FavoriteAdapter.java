@@ -475,15 +475,15 @@ public class FavoriteAdapter
     public ItemDraggableRange onGetChildItemDraggableRange(ItemViewHolder sectionViewHolder,
                                                            int groupPosition, int childPosition) {
         int draggableStartRange = 0;
-        int draggableEndRange = getGroupCount() - 1;
-        if (getAdPosition() >= 0) {
-            draggableEndRange--;
+        int draggableEndRange = getGroupCount() - 2;
+        if (getAdTag() != null && getAdPosition() >= 0) {
             if (getAdPosition() == 0) {
                 draggableStartRange++;
             } else if (getAdPosition() == draggableEndRange) {
                 draggableEndRange--;
             }
         }
+        if (draggableEndRange < draggableStartRange) draggableEndRange = draggableStartRange;
         return new GroupPositionItemDraggableRange(draggableStartRange, draggableEndRange);
     }
 

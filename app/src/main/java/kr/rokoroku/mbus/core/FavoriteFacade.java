@@ -150,27 +150,49 @@ public class FavoriteFacade {
         return favoriteGroup;
     }
 
-    public boolean isAdded(Route route) {
+    public boolean removeItem(FavoriteItem favoriteItem) {
+        Favorite bookmark = DatabaseFacade.getInstance().getBookmark(currentFavorite.getName());
+        boolean result = false;
+        if (bookmark != null) {
+            for (FavoriteGroup favoriteGroup : bookmark.getFavoriteGroups()) {
+                result |= favoriteGroup.remove(favoriteItem);
+            }
+            if (result) {
+                DatabaseFacade.getInstance().putBookmark(currentFavorite.getName(), currentFavorite);
+            }
+        }
+        return result;
+    }
+
+    public FavoriteItem getItem(Route route) {
+        return getItem(route, null);
+    }
+
+    public FavoriteItem getItem(Station station) {
+        return getItem(station, null);
+    }
+
+    public FavoriteItem getItem(Route route, RouteStation routeStation) {
         Favorite bookmark = DatabaseFacade.getInstance().getBookmark(currentFavorite.getName());
         if (bookmark != null && route != null) {
             for (FavoriteGroup favoriteGroup : bookmark.getFavoriteGroups()) {
                 for (FavoriteItem favoriteItem : favoriteGroup.getItems()) {
-                    if (favoriteItem.contains(route)) return true;
+                    if (favoriteItem.equals(route, routeStation)) return favoriteItem;
                 }
             }
         }
-        return false;
+        return null;
     }
 
-    public boolean isAdded(Station station) {
+    public FavoriteItem getItem(Station station, StationRoute stationRoute) {
         Favorite bookmark = DatabaseFacade.getInstance().getBookmark(currentFavorite.getName());
         if (bookmark != null && station != null) {
             for (FavoriteGroup favoriteGroup : bookmark.getFavoriteGroups()) {
                 for (FavoriteItem favoriteItem : favoriteGroup.getItems()) {
-                    if (favoriteItem.contains(station)) return true;
+                    if (favoriteItem.equals(station, stationRoute)) return favoriteItem;
                 }
             }
         }
-        return false;
+        return null;
     }
 }

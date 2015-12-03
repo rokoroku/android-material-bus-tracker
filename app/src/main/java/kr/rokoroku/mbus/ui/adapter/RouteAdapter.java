@@ -13,7 +13,6 @@ import android.graphics.drawable.Drawable;
 import android.os.Parcelable;
 import android.support.v4.view.ViewCompat;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -35,9 +34,9 @@ import kr.rokoroku.mbus.R;
 import kr.rokoroku.mbus.StationActivity;
 import kr.rokoroku.mbus.core.ApiFacade;
 import kr.rokoroku.mbus.data.RouteDataProvider;
-import kr.rokoroku.mbus.data.StationDataProvider;
 import kr.rokoroku.mbus.data.model.ArrivalInfo;
 import kr.rokoroku.mbus.data.model.BusLocation;
+import kr.rokoroku.mbus.data.model.FavoriteItem;
 import kr.rokoroku.mbus.data.model.Provider;
 import kr.rokoroku.mbus.data.model.Route;
 import kr.rokoroku.mbus.data.model.RouteStation;
@@ -380,11 +379,12 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
                                         resultArrivalInfo = new ArrivalInfo(routeId, routeStation.getId());
                                     }
                                     routeStation.putArrivalInfo(resultArrivalInfo);
+                                    arrivalViewHolder.setItem(resultArrivalInfo, childPosition);
                                     putArrivalInfoCache(finalStationRoute.getLocalStationId(), resultArrivalInfo);
 
-                                    if (childCount == (mAdTag == null ? 1 : 2)) {
-                                        ViewUtils.runOnUiThread(() -> { if(getChildCount(groupPosition) == (mAdTag == null ? 2 : 3)) notifyDataSetChanged(); });
-                                    }
+                                    ViewUtils.runOnUiThread(() -> {
+                                        if (childCount != getChildCount(groupPosition)) notifyDataSetChanged();
+                                    }, 100);
                                     ViewUtils.runOnUiThread(() -> mReloadingArrivalInfoSet.remove(localStationId), 1000);
                                 }
 
@@ -393,6 +393,9 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
                                     Toast.makeText(arrivalViewHolder.itemView.getContext(), t.getMessage(), Toast.LENGTH_LONG).show();
                                     arrivalViewHolder.setItem(null, childPosition);
                                     arrivalViewHolder.setColorByStationId(routeStation.getId());
+                                    ViewUtils.runOnUiThread(() -> {
+                                        if (childCount != getChildCount(groupPosition)) notifyDataSetChanged();
+                                    }, 100);
                                     ViewUtils.runOnUiThread(() -> mReloadingArrivalInfoSet.remove(localStationId), 1000);
                                 }
                             });
@@ -406,11 +409,9 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
                     arrivalViewHolder.setColorByStationId(arrivalInfo.getStationId());
                     if (childPosition == 0 && getArrivalInfoCache(localStationId) == null) {
                         putArrivalInfoCache(localStationId, arrivalInfo);
-                        if (childCount == 1) {
-                            ViewUtils.runOnUiThread(() -> {
-                                if(getChildCount(groupPosition) == 2) notifyDataSetChanged();
-                            }, 50);
-                        }
+                        ViewUtils.runOnUiThread(() -> {
+                            if (childCount != getChildCount(groupPosition)) notifyDataSetChanged();
+                        }, 250);
                     }
                 }
             }
@@ -600,10 +601,11 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
                     routeStation.getProvider(), routeStation.getId());
             mContainer.setCardBackgroundColor(favoriteStationColor.getColor(context));
 
-            if (FavoriteFacade.getInstance().isAdded(routeStation)) {
-                mFavoriteButton.setImageResource(R.drawable.ic_favorite_star_filled);
+            FavoriteItem favoriteItem = FavoriteFacade.getInstance().getItem(mDataProvider.getRoute(), routeStation);
+            if (favoriteItem != null) {
+                mFavoriteButton.setImageResource(R.drawable.ic_favorite_24dp);
             } else {
-                mFavoriteButton.setImageResource(R.drawable.ic_favorite_star);
+                mFavoriteButton.setImageResource(R.drawable.ic_favorite_outline_24dp);
             }
 
             if (TextUtils.isEmpty(routeStation.getLocalId())) {
