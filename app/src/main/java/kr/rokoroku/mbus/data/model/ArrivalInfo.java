@@ -44,7 +44,7 @@ public class ArrivalInfo implements Parcelable {
         this.isDriveEnd = "Y".equals(gbisBusArrival.getDrvEnd());
         this.timestamp = System.currentTimeMillis();
 
-        if (!TextUtils.isEmpty(gbisBusArrival.getPlateNo1())) {
+        if (!TextUtils.isEmpty(gbisBusArrival.getPlateNo1())) try {
             this.busArrivalItem1 = new BusArrivalItem();
             this.busArrivalItem1.plateNumber = gbisBusArrival.getPlateNo1();
             this.busArrivalItem1.predictTime = new Date(System.currentTimeMillis() + Integer.parseInt(gbisBusArrival.getPredictTime1()) * 60000);
@@ -52,9 +52,11 @@ public class ArrivalInfo implements Parcelable {
             this.busArrivalItem1.remainSeat = Integer.parseInt(gbisBusArrival.getRemainSeatCnt1());
             this.busArrivalItem1.isLowPlate = "Y".equals(gbisBusArrival.getLowPlate1());
             this.busArrivalItem1.isDelayed = "Y".equals(gbisBusArrival.getDelayYn1());
+        } catch (Exception e) {
+            busArrivalItem1 = null;
         }
 
-        if (!TextUtils.isEmpty(gbisBusArrival.getPlateNo2())) {
+        if (!TextUtils.isEmpty(gbisBusArrival.getPlateNo2())) try {
             this.busArrivalItem2 = new BusArrivalItem();
             this.busArrivalItem2.plateNumber = gbisBusArrival.getPlateNo2();
             this.busArrivalItem2.predictTime = new Date(System.currentTimeMillis() + Integer.parseInt(gbisBusArrival.getPredictTime2()) * 60000);
@@ -62,6 +64,8 @@ public class ArrivalInfo implements Parcelable {
             this.busArrivalItem2.remainSeat = Integer.parseInt(gbisBusArrival.getRemainSeatCnt2());
             this.busArrivalItem2.isLowPlate = "Y".equals(gbisBusArrival.getLowPlate2());
             this.busArrivalItem2.isDelayed = "Y".equals(gbisBusArrival.getDelayYn2());
+        } catch (Exception e) {
+            busArrivalItem2 = null;
         }
     }
 
@@ -71,7 +75,7 @@ public class ArrivalInfo implements Parcelable {
         this.isDriveEnd = "Y".equals(entity.getDrvEnd());
         this.timestamp = System.currentTimeMillis();
 
-        if (!TextUtils.isEmpty(entity.getPlateNo1())) {
+        if (!TextUtils.isEmpty(entity.getPlateNo1())) try {
             this.busArrivalItem1 = new BusArrivalItem();
             this.busArrivalItem1.vehicleId = entity.getVehId1();
             this.busArrivalItem1.plateNumber = entity.getPlateNo1();
@@ -80,9 +84,11 @@ public class ArrivalInfo implements Parcelable {
             this.busArrivalItem1.remainSeat = Integer.parseInt(entity.getRemainSeatCnt1());
             this.busArrivalItem1.isLowPlate = "Y".equals(entity.getLowPlate1());
             this.busArrivalItem1.isDelayed = "Y".equals(entity.getDelayYn1());
+        } catch (Exception e) {
+            busArrivalItem1 = null;
         }
 
-        if (!TextUtils.isEmpty(entity.getPlateNo2())) {
+        if (!TextUtils.isEmpty(entity.getPlateNo2())) try {
             this.busArrivalItem2 = new BusArrivalItem();
             this.busArrivalItem2.vehicleId = entity.getVehId2();
             this.busArrivalItem2.plateNumber = entity.getPlateNo2();
@@ -91,6 +97,8 @@ public class ArrivalInfo implements Parcelable {
             this.busArrivalItem2.remainSeat = Integer.parseInt(entity.getRemainSeatCnt2());
             this.busArrivalItem2.isLowPlate = "Y".equals(entity.getLowPlate2());
             this.busArrivalItem2.isDelayed = "Y".equals(entity.getDelayYn2());
+        } catch (Exception e) {
+            busArrivalItem2 = null;
         }
     }
 

@@ -788,12 +788,15 @@ public class MainActivity extends AbstractBaseActivity implements RecyclerViewFr
                 }
             }
             if (childView != null) {
-                new ShowcaseView.Builder(this, preferenceKey)
-                        .setDescription(getString(R.string.hint_favorite_tutorial), PositionsUtil.ItemPosition.CENTER)
-                        .setTarget(new TargetView(childView, TargetView.ShowcaseType.RECTANGLE))
-                        .setHideOnAction(true)
-                        .setOneShot(true)
-                        .build();
+                final View finalChildView = childView;
+                ViewUtils.runOnUiThread(() -> {
+                    new ShowcaseView.Builder(this, preferenceKey)
+                            .setDescription(getString(R.string.hint_favorite_tutorial), PositionsUtil.ItemPosition.CENTER)
+                            .setTarget(new TargetView(finalChildView, TargetView.ShowcaseType.RECTANGLE))
+                            .setHideOnAction(true)
+                            .setOneShot(true)
+                            .build();
+                }, 500);
             }
         }
         // TODO: REMOVE AFTER THIS BUILD

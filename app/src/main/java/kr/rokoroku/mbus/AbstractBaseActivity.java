@@ -1,11 +1,11 @@
 package kr.rokoroku.mbus;
 
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.LayoutRes;
 import android.support.design.widget.NavigationView;
-import android.support.v4.app.NavUtils;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
@@ -80,6 +80,18 @@ public abstract class AbstractBaseActivity extends AppCompatActivity implements 
             ex.printStackTrace();
             defaultUncaughtExceptionHandler.uncaughtException(thread, ex);
         });
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuItem refresh = menu.findItem(R.id.action_refresh);
+        if (refresh != null && refresh.getIcon() != null) {
+            Drawable icon = refresh.getIcon();
+            ViewUtils.setTint(icon, ThemeUtils.getThemeColor(this, android.R.attr.textColorPrimary));
+            refresh.setIcon(icon);
+        }
+
+        return super.onCreateOptionsMenu(menu);
     }
 
     @Override

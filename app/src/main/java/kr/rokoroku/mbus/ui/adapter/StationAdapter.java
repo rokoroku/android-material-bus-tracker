@@ -17,6 +17,7 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
@@ -24,6 +25,8 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.fsn.cauly.CaulyNativeAdView;
+import com.fsn.cauly.CaulyNativeAdViewListener;
 import com.h6ah4i.android.widget.advrecyclerview.utils.AbstractExpandableItemAdapter;
 import com.h6ah4i.android.widget.advrecyclerview.utils.AbstractExpandableItemViewHolder;
 
@@ -45,6 +48,7 @@ import kr.rokoroku.mbus.data.model.Route;
 import kr.rokoroku.mbus.data.model.RouteType;
 import kr.rokoroku.mbus.data.model.Station;
 import kr.rokoroku.mbus.data.model.StationRoute;
+import kr.rokoroku.mbus.util.CaulyAdUtil;
 import kr.rokoroku.mbus.util.FormatUtils;
 import kr.rokoroku.mbus.util.SimpleProgressCallback;
 import kr.rokoroku.mbus.util.ThemeUtils;
@@ -55,13 +59,16 @@ import kr.rokoroku.mbus.ui.widget.QuickAction;
 import kr.rokoroku.mbus.ui.widget.SplitCardView;
 
 
-public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter.BaseViewHolder, StationAdapter.BusArrivalViewHolder> {
+public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter.BaseViewHolder, StationAdapter.BaseChildViewHolder> {
 
     private static final String TAG = "StationAdapter";
 
     private static final int ITEM_SECTION = 1;
     private static final int ITEM_BUS = 2;
     private static final int ITEM_FOOTER = 3;
+
+    private static final int ITEM_CHILD_ROUTE = 10;
+    private static final int ITEM_CHILD_AD = 11;
 
     private final StationDataProvider mDataProvider;
     private long mExpandedGroupId = -1;
@@ -70,7 +77,9 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
     private Timer mTimer;
     private Set<WeakReference<BusArrivalItemViewHolder>> mArrivalViewReferenceSet;
     private final Set<String> mReloadingArrivalInfoSet = new HashSet<>();
+
     private OnItemInteractionListener mItemInteractionListener;
+    private String mAdTag;
 
     public StationAdapter(StationDataProvider dataProvider) {
         mDataProvider = dataProvider;
@@ -94,17 +103,20 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
     @Override
     public int getChildCount(int groupPosition) {
         StationDataProvider.StationListItemData item = mDataProvider.getItem(groupPosition);
+        int count = 0;
         if (item != null && item.getType().equals(StationDataProvider.StationListItemData.Type.ROUTE)) {
             StationRoute stationRoute = item.getStationRoute();
             ArrivalInfo arrivalInfo = stationRoute.getArrivalInfo();
             if(arrivalInfo != null && arrivalInfo.getBusArrivalItem2() != null) {
-                return 2;
+                count = 2;
             } else {
-                return 1;
+                count = 1;
             }
-        } else {
-            return 0;
+            if (mAdTag != null) {
+                count++;
+            }
         }
+        return count;
     }
 
     @Override
@@ -150,7 +162,11 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
 
     @Override
     public int getChildItemViewType(int groupPosition, int childPosition) {
-        return 0;
+        int childCount = getChildCount(groupPosition);
+        if (childCount > 0 && mAdTag != null && childCount - 1 == childPosition) {
+            return ITEM_CHILD_AD;
+        }
+        return ITEM_CHILD_ROUTE;
     }
 
     @Override
@@ -169,9 +185,15 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
     }
 
     @Override
-    public BusArrivalViewHolder onCreateChildViewHolder(ViewGroup parent, int viewType) {
+    public BaseChildViewHolder onCreateChildViewHolder(ViewGroup parent, int viewType) {
         final LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-        return new BusArrivalViewHolder(inflater.inflate(R.layout.row_station_route_more, parent, false));
+        switch (viewType) {
+            case ITEM_CHILD_ROUTE:
+                return new BusArrivalViewHolder(inflater.inflate(R.layout.row_station_route_more, parent, false));
+            case ITEM_CHILD_AD:
+                return new AdViewHolder(inflater.inflate(R.layout.row_station_route_more_ad, parent, false));
+        }
+        return null;
     }
 
     @Override
@@ -218,68 +240,88 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
     }
 
     @Override
-    public void onBindChildViewHolder(BusArrivalViewHolder holder, int groupPosition, int childPosition, int viewType) {
+    public void onBindChildViewHolder(BaseChildViewHolder holder, int groupPosition, int childPosition, int viewType) {
 
-        mExpandedGroupId = getGroupId(groupPosition);
-        mBusArrivalViewHolderReference = new WeakReference<>(holder);
-
-        holder.clear();
         Station station = mDataProvider.getStation();
         StationDataProvider.StationListItemData item = mDataProvider.getItem(groupPosition);
+        Context context = holder.itemView.getContext();
+
         if (item == null) {
-            holder.mRouteId = null;
-            holder.setItem(null, childPosition);
+            if (holder instanceof BusArrivalViewHolder) {
+                ((BusArrivalViewHolder)holder).clear();
+                ((BusArrivalViewHolder)holder).mRouteId = null;
+                ((BusArrivalViewHolder)holder).setItem(null, childPosition);
+            }
             return;
         }
 
         StationRoute stationRoute = item.getStationRoute();
         final String routeId = stationRoute.getRouteId();
         final int childCount = getChildCount(groupPosition);
-        holder.mRouteId = routeId;
-
-        if (stationRoute.getArrivalInfo() == null || TimeUtils.checkShouldUpdate(stationRoute.getArrivalInfo().getTimestamp())) {
-            synchronized (mReloadingArrivalInfoSet) {
-                if (!mReloadingArrivalInfoSet.contains(routeId)) {
-                    mReloadingArrivalInfoSet.add(routeId);
-                    ApiFacade.getInstance().getArrivalInfo(station, stationRoute, new SimpleProgressCallback<List<ArrivalInfo>>() {
-                        @Override
-                        public void onComplete(boolean success, List<ArrivalInfo> value) {
-                            ArrivalInfo resultArrivalInfo = stationRoute.getArrivalInfo();
-                            if (resultArrivalInfo == null) {
-                                resultArrivalInfo = new ArrivalInfo(routeId, station.getId());
-                            }
-                            stationRoute.setArrivalInfo(resultArrivalInfo);
-                            ViewUtils.runOnUiThread(StationAdapter.this::notifyDataSetChanged);
-                            ViewUtils.runOnUiThread(() -> mReloadingArrivalInfoSet.remove(routeId), 1000);
-                        }
-
-                        @Override
-                        public void onError(int progress, Throwable t) {
-                            Toast.makeText(holder.itemView.getContext(), t.getMessage(), Toast.LENGTH_LONG).show();
-                            holder.setItem(null, childPosition);
-                            ViewUtils.runOnUiThread(() -> mReloadingArrivalInfoSet.remove(routeId), 1000);
-                        }
-                    });
-                    return;
-                }
-            }
-            holder.setItem(stationRoute.getArrivalInfo(), childPosition);
-
-        } else {
-            holder.setItem(stationRoute.getArrivalInfo(), childPosition);
-        }
 
         FavoriteFacade.Color cardColor = FavoriteFacade.getInstance().getFavoriteRouteColor(
                 stationRoute.getProvider(), routeId);
-        holder.mCardView.setCardBackgroundColor(ThemeUtils.dimColor(cardColor.getColor(holder.itemView.getContext()), 0.95f));
+
+        holder.mCardView.setCardBackgroundColor(ThemeUtils.dimColor(cardColor.getColor(context), 0.95f));
+        holder.mCardView.setRoundTop(false);
+
         StationDataProvider.StationListItemData dataAfter = getItem(groupPosition + 1);
 
-        if(childCount == 1 || childPosition == 1) {
+        if (childPosition == childCount - 1) {
             holder.mCardView.setRoundBottom(dataAfter == null || dataAfter.getType().equals(StationDataProvider.StationListItemData.Type.SECTION));
-        } else if(childCount == 2 && childPosition == 0) {
+        } else if (childPosition < childCount - 1) {
             holder.mCardView.setRoundBottom(false);
         }
 
+
+        if (holder instanceof AdViewHolder) {
+            AdViewHolder adViewHolder = (AdViewHolder) holder;
+            if (mAdTag != null) {
+                adViewHolder.requestAd(mAdTag);
+            }
+        }
+
+        else if (holder instanceof BusArrivalViewHolder) {
+            BusArrivalViewHolder arrivalViewHolder = (BusArrivalViewHolder) holder;
+
+            mExpandedGroupId = getGroupId(groupPosition);
+            mBusArrivalViewHolderReference = new WeakReference<>(arrivalViewHolder);
+
+            arrivalViewHolder.clear();
+            arrivalViewHolder.mRouteId = routeId;
+
+            if (stationRoute.getArrivalInfo() == null || TimeUtils.checkShouldUpdate(stationRoute.getArrivalInfo().getTimestamp())) {
+                synchronized (mReloadingArrivalInfoSet) {
+                    if (!mReloadingArrivalInfoSet.contains(routeId)) {
+                        mReloadingArrivalInfoSet.add(routeId);
+                        ApiFacade.getInstance().getArrivalInfo(station, stationRoute, new SimpleProgressCallback<List<ArrivalInfo>>() {
+                            @Override
+                            public void onComplete(boolean success, List<ArrivalInfo> value) {
+                                ArrivalInfo resultArrivalInfo = stationRoute.getArrivalInfo();
+                                if (resultArrivalInfo == null) {
+                                    resultArrivalInfo = new ArrivalInfo(routeId, station.getId());
+                                }
+                                stationRoute.setArrivalInfo(resultArrivalInfo);
+                                ViewUtils.runOnUiThread(StationAdapter.this::notifyDataSetChanged);
+                                ViewUtils.runOnUiThread(() -> mReloadingArrivalInfoSet.remove(routeId), 1000);
+                            }
+
+                            @Override
+                            public void onError(int progress, Throwable t) {
+                                Toast.makeText(arrivalViewHolder.itemView.getContext(), t.getMessage(), Toast.LENGTH_LONG).show();
+                                arrivalViewHolder.setItem(null, childPosition);
+                                ViewUtils.runOnUiThread(() -> mReloadingArrivalInfoSet.remove(routeId), 1000);
+                            }
+                        });
+                        return;
+                    }
+                }
+                arrivalViewHolder.setItem(stationRoute.getArrivalInfo(), childPosition);
+
+            } else {
+                arrivalViewHolder.setItem(stationRoute.getArrivalInfo(), childPosition);
+            }
+        }
     }
 
     public int getExpandedPosition() {
@@ -324,6 +366,12 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
 
     public StationDataProvider.StationListItemData getItem(int groupPosition) {
         return mDataProvider.getItem(groupPosition);
+    }
+
+    public void setAdTag(String adTag) {
+        if (mAdTag != adTag) {
+            this.mAdTag = adTag;
+        }
     }
 
     public class BaseViewHolder extends AbstractExpandableItemViewHolder {
@@ -560,9 +608,17 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
         }
     }
 
-    public class BusArrivalViewHolder extends BaseViewHolder {
-
+    public class BaseChildViewHolder extends BaseViewHolder {
         public SplitCardView mCardView;
+
+        public BaseChildViewHolder(View v) {
+            super(v);
+            mCardView = (SplitCardView) v.findViewById(R.id.card_view);
+        }
+    }
+
+    public class BusArrivalViewHolder extends BaseChildViewHolder {
+
         public BusArrivalItemViewHolder mBusArrivalItem;
         public TextView mBusArrivalTitle;
         public ProgressBar mProgressBar;
@@ -801,6 +857,50 @@ public class StationAdapter extends AbstractExpandableItemAdapter<StationAdapter
         }, 0, 10000);
     }
 
+    public class AdViewHolder extends BaseChildViewHolder implements CaulyNativeAdViewListener {
+
+        private String mTag;
+        private ViewGroup mAdLayout;
+        private CaulyNativeAdView mAdView;
+
+        public AdViewHolder(View v) {
+            super(v);
+            mAdLayout = (ViewGroup) v.findViewById(R.id.ad_layout);
+        }
+
+        public void requestAd(String tag) {
+            if (mAdView == null || !TextUtils.equals(mTag, tag) || (mAdView != null && mAdView.getParent() != mAdLayout) ) {
+                mTag = tag;
+                Context context = mCardView.getContext();
+                CaulyAdUtil.requestAd2(context, tag, this);
+            }
+        }
+
+        @Override
+        public void onReceiveNativeAd(CaulyNativeAdView caulyNativeAdView, boolean b) {
+            if (caulyNativeAdView != null) {
+                mAdView = caulyNativeAdView;
+                ViewUtils.runOnUiThread(() -> {
+                    if (mAdView.getParent() != null) {
+                        ((ViewGroup) caulyNativeAdView.getParent()).removeView(mAdView);
+                    }
+                    mAdLayout.removeAllViewsInLayout();
+                    mAdLayout.addView(mAdView);
+                });
+            } else {
+                onFailedToReceiveNativeAd(null, -1, null);
+            }
+        }
+
+        @Override
+        public void onFailedToReceiveNativeAd(CaulyNativeAdView caulyNativeAdView, int i, String s) {
+            CaulyAdUtil.removeAd(mTag);
+            mAdView = null;
+            mTag = null;
+            mAdTag = null;
+            ViewUtils.runOnUiThread(StationAdapter.this::notifyDataSetChanged, 100);
+        }
+    }
 
     public OnItemInteractionListener getItemInteractionListener() {
         return mItemInteractionListener;

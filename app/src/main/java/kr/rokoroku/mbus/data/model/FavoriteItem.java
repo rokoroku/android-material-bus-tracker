@@ -1,5 +1,7 @@
 package kr.rokoroku.mbus.data.model;
 
+import android.text.TextUtils;
+
 import org.mapdb.Serializer;
 
 import java.io.DataInput;
@@ -120,7 +122,7 @@ public class FavoriteItem implements Serializable {
                         List<RouteStation> routeStationList = route.getRouteStationList();
                         if (routeStationList != null) {
                             for (RouteStation routeStation : routeStationList) {
-                                if (routeStation.getProvider().equals(extraKey.provider) && routeStation.getLocalId().equals(extraKey.id)) {
+                                if (routeStation.getProvider().equals(extraKey.provider) && TextUtils.equals(routeStation.getLocalId(), extraKey.id)) {
                                     extraData = routeStation;
                                     break;
                                 }

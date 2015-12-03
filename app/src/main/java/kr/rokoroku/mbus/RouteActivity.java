@@ -23,6 +23,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.afollestad.materialdialogs.MaterialDialog;
+import com.fsn.cauly.CaulyNativeAdView;
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
 import com.google.android.gms.common.ConnectionResult;
@@ -50,6 +51,7 @@ import kr.rokoroku.mbus.data.model.RouteType;
 import kr.rokoroku.mbus.data.model.Station;
 import kr.rokoroku.mbus.ui.adapter.RouteAdapter;
 import kr.rokoroku.mbus.ui.widget.SplitCardView;
+import kr.rokoroku.mbus.util.CaulyAdUtil;
 import kr.rokoroku.mbus.util.GeoUtils;
 import kr.rokoroku.mbus.util.SimpleProgressCallback;
 import kr.rokoroku.mbus.util.ThemeUtils;
@@ -202,6 +204,15 @@ public class RouteActivity extends AbstractBaseActivity
         if (TimeUtils.checkShouldUpdate(route.getLastUpdateTime()) || force) {
             if (isRefreshing) return true;
             else isRefreshing = true;
+
+            String tag = String.valueOf(System.currentTimeMillis());
+            CaulyAdUtil.requestAd2(this, tag, new CaulyAdUtil.SimpleCaulyNativeAdListener() {
+                @Override
+                public void onReceiveNativeAd(CaulyNativeAdView caulyNativeAdView, boolean b) {
+                    mBusRouteAdapter.setAdTag(tag);
+                    ViewUtils.runOnUiThread(mBusRouteAdapter::notifyDataSetChanged);
+                }
+            });
 
             final boolean needUpdateRouteInfo = !mRouteDataProvider.isRouteInfoAvailable() || route.getType() == null || route.getType().equals(RouteType.UNKNOWN);
             ApiFacade.getInstance().getRouteData(route, mRouteDataProvider, new SimpleProgressCallback() {
@@ -610,21 +621,15 @@ public class RouteActivity extends AbstractBaseActivity
             Drawable drawable;
             if (route != null && FavoriteFacade.getInstance().isAdded(route)) {
                 drawable = getResources().getDrawable(R.drawable.ic_favorite_star_filled);
+                ViewUtils.setTint(drawable, ThemeUtils.getResourceColor(this, R.color.md_red_700));
             } else {
                 drawable = getResources().getDrawable(R.drawable.ic_favorite_star);
+                ViewUtils.setTint(drawable, ThemeUtils.getThemeColor(this, android.R.attr.textColorPrimary));
             }
-            ViewUtils.setTint(drawable, ThemeUtils.getThemeColor(this, android.R.attr.textColorPrimary));
             favorite.setIcon(drawable);
         }
 
-        MenuItem refresh = menu.findItem(R.id.action_refresh);
-        if (refresh != null && refresh.getIcon() != null) {
-            Drawable icon = refresh.getIcon();
-            ViewUtils.setTint(icon, ThemeUtils.getThemeColor(this, android.R.attr.textColorPrimary));
-            refresh.setIcon(icon);
-        }
-
-        return true;
+        return super.onCreateOptionsMenu(menu);
     }
 
     @Override
@@ -644,7 +649,7 @@ public class RouteActivity extends AbstractBaseActivity
                 addToFavorite(null);
 
                 Drawable drawable = getResources().getDrawable(R.drawable.ic_favorite_star_filled);
-                ViewUtils.setTint(drawable, ThemeUtils.getThemeColor(this, android.R.attr.textColorPrimary));
+                ViewUtils.setTint(drawable, ThemeUtils.getResourceColor(this, R.color.md_red_700));
                 item.setIcon(drawable);
                 return true;
 

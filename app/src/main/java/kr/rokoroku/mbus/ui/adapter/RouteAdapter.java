@@ -13,6 +13,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Parcelable;
 import android.support.v4.view.ViewCompat;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -24,6 +25,8 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.fsn.cauly.CaulyNativeAdView;
+import com.fsn.cauly.CaulyNativeAdViewListener;
 import com.h6ah4i.android.widget.advrecyclerview.expandable.RecyclerViewExpandableItemManager;
 import com.h6ah4i.android.widget.advrecyclerview.utils.AbstractExpandableItemAdapter;
 import com.h6ah4i.android.widget.advrecyclerview.utils.AbstractExpandableItemViewHolder;
@@ -32,6 +35,7 @@ import kr.rokoroku.mbus.R;
 import kr.rokoroku.mbus.StationActivity;
 import kr.rokoroku.mbus.core.ApiFacade;
 import kr.rokoroku.mbus.data.RouteDataProvider;
+import kr.rokoroku.mbus.data.StationDataProvider;
 import kr.rokoroku.mbus.data.model.ArrivalInfo;
 import kr.rokoroku.mbus.data.model.BusLocation;
 import kr.rokoroku.mbus.data.model.Provider;
@@ -40,6 +44,7 @@ import kr.rokoroku.mbus.data.model.RouteStation;
 import kr.rokoroku.mbus.data.model.RouteType;
 import kr.rokoroku.mbus.data.model.Station;
 import kr.rokoroku.mbus.data.model.StationRoute;
+import kr.rokoroku.mbus.util.CaulyAdUtil;
 import kr.rokoroku.mbus.util.SimpleProgressCallback;
 import kr.rokoroku.mbus.util.ThemeUtils;
 import kr.rokoroku.mbus.util.TimeUtils;
@@ -61,12 +66,15 @@ import kr.rokoroku.mbus.ui.widget.SplitCardView;
 import kr.rokoroku.widget.ConnectorView;
 
 
-public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.BaseViewHolder, RouteAdapter.BusArrivalViewHolder> {
+public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.BaseViewHolder, RouteAdapter.BaseChildViewHolder> {
 
     private static final int ITEM_BUS = 0;
     private static final int ITEM_STATION = 1;
     private static final int ITEM_HEADER = 3;
     private static final int ITEM_FOOTER = 4;
+    private static final int ITEM_CHILD_STATION = 10;
+    private static final int ITEM_CHILD_AD = 11;
+
     private static final String TAG = "RouteAdapter";
 
     private final RouteDataProvider mDataProvider;
@@ -81,6 +89,7 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
     private Set<WeakReference<BusArrivalItemViewHolder>> mArrivalViewReferenceSet;
 
     private OnItemInteractionListener mItemInteractionListener;
+    private String mAdTag;
 
     public RouteAdapter(RouteDataProvider dataProvider) {
         mDataProvider = dataProvider;
@@ -101,6 +110,12 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
         }
     }
 
+    public void setAdTag(String adTag) {
+        if (mAdTag != adTag) {
+            this.mAdTag = adTag;
+        }
+    }
+
     @Override
     public int getGroupCount() {
         int count = mDataProvider.getCount();
@@ -111,6 +126,7 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
     @Override
     public int getChildCount(int groupPosition) {
         groupPosition--;
+        int count = 0;
         if (groupPosition >= 0 && groupPosition < mDataProvider.getCount()) {
             RouteDataProvider.RouteListItemData item = mDataProvider.getItem(groupPosition);
             RouteStation routeStation = item.getRouteStation();
@@ -118,13 +134,16 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
             if(routeStation != null && routeStation.isBusStop()) {
                 ArrivalInfo arrivalInfo = getArrivalInfoCache(routeStation.getLocalId());
                 if(arrivalInfo != null && arrivalInfo.getBusArrivalItem2() != null) {
-                    return 2;
+                    count = 2;
                 } else {
-                    return 1;
+                    count = 1;
+                }
+                if (mAdTag != null) {
+                    count++;
                 }
             }
         }
-        return 0;
+        return count;
     }
 
     @Override
@@ -181,7 +200,11 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
 
     @Override
     public int getChildItemViewType(int groupPosition, int childPosition) {
-        return 0;
+        int childCount = getChildCount(groupPosition);
+        if (mAdTag != null && childCount - 1 == childPosition) {
+            return ITEM_CHILD_AD;
+        }
+        return ITEM_CHILD_STATION;
     }
 
     @Override
@@ -190,10 +213,16 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
     }
 
     @Override
-    public BusArrivalViewHolder onCreateChildViewHolder(ViewGroup parent, int viewType) {
+    public BaseChildViewHolder onCreateChildViewHolder(ViewGroup parent, int viewType) {
         final LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-        final View v = inflater.inflate(R.layout.row_route_station_more, parent, false);
-        return new BusArrivalViewHolder(v);
+        switch (viewType) {
+            case ITEM_CHILD_STATION:
+                return new BusArrivalViewHolder(inflater.inflate(R.layout.row_route_station_more, parent, false));
+
+            case ITEM_CHILD_AD:
+                return new AdViewHolder(inflater.inflate(R.layout.row_route_station_more_ad, parent, false));
+        }
+        return null;
     }
 
     @Override
@@ -275,91 +304,116 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
     }
 
     @Override
-    public void onBindChildViewHolder(BusArrivalViewHolder holder, int groupPosition, int childPosition, int viewType) {
-
-        mExpandedGroupId = getGroupId(groupPosition);
-        mBusArrivalViewHolderReference = new WeakReference<>(holder);
+    public void onBindChildViewHolder(BaseChildViewHolder holder, int groupPosition, int childPosition, int viewType) {
 
         holder.clear();
-        RouteStation routeStation = getItem(groupPosition).getRouteStation();
+        mExpandedGroupId = getGroupId(groupPosition);
 
-        if (routeStation != null) {
-            holder.setColorByStationId(routeStation.getId());
-
-            final int childCount = getChildCount(groupPosition);
-            final String localStationId = routeStation.getLocalId();
-            final String routeId = routeStation.getRouteId();
-
-            ArrivalInfo arrivalInfo = getArrivalInfoCache(localStationId);
-            if (arrivalInfo == null) arrivalInfo = routeStation.getArrivalInfo();
-            if (arrivalInfo == null || TimeUtils.checkShouldUpdate(arrivalInfo.getTimestamp())) {
-                StationRoute stationRoute = routeStation.getStationRoute(routeId);
-                if (stationRoute == null) {
-                    stationRoute = new StationRoute(mDataProvider.getRoute(), localStationId);
-                }
-
-                if (childPosition == 0) synchronized (mReloadingArrivalInfoSet) {
-                    if (!mReloadingArrivalInfoSet.contains(localStationId)) {
-                        mReloadingArrivalInfoSet.add(localStationId);
-
-                        final StationRoute finalStationRoute = stationRoute;
-                        ApiFacade.getInstance().getArrivalInfo(routeStation, stationRoute, new SimpleProgressCallback<List<ArrivalInfo>>() {
-                            @Override
-                            public void onComplete(boolean success, List<ArrivalInfo> value) {
-                                ArrivalInfo resultArrivalInfo = finalStationRoute.getArrivalInfo();
-                                holder.setItem(resultArrivalInfo, childPosition);
-                                holder.setColorByStationId(routeStation.getId());
-                                if (resultArrivalInfo == null) {
-                                    resultArrivalInfo = new ArrivalInfo(routeId, routeStation.getId());
-                                }
-                                routeStation.putArrivalInfo(resultArrivalInfo);
-                                putArrivalInfoCache(finalStationRoute.getLocalStationId(), resultArrivalInfo);
-
-                                if (childCount == 1) {
-                                    ViewUtils.runOnUiThread(() -> { if(getChildCount(groupPosition) == 2) notifyDataSetChanged(); });
-                                }
-                                ViewUtils.runOnUiThread(() -> mReloadingArrivalInfoSet.remove(localStationId), 1000);
-                            }
-
-                            @Override
-                            public void onError(int progress, Throwable t) {
-                                Toast.makeText(holder.itemView.getContext(), t.getMessage(), Toast.LENGTH_LONG).show();
-                                holder.setItem(null, childPosition);
-                                holder.setColorByStationId(routeStation.getId());
-                                ViewUtils.runOnUiThread(() -> mReloadingArrivalInfoSet.remove(localStationId), 1000);
-                            }
-                        });
-                        return;
-                    }
-                }
-                holder.setItem(arrivalInfo, childPosition);
-
+        if (holder.mConnector != null) {
+            if (groupPosition == mDataProvider.getCount()) {
+                holder.mConnector.setVisibility(View.INVISIBLE);
             } else {
-                holder.setItem(arrivalInfo, childPosition);
-                holder.setColorByStationId(arrivalInfo.getStationId());
-                if (childPosition == 0 && getArrivalInfoCache(localStationId) == null) {
-                    putArrivalInfoCache(localStationId, arrivalInfo);
-                    if (childCount == 1) {
-                        ViewUtils.runOnUiThread(() -> {
-                            if(getChildCount(groupPosition) == 2) notifyDataSetChanged();
-                        }, 50);
-                    }
-                }
+                holder.mConnector.setVisibility(View.VISIBLE);
             }
         }
 
-        if (groupPosition == mDataProvider.getCount()) {
-            holder.mConnector.setVisibility(View.INVISIBLE);
-        } else {
-            holder.mConnector.setVisibility(View.VISIBLE);
+        RouteDataProvider.RouteListItemData dataAfter = getItem(groupPosition + 1);
+
+        int childCount = getChildCount(groupPosition);
+        if (childPosition == childCount - 1) {
+            holder.mCardView.setRoundBottom(dataAfter == null || RouteDataProvider.RouteListItemData.Type.BUS.equals(dataAfter.getType()));
+        } else if (childPosition < childCount - 1) {
+            holder.mCardView.setRoundBottom(false);
         }
 
-        RouteDataProvider.RouteListItemData dataAfter = getItem(groupPosition + 1);
-        int childCount = getChildCount(groupPosition);
-        if(childCount == 1 || childPosition == 1) {
-            holder.mContainer.setRoundBottom(dataAfter == null || RouteDataProvider.RouteListItemData.Type.BUS.equals(dataAfter.getType()));
-        } else if(childCount == 2 && childPosition == 0) {
-            holder.mContainer.setRoundBottom(false);
+        if (holder instanceof AdViewHolder) {
+            AdViewHolder adViewHolder = (AdViewHolder) holder;
+            if (mAdTag != null) {
+                adViewHolder.requestAd(mAdTag);
+            }
+            RouteStation routeStation = getItem(groupPosition).getRouteStation();
+
+            if (routeStation != null) {
+                Context context = holder.itemView.getContext();
+                FavoriteFacade.Color favoriteStationColor = FavoriteFacade.Color.WHITE;
+                String id = routeStation.getId();
+                if (id != null) {
+                    favoriteStationColor = FavoriteFacade.getInstance().getFavoriteStationColor(
+                            mDataProvider.getRoute().getProvider(), id);
+                }
+                ((AdViewHolder) holder).mContainer.setCardBackgroundColor(ThemeUtils.dimColor(favoriteStationColor.getColor(context), 0.95f));
+            }
+        }
+
+        else if (holder instanceof BusArrivalViewHolder) {
+            BusArrivalViewHolder arrivalViewHolder = (BusArrivalViewHolder) holder;
+            mBusArrivalViewHolderReference = new WeakReference<>(arrivalViewHolder);
+
+            RouteStation routeStation = getItem(groupPosition).getRouteStation();
+
+            if (routeStation != null) {
+                arrivalViewHolder.setColorByStationId(routeStation.getId());
+
+                final String localStationId = routeStation.getLocalId();
+                final String routeId = routeStation.getRouteId();
+
+                ArrivalInfo arrivalInfo = getArrivalInfoCache(localStationId);
+                if (arrivalInfo == null) arrivalInfo = routeStation.getArrivalInfo();
+                if (arrivalInfo == null || TimeUtils.checkShouldUpdate(arrivalInfo.getTimestamp())) {
+                    StationRoute stationRoute = routeStation.getStationRoute(routeId);
+                    if (stationRoute == null) {
+                        stationRoute = new StationRoute(mDataProvider.getRoute(), localStationId);
+                    }
+
+                    if (childPosition == 0) synchronized (mReloadingArrivalInfoSet) {
+                        if (!mReloadingArrivalInfoSet.contains(localStationId)) {
+                            mReloadingArrivalInfoSet.add(localStationId);
+
+                            final StationRoute finalStationRoute = stationRoute;
+                            ApiFacade.getInstance().getArrivalInfo(routeStation, stationRoute, new SimpleProgressCallback<List<ArrivalInfo>>() {
+                                @Override
+                                public void onComplete(boolean success, List<ArrivalInfo> value) {
+                                    ArrivalInfo resultArrivalInfo = finalStationRoute.getArrivalInfo();
+                                    arrivalViewHolder.setItem(resultArrivalInfo, childPosition);
+                                    arrivalViewHolder.setColorByStationId(routeStation.getId());
+                                    if (resultArrivalInfo == null) {
+                                        resultArrivalInfo = new ArrivalInfo(routeId, routeStation.getId());
+                                    }
+                                    routeStation.putArrivalInfo(resultArrivalInfo);
+                                    putArrivalInfoCache(finalStationRoute.getLocalStationId(), resultArrivalInfo);
+
+                                    if (childCount == (mAdTag == null ? 1 : 2)) {
+                                        ViewUtils.runOnUiThread(() -> { if(getChildCount(groupPosition) == (mAdTag == null ? 2 : 3)) notifyDataSetChanged(); });
+                                    }
+                                    ViewUtils.runOnUiThread(() -> mReloadingArrivalInfoSet.remove(localStationId), 1000);
+                                }
+
+                                @Override
+                                public void onError(int progress, Throwable t) {
+                                    Toast.makeText(arrivalViewHolder.itemView.getContext(), t.getMessage(), Toast.LENGTH_LONG).show();
+                                    arrivalViewHolder.setItem(null, childPosition);
+                                    arrivalViewHolder.setColorByStationId(routeStation.getId());
+                                    ViewUtils.runOnUiThread(() -> mReloadingArrivalInfoSet.remove(localStationId), 1000);
+                                }
+                            });
+                            return;
+                        }
+                    }
+                    arrivalViewHolder.setItem(arrivalInfo, childPosition);
+
+                } else {
+                    arrivalViewHolder.setItem(arrivalInfo, childPosition);
+                    arrivalViewHolder.setColorByStationId(arrivalInfo.getStationId());
+                    if (childPosition == 0 && getArrivalInfoCache(localStationId) == null) {
+                        putArrivalInfoCache(localStationId, arrivalInfo);
+                        if (childCount == 1) {
+                            ViewUtils.runOnUiThread(() -> {
+                                if(getChildCount(groupPosition) == 2) notifyDataSetChanged();
+                            }, 50);
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -653,9 +707,24 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
         }
     }
 
-    public class BusArrivalViewHolder extends BaseViewHolder {
+    public class BaseChildViewHolder extends BaseViewHolder {
 
         public SplitCardView mCardView;
+
+        public BaseChildViewHolder(View v) {
+            super(v);
+            mCardView = (SplitCardView) v.findViewById(R.id.card_view);
+            mCardView.setRoundTop(false);
+        }
+
+        public void clear() {
+            mContainer.setCardBackgroundColor(
+                    ThemeUtils.dimColor(FavoriteFacade.Color.WHITE.getColor(itemView.getContext()), 0.95f));
+        }
+    }
+
+    public class BusArrivalViewHolder extends BaseChildViewHolder {
+
         public BusArrivalItemViewHolder mBusArrivalItem;
         public TextView mBusArrivalTitle;
         public ProgressBar mProgressBar;
@@ -666,7 +735,6 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
 
         public BusArrivalViewHolder(View v) {
             super(v);
-            mCardView = (SplitCardView) v.findViewById(R.id.card_view);
             mProgressBar = (ProgressBar) v.findViewById(R.id.progress_bar);
             mBusArrivalLayout = v.findViewById(R.id.bus_arrival_layout);
             mBusOperationEndLayout = v.findViewById(R.id.bus_operation_end_layout);
@@ -733,6 +801,7 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
             mContainer.setCardBackgroundColor(ThemeUtils.dimColor(favoriteStationColor.getColor(context), 0.95f));
         }
 
+        @Override
         public void clear() {
             mProgressBar.setVisibility(View.VISIBLE);
             mBusArrivalLayout.setVisibility(View.INVISIBLE);
@@ -915,6 +984,55 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
             }
         }
         return null;
+    }
+
+    public class AdViewHolder extends BaseChildViewHolder implements CaulyNativeAdViewListener {
+
+        private String mTag;
+        private ViewGroup mAdLayout;
+        private CaulyNativeAdView mAdView;
+
+        public AdViewHolder(View v) {
+            super(v);
+            mAdLayout = (ViewGroup) v.findViewById(R.id.ad_layout);
+        }
+
+        public void requestAd(String tag) {
+            if (mAdView == null || !TextUtils.equals(mTag, tag) || (mAdView != null && mAdView.getParent() != mAdLayout) ) {
+                mTag = tag;
+                Context context = mCardView.getContext();
+                CaulyAdUtil.requestAd2(context, tag, this);
+            }
+        }
+
+        @Override
+        public void onReceiveNativeAd(CaulyNativeAdView caulyNativeAdView, boolean b) {
+            if (caulyNativeAdView != null) {
+                mAdView = caulyNativeAdView;
+                ViewUtils.runOnUiThread(() -> {
+                    if (mAdView.getParent() != null) {
+                        ((ViewGroup) caulyNativeAdView.getParent()).removeView(mAdView);
+                    }
+                    mAdLayout.removeAllViewsInLayout();
+                    mAdLayout.addView(mAdView);
+                    mCardView.post(() -> {
+                        mCardView.getLayoutParams().height = mAdLayout.getHeight();
+                        mCardView.requestLayout();
+                    });
+                });
+            } else {
+                onFailedToReceiveNativeAd(null, -1, null);
+            }
+        }
+
+        @Override
+        public void onFailedToReceiveNativeAd(CaulyNativeAdView caulyNativeAdView, int i, String s) {
+            CaulyAdUtil.removeAd(mTag);
+            mAdView = null;
+            mTag = null;
+            mAdTag = null;
+            ViewUtils.runOnUiThread(RouteAdapter.this::notifyDataSetChanged, 100);
+        }
     }
 
     public OnItemInteractionListener getItemInteractionListener() {

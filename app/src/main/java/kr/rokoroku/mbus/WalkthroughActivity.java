@@ -40,7 +40,7 @@ public class WalkthroughActivity extends AppIntro2 {
                         getString(R.string.walkthrough_favorite_title),
                         getString(R.string.walkthrough_favorite_description),
                         R.drawable.walkthrough_4,
-                        getResources().getColor(R.color.md_red_100))
+                        getResources().getColor(R.color.md_red_200))
         };
 
         for (AppIntroFragment slide : slides) {

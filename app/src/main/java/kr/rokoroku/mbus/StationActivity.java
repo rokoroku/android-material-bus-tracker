@@ -20,6 +20,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.afollestad.materialdialogs.MaterialDialog;
+import com.fsn.cauly.CaulyNativeAdView;
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
 import com.h6ah4i.android.widget.advrecyclerview.animator.RefactoredDefaultItemAnimator;
@@ -42,6 +43,7 @@ import kr.rokoroku.mbus.core.ApiFacade;
 import kr.rokoroku.mbus.core.FavoriteFacade;
 import kr.rokoroku.mbus.data.model.Station;
 import kr.rokoroku.mbus.data.model.StationRoute;
+import kr.rokoroku.mbus.util.CaulyAdUtil;
 import kr.rokoroku.mbus.util.SimpleProgressCallback;
 import kr.rokoroku.mbus.util.ThemeUtils;
 import kr.rokoroku.mbus.util.TimeUtils;
@@ -120,6 +122,7 @@ public class StationActivity extends AbstractBaseActivity
         if (mBusStationAdapter != null) {
             mBusStationAdapter.notifyDataSetChanged();
         }
+
         showToolbarLayer();
     }
 
@@ -197,6 +200,16 @@ public class StationActivity extends AbstractBaseActivity
             else isRefreshing = true;
 
             mBusStationAdapter.clearCache();
+
+            String tag = String.valueOf(System.currentTimeMillis());
+            CaulyAdUtil.requestAd2(this, tag, new CaulyAdUtil.SimpleCaulyNativeAdListener() {
+                @Override
+                public void onReceiveNativeAd(CaulyNativeAdView caulyNativeAdView, boolean b) {
+                    mBusStationAdapter.setAdTag(tag);
+                    ViewUtils.runOnUiThread(mBusStationAdapter::notifyDataSetChanged);
+                }
+            });
+
             if (station.getId() == null && station.getLocalId() != null && station.getProvider().equals(Provider.SEOUL)) {
                 ApiFacade.getInstance().getSeoulWebRestClient().getStationBaseInfo(station.getLocalId(), new ApiWrapperInterface.Callback<Station>() {
                     @Override
@@ -443,21 +456,15 @@ public class StationActivity extends AbstractBaseActivity
             Drawable drawable;
             if (station != null && FavoriteFacade.getInstance().isAdded(station)) {
                 drawable = getResources().getDrawable(R.drawable.ic_favorite_star_filled);
+                ViewUtils.setTint(drawable, ThemeUtils.getResourceColor(this, R.color.md_red_700));
             } else {
                 drawable = getResources().getDrawable(R.drawable.ic_favorite_star);
+                ViewUtils.setTint(drawable, ThemeUtils.getThemeColor(this, android.R.attr.textColorPrimary));
             }
-            ViewUtils.setTint(drawable, ThemeUtils.getThemeColor(this, android.R.attr.textColorPrimary));
             item.setIcon(drawable);
         }
 
-        MenuItem refresh = menu.findItem(R.id.action_refresh);
-        if (refresh != null && refresh.getIcon() != null) {
-            Drawable icon = refresh.getIcon();
-            ViewUtils.setTint(icon, ThemeUtils.getThemeColor(this, android.R.attr.textColorPrimary));
-            refresh.setIcon(icon);
-        }
-
-        return true;
+        return super.onCreateOptionsMenu(menu);
     }
 
     @Override
@@ -477,7 +484,7 @@ public class StationActivity extends AbstractBaseActivity
                 addToFavorite(null);
 
                 Drawable drawable = getResources().getDrawable(R.drawable.ic_favorite_star_filled);
-                ViewUtils.setTint(drawable, ThemeUtils.getThemeColor(this, android.R.attr.textColorPrimary));
+                ViewUtils.setTint(drawable, ThemeUtils.getResourceColor(this, R.color.md_red_700));
                 item.setIcon(drawable);
                 return true;
 

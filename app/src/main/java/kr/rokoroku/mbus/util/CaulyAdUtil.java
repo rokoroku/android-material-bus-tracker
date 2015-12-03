@@ -5,7 +5,6 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 
 import com.fsn.cauly.CaulyAdInfo;
-import com.fsn.cauly.CaulyNativeAdHelper;
 import com.fsn.cauly.CaulyNativeAdInfoBuilder;
 import com.fsn.cauly.CaulyNativeAdView;
 import com.fsn.cauly.CaulyNativeAdViewListener;
@@ -62,10 +61,36 @@ public class CaulyAdUtil {
                     .layoutID(R.layout.row_ad_view)
                     .iconImageID(R.id.icon)
                     .titleID(R.id.title)
-                    //.subtitleID(R.id.subtitle)
+                            //.subtitleID(R.id.subtitle)
                     .textID(R.id.text)
                     .clickingView(R.id.card_view)
                     .sponsorPosition(R.id.sponsor, CaulyAdInfo.Direction.RIGHT)
+                    .build();
+
+            CaulyNativeAdView nativeAd = new CaulyNativeAdView(context);
+            nativeAd.setAdInfo(adInfo);
+            nativeAd.setAdViewListener(listener);
+            nativeAd.request();
+            putNativeAdView(tag, nativeAd);
+
+        } else {
+            listener.onFailedToReceiveNativeAd(null, -1, "NETWORK_UNAVAILABLE");
+        }
+    }
+
+    public static void requestAd2(Context context, String tag, CaulyNativeAdViewListener listener) {
+        CaulyNativeAdView nativeAdView = getNativeAdView(tag);
+        if (nativeAdView != null) {
+            listener.onReceiveNativeAd(nativeAdView, true);
+
+        } else if (isNetworkAvailable(context)) {
+            String appCode = context.getString(R.string.cauly_app_key);
+            CaulyAdInfo adInfo = new CaulyNativeAdInfoBuilder(appCode)
+                    .layoutID(R.layout.row_ad_view_small)
+                    .iconImageID(R.id.icon)
+                    .titleID(R.id.title)
+                    .textID(R.id.text)
+                    .clickingView(R.id.ad_layout)
                     .build();
 
             CaulyNativeAdView nativeAd = new CaulyNativeAdView(context);
