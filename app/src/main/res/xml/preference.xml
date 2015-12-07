@@ -24,6 +24,16 @@
 
     </PreferenceCategory>
 
+
+    <PreferenceCategory android:title="실험실">
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="pref_enable_favorite_color"
+            android:summary="노선 및 정류장 정보에서 각 항목에 색상을 설정할 수 있는 버튼을 추가합니다."
+            android:title="색상 설정 기능" />
+
+    </PreferenceCategory>
+
     <PreferenceCategory android:title="API 사용 설정">
         <SwitchPreference
             android:defaultValue="true"

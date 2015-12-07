@@ -26,10 +26,12 @@ import android.widget.Toast;
 
 import com.fsn.cauly.CaulyNativeAdView;
 import com.fsn.cauly.CaulyNativeAdViewListener;
+import com.google.android.gms.ads.AdView;
 import com.h6ah4i.android.widget.advrecyclerview.expandable.RecyclerViewExpandableItemManager;
 import com.h6ah4i.android.widget.advrecyclerview.utils.AbstractExpandableItemAdapter;
 import com.h6ah4i.android.widget.advrecyclerview.utils.AbstractExpandableItemViewHolder;
 
+import kr.rokoroku.mbus.BaseApplication;
 import kr.rokoroku.mbus.R;
 import kr.rokoroku.mbus.StationActivity;
 import kr.rokoroku.mbus.core.ApiFacade;
@@ -80,9 +82,12 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
     private long mExpandedGroupId = -1;
     private RecyclerViewExpandableItemManager mExpandableItemManager;
     private WeakReference<RouteAdapter.BusArrivalViewHolder> mBusArrivalViewHolderReference;
+    private WeakReference<RouteAdapter.BusArrivalViewHolder> mBusArrivalViewHolderReference2;
+    private WeakReference<RouteAdapter.AdViewHolder> mAdViewHolderReference;
     private WeakReference<RouteStation> mRouteStationReference;
     private Map<String, WeakReference<ArrivalInfo>> mArrivalInfoCache;
     private final Set<String> mReloadingArrivalInfoSet = new HashSet<>();
+    boolean isFavoriteColorEnabled = BaseApplication.getSharedPreferences().getBoolean(BaseApplication.PREFERENCE_FAVORITE_COLOR, false);
 
     private Timer mTimer;
     private Set<WeakReference<BusArrivalItemViewHolder>> mArrivalViewReferenceSet;
@@ -267,10 +272,14 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
             if (getExpandedPosition() == groupPosition && routeStation.isBusStop()) {
                 stationViewHolder.mNavigateButton.setVisibility(View.VISIBLE);
                 stationViewHolder.mFavoriteButton.setVisibility(View.VISIBLE);
+                if (isFavoriteColorEnabled) {
+                    stationViewHolder.mPalleteButton.setVisibility(View.VISIBLE);
+                }
                 stationViewHolder.mContainer.setRoundBottom(false);
             } else {
                 stationViewHolder.mNavigateButton.setVisibility(View.GONE);
                 stationViewHolder.mFavoriteButton.setVisibility(View.GONE);
+                stationViewHolder.mPalleteButton.setVisibility(View.GONE);
                 RouteDataProvider.RouteListItemData dataAfter = mDataProvider.getItem(itemPosition + 1);
                 stationViewHolder.mContainer.setRoundBottom(dataAfter == null || RouteDataProvider.RouteListItemData.Type.BUS.equals(dataAfter.getType()));
             }
@@ -306,7 +315,7 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
     public void onBindChildViewHolder(BaseChildViewHolder holder, int groupPosition, int childPosition, int viewType) {
 
         holder.clear();
-        mExpandedGroupId = getGroupId(groupPosition);
+        Context context = holder.itemView.getContext();
 
         if (holder.mConnector != null) {
             if (groupPosition == mDataProvider.getCount()) {
@@ -315,6 +324,18 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
                 holder.mConnector.setVisibility(View.VISIBLE);
             }
         }
+
+        mExpandedGroupId = getGroupId(groupPosition);
+        RouteStation routeStation = getItem(groupPosition).getRouteStation();
+        FavoriteFacade.Color favoriteStationColor = FavoriteFacade.Color.WHITE;
+        if (routeStation != null) {
+            String id = routeStation.getId();
+            if (id != null) {
+                favoriteStationColor = FavoriteFacade.getInstance().getFavoriteStationColor(mDataProvider.getRoute().getProvider(), id);
+            }
+        }
+        holder.mCardView.setCardBackgroundColor(ThemeUtils.dimColor(favoriteStationColor.getColor(context), 0.95f));
+
 
         RouteDataProvider.RouteListItemData dataAfter = getItem(groupPosition + 1);
 
@@ -329,26 +350,23 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
             AdViewHolder adViewHolder = (AdViewHolder) holder;
             if (mAdTag != null) {
                 adViewHolder.requestAd(mAdTag);
+                mAdViewHolderReference = new WeakReference<>(adViewHolder);
+            } else {
+                mAdViewHolderReference = null;
             }
-            RouteStation routeStation = getItem(groupPosition).getRouteStation();
 
             if (routeStation != null) {
-                Context context = holder.itemView.getContext();
-                FavoriteFacade.Color favoriteStationColor = FavoriteFacade.Color.WHITE;
-                String id = routeStation.getId();
-                if (id != null) {
-                    favoriteStationColor = FavoriteFacade.getInstance().getFavoriteStationColor(
-                            mDataProvider.getRoute().getProvider(), id);
-                }
-                ((AdViewHolder) holder).mContainer.setCardBackgroundColor(ThemeUtils.dimColor(favoriteStationColor.getColor(context), 0.95f));
+                adViewHolder.mStationId = routeStation.getId();
             }
         }
 
         else if (holder instanceof BusArrivalViewHolder) {
             BusArrivalViewHolder arrivalViewHolder = (BusArrivalViewHolder) holder;
-            mBusArrivalViewHolderReference = new WeakReference<>(arrivalViewHolder);
-
-            RouteStation routeStation = getItem(groupPosition).getRouteStation();
+            if (childPosition == 0) {
+                mBusArrivalViewHolderReference = new WeakReference<>(arrivalViewHolder);
+            } else {
+                mBusArrivalViewHolderReference2 = new WeakReference<>(arrivalViewHolder);
+            }
 
             if (routeStation != null) {
                 arrivalViewHolder.setColorByStationId(routeStation.getId());
@@ -571,6 +589,7 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
         public TextView mStationDescription;
         public ImageButton mFavoriteButton;
         public ImageButton mNavigateButton;
+        public ImageButton mPalleteButton;
 
         public StationViewHolder(View v) {
             super(v);
@@ -578,10 +597,19 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
             mStationDescription = (TextView) v.findViewById(R.id.station_description);
             mFavoriteButton = (ImageButton) v.findViewById(R.id.favorite_button);
             mNavigateButton = (ImageButton) v.findViewById(R.id.navigate_button);
+            mPalleteButton = (ImageButton) v.findViewById(R.id.pallete_button);
             mFavoriteButton.setOnTouchListener(this);
             mFavoriteButton.setOnClickListener(this);
             mNavigateButton.setOnTouchListener(this);
             mNavigateButton.setOnClickListener(this);
+            mPalleteButton.setOnTouchListener(this);
+            mPalleteButton.setOnClickListener(this);
+
+            if (isFavoriteColorEnabled) {
+                mPalleteButton.setVisibility(View.VISIBLE);
+            } else {
+                mPalleteButton.setVisibility(View.GONE);
+            }
         }
 
         public void setItem(RouteStation routeStation) {
@@ -639,7 +667,6 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
                 if (mItemInteractionListener != null && mItem != null) {
                     mItemInteractionListener.onClickFavoriteButton(mFavoriteButton, mItem);
                 }
-                //showPalette(v, mItem);
 
             } else if (v.equals(mNavigateButton)) {
                 // Navigate to StationActivity
@@ -649,6 +676,9 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
                 intent.putExtra(StationActivity.EXTRA_KEY_REDIRECT_ROUTE_ID, mDataProvider.getRoute().getId());
                 intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_NEW_TASK);
                 context.startActivity(intent);
+
+            } else if (v.equals(mPalleteButton)) {
+                showPalette(v, mItem);
             }
         }
 
@@ -695,17 +725,42 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
             Context context = itemView.getContext();
             mContainer.animateCardBackgroundColor(color.getColor(context));
 
+            int delay = 60;
             if (mBusArrivalViewHolderReference != null) {
                 BusArrivalViewHolder busArrivalViewHolder = mBusArrivalViewHolderReference.get();
                 if (busArrivalViewHolder != null && station.getId().equals(busArrivalViewHolder.mStationId)) {
                     busArrivalViewHolder.mContainer.postDelayed(() ->
                             busArrivalViewHolder.mContainer.animateCardBackgroundColor(
                                     ThemeUtils.dimColor(color.getColor(context), 0.95f),
-                                    RevealUtils.Position.TOP_CENTER), 60);
+                                    RevealUtils.Position.TOP_CENTER), delay);
+                    delay += 60;
                 }
-                FavoriteFacade favoriteFacade = FavoriteFacade.getInstance();
-                favoriteFacade.setFavoriteStationColor(station.getProvider(), station.getId(), color);
             }
+
+            if (mBusArrivalViewHolderReference2 != null) {
+                BusArrivalViewHolder busArrivalViewHolder = mBusArrivalViewHolderReference2.get();
+                if (busArrivalViewHolder != null && station.getId().equals(busArrivalViewHolder.mStationId)) {
+                    busArrivalViewHolder.mContainer.postDelayed(() ->
+                            busArrivalViewHolder.mContainer.animateCardBackgroundColor(
+                                    ThemeUtils.dimColor(color.getColor(context), 0.95f),
+                                    RevealUtils.Position.TOP_CENTER), delay);
+                    delay += 60;
+                }
+            }
+
+            if (mAdViewHolderReference != null) {
+                AdViewHolder adViewHolder = mAdViewHolderReference.get();
+                if (adViewHolder != null && station.getId().equals(adViewHolder.mStationId)) {
+                    adViewHolder.mContainer.postDelayed(() ->
+                            adViewHolder.mContainer.animateCardBackgroundColor(
+                                    ThemeUtils.dimColor(color.getColor(context), 0.95f),
+                                    RevealUtils.Position.TOP_CENTER), delay);
+                }
+            }
+
+            FavoriteFacade favoriteFacade = FavoriteFacade.getInstance();
+            favoriteFacade.setFavoriteStationColor(station.getProvider(), station.getId(), color);
+
         }
     }
 
@@ -991,6 +1046,7 @@ public class RouteAdapter extends AbstractExpandableItemAdapter<RouteAdapter.Bas
     public class AdViewHolder extends BaseChildViewHolder implements CaulyNativeAdViewListener {
 
         private String mTag;
+        private String mStationId;
         private ViewGroup mAdLayout;
         private CaulyNativeAdView mAdView;
 

@@ -10,7 +10,6 @@
       <module fileurl="file://$PROJECT_DIR$/material-bus-tracker.iml" filepath="$PROJECT_DIR$/material-bus-tracker.iml" />
       <module fileurl="file://$PROJECT_DIR$/persistentSearch/persistentSearch.iml" filepath="$PROJECT_DIR$/persistentSearch/persistentSearch.iml" />
       <module fileurl="file://$PROJECT_DIR$/showcaseview/showcaseview.iml" filepath="$PROJECT_DIR$/showcaseview/showcaseview.iml" />
-      <module fileurl="file://$PROJECT_DIR$/vector-compat/vector-compat.iml" filepath="$PROJECT_DIR$/vector-compat/vector-compat.iml" />
     </modules>
   </component>
 </project>

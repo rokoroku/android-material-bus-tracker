@@ -27,6 +27,7 @@ public class BaseApplication extends Application {
     public static final String PREFERENCE_DB_CRASHED_BEFORE = "pref_db_crashed";
     public static final String PREFERENCE_HOME_SCREEN = "pref_home_screen";
     public static final String PREFERENCE_THEME = "pref_theme";
+    public static final String PREFERENCE_FAVORITE_COLOR = "pref_enable_favorite_color";
     public static final String PREFERENCE_WALKTHROUGH = "pref_walkthrough";
 
     public static boolean showAd = false;

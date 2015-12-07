@@ -753,11 +753,14 @@ public class RouteActivity extends AbstractBaseActivity
         if (favoriteItem == null) {
             addToFavorite(routeStation);
         } else {
-            if (FavoriteFacade.getInstance().removeItem(favoriteItem)) {
-                Snackbar.make(mCoordinatorLayout, R.string.alert_favorite_removed, Snackbar.LENGTH_LONG)
-                        .show();
-                button.setImageResource(R.drawable.ic_favorite_outline_24dp);
-            }
+            do {
+                FavoriteFacade.getInstance().removeItem(favoriteItem);
+                favoriteItem = FavoriteFacade.getInstance().getItem(mRouteDataProvider.getRoute(), routeStation);
+            } while (favoriteItem != null);
+
+            Snackbar.make(mCoordinatorLayout, R.string.alert_favorite_removed, Snackbar.LENGTH_LONG)
+                    .show();
+            button.setImageResource(R.drawable.ic_favorite_outline_24dp);
         }
     }
 }

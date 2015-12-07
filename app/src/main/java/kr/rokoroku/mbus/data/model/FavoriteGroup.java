@@ -94,8 +94,10 @@ public class FavoriteGroup implements Serializable {
         return list.remove(index);
     }
 
-    public boolean remove(Object object) {
-        return list.remove(object);
+    public boolean remove(FavoriteItem object) {
+        ArrayList<FavoriteItem> collection = new ArrayList<>();
+        collection.add(object);
+        return list.removeAll(collection);
     }
 
     public FavoriteItem set(int index, FavoriteItem object) {

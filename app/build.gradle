@@ -21,8 +21,8 @@ android {
         applicationId "kr.rokoroku.mbus"
         minSdkVersion 14
         targetSdkVersion 23
-        versionCode 12
-        versionName "0.91"
+        versionCode 14
+        versionName "0.92"
     }
     buildTypes {
         release {
@@ -52,7 +52,6 @@ dependencies {
     compile project(':circularReveal')
     compile project(':persistentSearch')
     compile project(':advRecyclerView')
-    compile project(':vector-compat')
     compile project(':showcaseview')
     compile project(':fab')
     compile 'com.android.support:design:23.1.1'

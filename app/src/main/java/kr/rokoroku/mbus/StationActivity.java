@@ -581,11 +581,14 @@ public class StationActivity extends AbstractBaseActivity
         if (favoriteItem == null) {
             addToFavorite(stationRoute);
         } else {
-            if (FavoriteFacade.getInstance().removeItem(favoriteItem)) {
-                Snackbar.make(mCoordinatorLayout, R.string.alert_favorite_removed, Snackbar.LENGTH_LONG)
-                        .show();
-                button.setImageResource(R.drawable.ic_favorite_outline_24dp);
-            }
+            do {
+                FavoriteFacade.getInstance().removeItem(favoriteItem);
+                favoriteItem = FavoriteFacade.getInstance().getItem(mStationDataProvider.getStation(), stationRoute);
+            } while (favoriteItem != null);
+
+            Snackbar.make(mCoordinatorLayout, R.string.alert_favorite_removed, Snackbar.LENGTH_LONG)
+                    .show();
+            button.setImageResource(R.drawable.ic_favorite_outline_24dp);
         }
     }
 }

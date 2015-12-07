@@ -41,7 +41,6 @@ import com.h6ah4i.android.widget.advrecyclerview.swipeable.action.SwipeResultAct
 import com.h6ah4i.android.widget.advrecyclerview.swipeable.action.SwipeResultActionRemoveItem;
 import com.h6ah4i.android.widget.advrecyclerview.utils.AbstractDraggableSwipeableItemViewHolder;
 import com.h6ah4i.android.widget.advrecyclerview.utils.AbstractExpandableItemAdapter;
-import com.wnafee.vector.MorphButton;
 
 import java.util.HashSet;
 import java.util.Random;
@@ -256,17 +255,21 @@ public class FavoriteAdapter
                             .scaleY(1f)
                             .setDuration(200));
                 }
+            }
 
-                MorphButton.MorphState state;
-                if ((expandState & RecyclerViewExpandableItemManager.STATE_FLAG_IS_EXPANDED) != 0) {
-                    sectionViewHolder.mOverflowButton.setVisibility(View.VISIBLE);
-                    state = MorphButton.MorphState.END;
-                } else {
-                    sectionViewHolder.mOverflowButton.setVisibility(View.GONE);
-                    state = MorphButton.MorphState.START;
+            if ((expandState & RecyclerViewExpandableItemManager.STATE_FLAG_IS_EXPANDED) != 0) {
+                sectionViewHolder.mOverflowButton.setVisibility(View.VISIBLE);
+                if (sectionViewHolder.mIndicator.getRotation() != 180.0f ) {
+                    ViewUtils.runOnUiThread(() -> ViewCompat.animate(sectionViewHolder.mIndicator)
+                            .rotation(180.0f)
+                            .setDuration(200));
                 }
-                if (sectionViewHolder.mIndicator.getState() != state) {
-                    sectionViewHolder.mIndicator.setState(state, true);
+            } else {
+                sectionViewHolder.mOverflowButton.setVisibility(View.GONE);
+                if (sectionViewHolder.mIndicator.getRotation() != 0f ) {
+                    ViewUtils.runOnUiThread(() -> ViewCompat.animate(sectionViewHolder.mIndicator)
+                            .rotation(0f)
+                            .setDuration(200));
                 }
             }
         }
@@ -458,16 +461,13 @@ public class FavoriteAdapter
         } else {
             mTemporariliyCollapsedGroupPosition = -1;
         }
+
         int draggableStartRange = 0;
-        int draggableEndRange = getGroupCount() - 1;
-        if (getAdPosition() >= 0) {
+        int draggableEndRange = getGroupCount() - 2;
+        if (getAdTag() != null && getAdPosition() >= 0) {
             draggableEndRange--;
-//            if(getAdPosition() == 0) {
-//                draggableStartRange++;
-//            } else if(getAdPosition() == draggableEndRange) {
-//                draggableEndRange--;
-//            }
         }
+        if (draggableEndRange < draggableStartRange) draggableEndRange = draggableStartRange;
         return new GroupPositionItemDraggableRange(draggableStartRange, draggableEndRange);
     }
 
@@ -520,8 +520,15 @@ public class FavoriteAdapter
                             mAdPosition++;
                         }
                     }
-
                 }
+
+                if (realToGroupPosition > mProvider.getGroupCount() - 1) {
+                    realToGroupPosition = mProvider.getGroupCount() - 1;
+                }
+                if (realFromGroupPosition < 0) {
+                    realFromGroupPosition = 0;
+                }
+
                 if (realFromGroupPosition != realToGroupPosition) {
                     mProvider.moveGroupItem(realFromGroupPosition, realToGroupPosition);
                 } else {
@@ -982,14 +989,14 @@ public class FavoriteAdapter
     public class SectionViewHolder extends GroupViewHolder implements View.OnClickListener, View.OnTouchListener {
 
         public TextView mTitle;
-        public MorphButton mIndicator;
+        public ImageView mIndicator;
         public ImageButton mOverflowButton;
         public FavoriteGroup mItem;
 
         public SectionViewHolder(View v) {
             super(v);
             mTitle = (TextView) v.findViewById(R.id.section_title);
-            mIndicator = (MorphButton) v.findViewById(R.id.indicator);
+            mIndicator = (ImageView) v.findViewById(R.id.indicator);
             mOverflowButton = (ImageButton) v.findViewById(R.id.overflow_button);
             mOverflowButton.setOnClickListener(this);
             mOverflowButton.setOnTouchListener(this);
